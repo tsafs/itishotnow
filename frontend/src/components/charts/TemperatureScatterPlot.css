@@ -1,0 +1,64 @@
+.temperature-scatter-container {
+    overflow: visible;
+    text-align: center;
+}
+
+.temperature-scatter-container * .title {
+    font-weight: bold;
+}
+
+.temperature-scatter-container * .today-label {
+    font-weight: bold;
+    font-size: 14px;
+    color: #333;
+}
+
+.temperature-scatter-container * svg {
+    overflow: visible;
+}
+
+.temperature-scatter-container * svg g[aria-label="x-axis tick label"],
+.temperature-scatter-container * svg g[aria-label="y-axis tick label"] {
+    font-size: 14px;
+    color: #333;
+}
+
+.temperature-scatter-container * svg g[aria-label="y-axis label"] {
+    font-size: 14px;
+    color: #333;
+}
+
+.temperature-scatter-container * svg g[aria-label="y-axis tick"],
+.temperature-scatter-container * svg g[aria-label="x-axis tick"] {
+    stroke: #ddd;
+    stroke-opacity: 1;
+}
+
+.temperature-scatter-container * svg g[aria-label="y-grid"] {
+    stroke: #ddd;
+    stroke-opacity: 1;
+}
+
+.temperature-scatter-container * svg .hover-text {
+    color: #333;
+    font-size: 14px;
+}
+
+.loading-message,
+.error-message {
+    padding: 20px;
+    text-align: center;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.error-message {
+    color: #d32f2f;
+    font-weight: 500;
+}
+
+@media (max-width: 768px) {
+    .temperature-scatter-container * figure {
+        margin: 0;
+    }
+}

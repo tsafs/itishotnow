@@ -1,0 +1,34 @@
+.app-container {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  overflow-x: visible;
+  background-color: #D7DDE2;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Make the content area grow to push footer to bottom */
+.content-wrapper {
+  width: 100%;
+  position: relative;
+  flex: 1;
+  /* Add appropriate top padding to account for fixed header */
+  margin-top: 60px;
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-size: 1.5rem;
+  color: #666;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .content-wrapper {
+    margin-top: 100px;
+  }
+}

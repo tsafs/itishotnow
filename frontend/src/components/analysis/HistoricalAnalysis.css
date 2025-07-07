@@ -1,0 +1,49 @@
+.historical-analysis {
+    padding: 15px;
+    background-color: #f8f9fa;
+}
+
+@media (max-width: 1024px) {
+    .scatter-plot {
+        max-width: 600px;
+    }
+}
+
+@media (max-width: 768px) {
+    .scatter-plot {
+        max-width: 450px;
+    }
+}
+
+@media (max-width: 480px) {
+    .scatter-plot {
+        max-width: 350px;
+    }
+}
+
+.analysis-info {
+    padding: 10px;
+    height: 100%;
+    max-width: 600px;
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+
+.analysis-info h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.6rem;
+    color: #333;
+}
+
+@media (max-width: 1024px) {
+    .analysis-info {
+        margin-top: 30px;
+        text-align: justify;
+    }
+
+    .analysis-info h2 {
+        text-align: center;
+    }
+}

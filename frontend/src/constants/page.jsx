@@ -1,0 +1,1 @@
+export const PAGE_NAME = "Ist es jetzt wirklich warm?";

@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Ist es jetzt wirklich warm?</title>
+  <script>
+    // Get the current URL path
+    const path = window.location.pathname;
+    // Redirect to the homepage with a special query parameter
+    window.location.href = '/?redirect=' + encodeURIComponent(path);
+  </script>
+</head>
+<body>
+  Redirecting...
+</body>
+</html>

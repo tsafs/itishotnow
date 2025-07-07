@@ -1,0 +1,41 @@
+.impressum-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.impressum-content {
+    background-color: #efefef;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    padding: 25px;
+}
+
+.impressum-loading {
+    text-align: center;
+    padding: 40px;
+    font-size: 18px;
+    color: #666;
+}
+
+.impressum-content h1 {
+    margin-top: 0;
+    color: #333;
+}
+
+.impressum-content p {
+    line-height: 1.6;
+}
+
+.impressum-content ul {
+    padding-left: 20px;
+}
+
+.impressum-content a {
+    color: #0066cc;
+    text-decoration: none;
+}
+
+.impressum-content a:hover {
+    text-decoration: underline;
+}

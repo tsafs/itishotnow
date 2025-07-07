@@ -1,0 +1,96 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Fetch 10min Station data",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/analysis/stations/fetch_station_data.py",
+            "console": "integratedTerminal",
+            "args": "--granularity 10min --type now --output-dir ./data/10min_station_data"
+        },
+        {
+            "name": "Extract 10min Station data",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/analysis/stations/extract_10min_station_data.py",
+            "console": "integratedTerminal",
+            "args": "--data-dir ./data/10min_station_data/now --output-file ./data/10min_station_data/unfiltered_10min_station_data.csv --reference-date 20250707 --invalid-value -999"
+        },
+        {
+            "name": "Fetch HYRAS data",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/analysis/hyras/fetch_hyras_data.py",
+            "console": "integratedTerminal",
+            "args": "--dataset air_temperature_min --start-year 1960 --end-year 1991 --resolution 1 --output-dir ./data/hyras/reference_periods"
+        },
+        {
+            "name": "Extract HYRAS Climate Metrics",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/analysis/hyras/extract_hyras_data.py",
+            "console": "integratedTerminal",
+            "args": "--file ./data/hyras/reference_periods/tasmin_hyras_1_{1960-1991}_v6-0_de.nc --file ./data/hyras/reference_periods/tasmax_hyras_1_{1960-1991}_v6-0_de.nc --stations ./data/10min_station_data/10min_station_data.csv --output-dir ./data/10min_station_data/hyras/1960-1991 --param tasmin --param tasmax"
+        },
+        {
+            "name": "Filter 10min station data available in HYRAS grid",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/analysis/stations/filter_10min_station_data_by_hyras.py",
+            "console": "integratedTerminal",
+            "args": "--station-data ./data/10min_station_data/unfiltered_10min_station_data.csv --reference-file ./data/10min_station_data/hyras/1951-2024/hyras_stations.csv --output-file ./data/10min_station_data/10min_station_data.csv"
+        },
+        {
+            "name": "Calculate Rolling Averages",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/analysis/rolling_average/calculate_rolling_average.py",
+            "console": "integratedTerminal",
+            "args": "--data-dir ./data/10min_station_data/hyras/1960-1991 --output-dir ./data/10min_station_data/rolling_average/1961_1990/daily --from-year 1961 --to-year 1990 --rolling-window 7"
+        },
+        {
+            "name": "Calculate Rolling Averages Over Years",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/analysis/rolling_average/calculate_rolling_average.py",
+            "console": "integratedTerminal",
+            "args": "--data-dir ./data/10min_station_data/hyras/1960-1991 --output-dir ./data/10min_station_data/rolling_average/1961_1990/yearly --from-year 1961 --to-year 1990 --rolling-window 7 --over-years"
+        },
+        {
+            "name": "Interpolate Hourly Temperatures for HYRAS Stations",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/analysis/stations/interpolate_hourly_temperatures_for_stations.py",
+            "console": "integratedTerminal",
+            "args": "--input-file ./data/10min_station_data/10min_station_data.csv --hyras-data ./data/10min_station_data/rolling_average/1961_1990/yearly --output-dir ./data/10min_station_data/interpolated_hourly/1961_1990 --output-prefix interpolated_hourly_temperatures_1961_1990"
+        },
+        {
+            "name": "Visualize Interpolated Temperatures",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/playground/visualize_temperatures.py",
+            "console": "integratedTerminal",
+            "args": " --station-data ./data/10min_station_data/rolling_average/1961_1990/yearly/avg_7d_over_years_159_76_großenkneten_1961-1990.csv --hourly-data-dir ./data/10min_station_data/rolling_average/1961_1990/yearly/interpolated_hourly_temperatures/ --start-date 01-01 --end-date 01-10 --output output_plot.png"
+        },
+        {
+            "name": "Extract Active Stations",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/analysis/stations/extract_active_stations.py",
+            "console": "integratedTerminal",
+            "args": "--input-file ./data/stations/daily/recent/KL_Tageswerte_Beschreibung_Stationen.txt --output-file ./data/stations/daily/recent/active_stations_daily.csv --data-dir ./data/stations/daily/recent --reference-date 20250616 --max-days-offset 7 --invalid-value -999 --check-columns TMK,TXK,TNK,UPM"
+        },
+        {
+            "name": "Extract German Cities from Geonames Data",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/analysis/geonames/filter_german_cities.py",
+            "console": "integratedTerminal",
+            "args": "--input-file ./data/geonames/cities1000.txt --output-file ./data/geonames/german_cities_p5000.csv --min-population 5000"
+        }
+    ]
+}

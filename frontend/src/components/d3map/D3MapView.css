@@ -1,0 +1,31 @@
+.d3-map-view {
+    position: relative;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+@media (max-width: 768px) {
+    .d3-map-view {
+        margin-top: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .d3-map-view {
+        margin-top: 0px;
+    }
+}
+
+.map-content-split {
+    background-color: #D7DDE2;
+}
+
+.left-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    height: 100%;
+    gap: 20px;
+}
