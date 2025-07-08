@@ -12,6 +12,7 @@ import './App.css';
 const D3MapView = React.lazy(() => import('./components/d3map/D3MapView'));
 const HistoricalAnalysis = React.lazy(() => import('./components/analysis/HistoricalAnalysis'));
 const ImpressumPage = React.lazy(() => import('./pages/ImpressumPage'));
+const Closing = React.lazy(() => import('./components/closing/Closing'));
 
 // Create an AppContent component to use router hooks
 function AppContent() {
@@ -69,6 +70,10 @@ function AppContent() {
         <Suspense fallback={<div className="loading-container">Loading analysis data...</div>}>
           <HistoricalAnalysis />
         </Suspense>
+      </div>
+
+      <div>
+        <Closing />
       </div>
     </>
   );
