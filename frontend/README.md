@@ -1,70 +1,82 @@
-# Getting Started with Create React App
+# Ist es jetzt wirklich warm? - Frontend
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A React-based interactive web application that shows real-time temperature data across Germany, allowing users to compare and analyze temperature patterns.
 
-## Available Scripts
+## Features
 
-In the project directory, you can run:
+- Interactive D3-based map visualization of temperature data
+- Historical temperature analysis
+- City comparison functionality
+- Responsive design for mobile and desktop
+- Redux state management
 
-### `npm start`
+## Tech Stack
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- React (with React Router for routing)
+- Redux (with Redux Toolkit for state management)
+- D3.js for interactive data visualizations
+- CSS for styling
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Getting Started
 
-### `npm test`
+### Installation
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/itishotnow.git
+cd itishotnow/frontend
+```
 
-### `npm run build`
+2. Install dependencies:
+```bash
+npm install
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### Data Setup
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+Before running the application, you need to set up the data by creating symlinks to the data directories:
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+```bash
+# Run the script from the project root
+./symlink_data_to_frontend.sh
+```
 
-### `npm run eject`
+This script creates symlinks in the frontend directory that point to the required data files:
+- Station data for the map of Germany
+- Rolling average data (1951-2024) for the temperature scatter plot
+- Rolling average data (1961-1990) for the temperature bell curve plot
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+The data can either be:
+- Downloaded and generated following the hints left in FILES.md and .vscode/launch.json. Real instructions will follow.
+- Downloaded directly from the S3 bucket at:
+  - https://esistwarm.jetzt/station_data/10min_station_data_20250707_with_hist_means.csv
+  - https://esistwarm.jetzt/data/10min_station_data/rolling_average/1951_2024/daily/
+  - https://esistwarm.jetzt/data/10min_station_data/rolling_average/1961_1990/daily/
+  
+### Development
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+To start the development server:
+```bash
+npm run start
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+The application will be available at [http://localhost:3000](http://localhost:3000).
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+### Building for Production
 
-## Learn More
+There is a GitHub Action that automatically builds the frontend on push and stores it in an S3 bucket for serving.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## Data Sources
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+The application uses data from:
+- GeoNames for city information
+- Weather station data for temperature information
+- Europe GeoJSON data for map rendering
 
-### Code Splitting
+## Contributing
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+Feel free to contribute however you like, whether it is actively in the repository or in your fork. There can never be enough plots.
 
-### Analyzing the Bundle Size
+## License
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+This project is licensed under the MIT License - see the LICENSE file for details.
