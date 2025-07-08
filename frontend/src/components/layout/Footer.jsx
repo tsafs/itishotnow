@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
 import { PAGE_NAME } from '../../constants/page';
 import './Footer.css';
+// Import GitHub icon from react-icons
+import { FaGithub } from 'react-icons/fa';
 
 const Footer = () => {
     const currentYear = new Date().getFullYear();
@@ -11,6 +13,14 @@ const Footer = () => {
                 <div className="footer-links">
                     <Link to="/" className="footer-link">Home</Link>
                     <Link to="/impressum" className="footer-link">Impressum</Link>
+                    <a
+                        href="https://github.com/tsafs/itishotnow"
+                        className="footer-link github-link"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        <FaGithub /> GitHub
+                    </a>
                     {/* Add more links here as needed */}
                 </div>
                 <div className="footer-copyright">
