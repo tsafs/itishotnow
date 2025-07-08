@@ -34,7 +34,7 @@ const StationDetails = () => {
             subtitleText = `Wetterstation: ${selectedCity.nearestStation.station_name} ${formattedDistance}`;
         }
         if (selectedCity.data_date) {
-            subtitleText += `, ${selectedCity.data_date}\u00A0Uhr`;
+            subtitleText += ` ${selectedCity.data_date}\u00A0Uhr`;
         }
         setSubtitle(subtitleText);
     }, [selectedCity]);

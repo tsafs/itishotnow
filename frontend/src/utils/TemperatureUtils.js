@@ -125,7 +125,7 @@ export const analyzeTemperatureAnomaly = (anomaly) => {
         comparisonMessage = "Es ist brütend heiß!";
     }
 
-    const anomalyMessage = `Die aktuelle Temperatur liegt ${Math.abs(anomaly).toFixed(1)}°C ${anomaly > 0 ? 'über' : 'unter'} dem historischen Mittelwert.`;
+    const anomalyMessage = `Die aktuelle Temperatur liegt ${Math.abs(anomaly).toFixed(1)}\u00A0°C ${anomaly > 0 ? 'über' : 'unter'} dem historischen\u00A0Mittelwert.`;
 
     return {
         comparisonMessage,
