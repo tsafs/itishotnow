@@ -9,15 +9,17 @@ const HistoricalAnalysis = () => {
     // Left side content with tabs for different content types
     const rightContent = (
         <div className="analysis-info">
-            <h2>Was zeigt diese Grafik?</h2>
             <p>
-                Die Grafik zeigt die Temperaturentwicklung am heutigen Kalendertag für die ausgewählte Wetterstation seit 1951. Jeder farbige Punkt steht für die Durchschnittstemperatur an diesem Tag in einem bestimmten Jahr, gemittelt inklusive der Durchschnittstemperaturen der umliegenden Tage (jeweils 7 Tage davor und danach).
+                Diese Grafik zeigt, wie warm der <strong>heutige Tag</strong> im Vergleich zu früheren Jahren ist. Sie umfasst Daten seit <strong>1951</strong> für die ausgewählte Wetterstation.
             </p>
             <p>
-                Als Vergleich dient der Durchschnitt des Referenzzeitraums 1961–1990 (Nulllinie). Punkte oberhalb der Linie waren wärmer als dieser historische Durchschnitt, Punkte unterhalb kälter. Die Farbe der Punkte zeigt dies ebenfalls an (Blau = kälter, Rot = wärmer).
+                Jeder <strong>farbige Punkt</strong> steht für ein Jahr. Der Wert zeigt die durchschnittliche Temperatur am heutigen Kalendertag. Um zufällige Wetterschwankungen auszugleichen, wird ein Durchschnitt aus den umliegenden Tagen gebildet (7 Tage davor und 7 Tage danach).
             </p>
             <p>
-                Die gestrichelte Linie visualisiert den langfristigen Erwärmungstrend. Der Wert <strong>Trend / Jahrzehnt</strong> gibt an, um wie viel Grad es pro Jahrzehnt im Durchschnitt wärmer geworden ist. Die grauen Punkte im Hintergrund zeigen zur besseren Einordnung die Durchschnittstemperaturen der umliegenden Tage.
+                Die horizontale <strong>Nulllinie</strong> entspricht dem Durchschnitt der Jahre <strong>1961-1990</strong>. <span style={{ color: '#d73027' }}>Rote&nbsp;Punkte</span> über dieser Linie zeigen wärmere Jahre, <span style={{ color: '#4575b4' }}>blaue&nbsp;Punkte</span> kältere Jahre über und unter dem Durchschnitt. Die grauen Punkte im Hintergrund zeigen die Werte der umliegenden Tage und geben einen breiteren Kontext.
+            </p>
+            <p>
+                Der <strong>aktuelle Wert</strong> basiert auf den bisher heute gemessenen Temperaturen. Das vollständige Bild entsteht daher erst am Ende des Tages oder nach Erreichen der Tageshöchsttemperatur.
             </p>
         </div>
     );

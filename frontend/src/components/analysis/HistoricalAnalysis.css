@@ -3,6 +3,10 @@
     background-color: #f8f9fa;
 }
 
+.scatter-plot {
+    height: 1000%;
+}
+
 @media (max-width: 1024px) {
     .scatter-plot {
         max-width: 600px;
@@ -12,6 +16,7 @@
 @media (max-width: 768px) {
     .scatter-plot {
         max-width: 450px;
+        padding: 0 10px;
     }
 }
 
@@ -22,28 +27,18 @@
 }
 
 .analysis-info {
-    padding: 10px;
+    padding-right: 10px;
     height: 100%;
     max-width: 600px;
     display: flex;
     flex-direction: column;
+    justify-content: center;
     text-align: left;
 }
 
-.analysis-info h2 {
-    margin-top: 0;
-    margin-bottom: 15px;
-    font-size: 1.6rem;
-    color: #333;
-}
-
-@media (max-width: 1024px) {
+@media (max-width: 768px) {
     .analysis-info {
-        margin-top: 30px;
+        margin-top: 20px;
         text-align: justify;
-    }
-
-    .analysis-info h2 {
-        text-align: center;
     }
 }

@@ -1,4 +1,4 @@
-const DEBUG_MODE = process.env.NODE_ENV === 'development';
+import { getNow } from "../utils/dateUtils";
 
 /**
  * Service to fetch weather stations data from CSV file
@@ -8,14 +8,11 @@ const DEBUG_MODE = process.env.NODE_ENV === 'development';
 export const fetchLatestWeatherStationsData = async () => {
     try {
         // Get today's date in YYYYMMDD format
-        const today = new Date();
+        const today = getNow();
         const year = today.getFullYear();
         const month = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
         const day = String(today.getDate()).padStart(2, '0');
         let year_month_day = `${year}${month}${day}`;
-        if (DEBUG_MODE) {
-            year_month_day = '20250706';
-        }
 
         const url = `/station_data/10min_station_data_${year_month_day}_with_hist_means.csv?t=${Date.now()}`;
 
@@ -64,7 +61,7 @@ export const fetchLatestWeatherStationsData = async () => {
                 const dateParts = dateString.match(/(\d{2})\.(\d{2})\.(\d{4})\s+(\d{2}:\d{2})/);
                 if (dateParts) {
                     const [, month, day, year, time] = dateParts;
-                    dateString = `${day}.${month}.${year} ${time}`;
+                    dateString = `${day}.${month}.${year}\u00A0${time}`;
                 }
             }
 

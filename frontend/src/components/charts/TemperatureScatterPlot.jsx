@@ -4,6 +4,7 @@ import { html } from 'htl';
 import * as d3 from "d3";
 import { useSelector } from 'react-redux';
 import { fetchRollingAverageForStation } from '../../services/DataService';
+import { getNow } from '../../utils/dateUtils';
 import './TemperatureScatterPlot.css';
 
 /**
@@ -19,7 +20,7 @@ const filterTemperatureDataByDateWindow = (data, targetMonthDay, windowDays = 7)
     const windowDates = [];
 
     // Create a reference date for this year
-    const currentYear = new Date().getFullYear();
+    const currentYear = getNow().getFullYear();
     const targetDate = new Date(currentYear, targetMonth - 1, targetDay);
 
     // Add days before and after
@@ -111,7 +112,7 @@ const TemperatureScatterPlot = () => {
         }
 
         // Parse the date to get day and month
-        const today = new Date();
+        const today = getNow();
         const month = String(today.getMonth() + 1).padStart(2, '0');
         const day = String(today.getDate()).padStart(2, '0');
         const todayMonthDay = `${month}-${day}`;
@@ -179,10 +180,10 @@ const TemperatureScatterPlot = () => {
                 const averageTemperature = (selectedCity.min_temperature + selectedCity.max_temperature) / 2;
                 const todayAnomaly = averageTemperature - averageTempForPrimaryDay;
                 todayDataPoint = {
-                    year: new Date().getFullYear(),
+                    year: getNow().getFullYear(),
                     temperature: averageTemperature,
                     anomaly: todayAnomaly,
-                    date: `${new Date().getFullYear()}-${month}-${day}`,
+                    date: `${getNow().getFullYear()}-${month}-${day}`,
                     isPrimaryDay: true,
                     isCurrent: true
                 };
@@ -223,6 +224,7 @@ const TemperatureScatterPlot = () => {
                     labelOffset: 55,
                     labelAnchor: "center",
                     tickSize: 5,
+                    labelArrow: false,
                 },
                 x: {
                     label: null,
@@ -232,9 +234,15 @@ const TemperatureScatterPlot = () => {
                     tickPadding: 5,
                 },
                 color: {
-                    scheme: "BuRd",
+                    scheme: "BuYlRd",
                 },
                 marks: [
+                    Plot.ruleY([0],
+                        {
+                            stroke: "#666",
+                            strokeWidth: 1,
+                        }
+                    ), // Zero line
                     Plot.ruleX([1961, 1990],
                         {
                             stroke: "#666",
