@@ -23,6 +23,5 @@ yarn-debug.log*
 yarn-error.log*
 
 # custom public data
-public/hyras_data
-public/rolling_average
+public/data
 public/station_data
