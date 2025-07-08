@@ -1,4 +1,3 @@
-import React from 'react';
 import './FlagLink.css';
 
 const FlagLink = ({ url, flagImage, title, customStyle }) => {

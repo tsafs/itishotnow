@@ -1,4 +1,3 @@
-import { useSelector } from 'react-redux';
 import ContentSplit from '../layout/ContentSplit';
 import FlagLink from '../common/FlagLink';
 import './Closing.css';
