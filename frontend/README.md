@@ -41,6 +41,14 @@ npm run start
 
 The application will be available at [http://localhost:3000](http://localhost:3000).
 
+#### Configuration
+
+You can configure the environment variables below before starting the service.
+
+| Variable      | Value                  | Effect                                                                                                              |
+| ------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| REACT_APP_NOW | '2025-07-07T17:35:00Z' | All data corresponds to the given date, i.e. all calls to getDate() return getDate('2025-07-07T17:35:00Z') instead. |
+
 ### Building for Production
 
 There is a GitHub Action that automatically builds the frontend on push and stores it in an S3 bucket for serving.
