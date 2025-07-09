@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import ContentSplit from '../layout/ContentSplit';
 import TemperaturePercentogram from '../charts/TemperaturePercentogram';
