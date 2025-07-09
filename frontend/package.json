@@ -19,7 +19,7 @@
         "topojson-client": "^3.1.0"
     },
     "scripts": {
-        "start": "REACT_APP_NOW='2025-07-07T17:35:00Z' react-scripts start",
+        "start": "react-scripts start",
         "build": "react-scripts build"
     },
     "eslintConfig": {
