@@ -1,0 +1,21 @@
+{
+    "CORSRules": [
+        {
+            "AllowedOrigins": [
+                "https://esistwarm.jetzt",
+                "http://localhost:3000"
+            ],
+            "AllowedHeaders": [
+                "*"
+            ],
+            "AllowedMethods": [
+                "GET",
+                "HEAD"
+            ],
+            "MaxAgeSeconds": 3000,
+            "ExposeHeaders": [
+                "ETag"
+            ]
+        }
+    ]
+}
