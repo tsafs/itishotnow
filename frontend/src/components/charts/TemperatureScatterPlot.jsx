@@ -5,63 +5,8 @@ import * as d3 from "d3";
 import { useSelector } from 'react-redux';
 import { fetchRollingAverageForStation } from '../../services/DataService';
 import { getNow } from '../../utils/dateUtils';
+import { filterTemperatureDataByDateWindow } from '../../utils/rollingAverageUtils';
 import './TemperatureScatterPlot.css';
-
-/**
- * Filter temperature data to include only dates within a window around a target date
- * @param {Array} data - The full dataset
- * @param {string} targetMonthDay - The target month-day in MM-DD format
- * @param {number} windowDays - Number of days to include before and after target date
- * @returns {Object} Filtered data separated by primary day and surrounding days
- */
-const filterTemperatureDataByDateWindow = (data, targetMonthDay, windowDays = 7) => {
-    // Calculate window dates
-    const [targetMonth, targetDay] = targetMonthDay.split('-').map(Number);
-    const windowDates = [];
-
-    // Create a reference date for this year
-    const currentYear = getNow().getFullYear();
-    const targetDate = new Date(currentYear, targetMonth - 1, targetDay);
-
-    // Add days before and after
-    for (let i = -windowDays; i <= windowDays; i++) {
-        const windowDate = new Date(targetDate);
-        windowDate.setDate(targetDate.getDate() + i);
-        const windowMonth = String(windowDate.getMonth() + 1).padStart(2, '0');
-        const windowDay = String(windowDate.getDate()).padStart(2, '0');
-        windowDates.push(`${windowMonth}-${windowDay}`);
-    }
-
-    // Primary day data (exactly matching target date)
-    const primaryDayData = [];
-
-    // Surrounding days data (within window but not on target date)
-    const surroundingDaysData = [];
-
-    // Process each data point
-    data.forEach(entry => {
-        const dateParts = entry.date.split('-');
-        if (dateParts.length < 3) return;
-
-        const entryMonthDay = `${dateParts[1]}-${dateParts[2]}`;
-
-        if (entryMonthDay === targetMonthDay) {
-            // This entry is for our primary target day
-            primaryDayData.push({
-                ...entry,
-                isPrimaryDay: true
-            });
-        } else if (windowDates.includes(entryMonthDay)) {
-            // This entry is within our window but not the target day
-            surroundingDaysData.push({
-                ...entry,
-                isPrimaryDay: false
-            });
-        }
-    });
-
-    return { primaryDayData, surroundingDaysData };
-};
 
 const TemperatureScatterPlot = () => {
     const containerRef = useRef();
@@ -120,7 +65,7 @@ const TemperatureScatterPlot = () => {
         try {
             // Filter data for our date window (±7 days)
             const { primaryDayData, surroundingDaysData } =
-                filterTemperatureDataByDateWindow(data, todayMonthDay, 7);
+                filterTemperatureDataByDateWindow(data, todayMonthDay, 7, fromYear, toYear);
 
             if (primaryDayData.length === 0) {
                 setError(`No data found for ${todayMonthDay} in the selected time period`);
