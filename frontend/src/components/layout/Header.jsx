@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import StationSearch from '../search/StationSearch';
-import DateSelection from '../timeSelection/DateSelection';
+import DateSelection from '../dateSelection/DateSelection';
 import './Header.css';
 
 const Header = () => {
