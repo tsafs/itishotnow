@@ -1,8 +1,9 @@
 import { createSlice } from '@reduxjs/toolkit';
+import { getNow } from '../../utils/dateUtils';
 
 const selectedDateSlice = createSlice({
     name: 'selectedDate',
-    initialState: null,
+    initialState: getNow().toISOString(),
     reducers: {
         setSelectedDate: (state, action) => {
             return action.payload;
