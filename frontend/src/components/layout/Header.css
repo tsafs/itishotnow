@@ -25,9 +25,17 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 50px;
     padding: 10px 20px;
     max-width: 1200px;
     margin: 0 auto;
+}
+
+.menu-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
 }
 
 .site-title {

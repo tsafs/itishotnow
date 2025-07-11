@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import StationSearch from '../search/StationSearch';
-import { PAGE_NAME } from '../../constants/page';
+import DateSelection from '../timeSelection/DateSelection';
 import './Header.css';
 
 const Header = () => {
@@ -46,10 +46,15 @@ const Header = () => {
         <header className={`site-header ${isVisible ? 'visible' : 'hidden'}`}>
             <div className="header-container">
                 <Link to="/">
-                    <h1 className="site-title">{PAGE_NAME}</h1>
+                    <h1 className="site-title">Ist es jetzt wirklich&nbsp;warm?</h1>
                 </Link>
-                <div className="header-search">
-                    <StationSearch showSearchIcon={true} />
+                <div className="menu-container">
+                    <div className="header-date-selection">
+                        <DateSelection />
+                    </div>
+                    <div className="header-search">
+                        <StationSearch showSearchIcon={true} />
+                    </div>
                 </div>
             </div>
         </header>
