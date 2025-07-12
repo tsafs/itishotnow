@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { analyzeTemperatureAnomaly } from '../../utils/TemperatureUtils';
+import { selectHistoricalMean } from '../../store/slices/weatherStationDataSlice';
 import './StationDetails.css';
 
 /**
@@ -10,20 +11,25 @@ import './StationDetails.css';
  */
 const StationDetails = () => {
     const selectedCity = useSelector(state => state.selectedCity);
-    const [anomaly, setAnomaly] = useState(null);
+    const historicalMean = useSelector(state => selectHistoricalMean(state, selectedCity?.station_id));
+    const [anomalyDetails, setAnomalyDetails] = useState(null);
     const [subtitle, setSubtitle] = useState('');
 
     // Extract anomaly from selected station
     useEffect(() => {
-        if (!selectedCity || !selectedCity.nearestStation) {
-            setAnomaly(null);
+        if (!selectedCity || !selectedCity.nearestStation || !historicalMean) {
+            setAnomalyDetails(null);
             setSubtitle('');
             return;
         }
 
-        const stationAnomaly = selectedCity.anomaly_1961_1990;
-        setAnomaly(stationAnomaly);
-
+        let difference = null;
+        if (selectedCity.temperature !== undefined
+            && historicalMean !== undefined
+            && historicalMean !== null) {
+            difference = selectedCity.temperature - historicalMean;
+        }
+        setAnomalyDetails(analyzeTemperatureAnomaly(difference));
 
         // Format the distance to show as km
         const formattedDistance = selectedCity.distanceToStation ?
@@ -37,18 +43,7 @@ const StationDetails = () => {
             subtitleText += ` ${selectedCity.data_date}\u00A0Uhr`;
         }
         setSubtitle(subtitleText);
-    }, [selectedCity]);
-
-    // Calculate comparison details using the utility function
-    const anomalyDetails = useMemo(() => {
-        if (anomaly === undefined || anomaly === null) {
-            return {
-                comparisonMessage: "Keine historischen Daten verfügbar.",
-                anomalyMessage: null
-            };
-        }
-        return analyzeTemperatureAnomaly(anomaly);
-    }, [anomaly]);
+    }, [selectedCity, historicalMean]);
 
     // If no city is selected, show a placeholder
     if (!selectedCity) {
@@ -106,7 +101,7 @@ const StationDetails = () => {
                 </div>
             </div>
 
-            {anomalyDetails.comparisonMessage && anomalyDetails.anomalyMessage && (
+            {anomalyDetails && (
                 <div className="temperature-comparison">
                     <div className="message">
                         {anomalyDetails.comparisonMessage}

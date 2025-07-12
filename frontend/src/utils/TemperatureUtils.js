@@ -93,8 +93,8 @@ function interpolateColor(color1, color2, ratio) {
 export const analyzeTemperatureAnomaly = (anomaly) => {
     if (anomaly === undefined || anomaly === null) {
         return {
-            comparisonMessage: "Keine historischen Daten verfügbar.",
-            anomalyMessage: null
+            comparisonMessage: "Keine Ahnung.",
+            anomalyMessage: "Keine historischen Daten verfügbar.",
         };
     }
 
