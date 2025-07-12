@@ -144,10 +144,10 @@ export const fetchDailyWeatherStationData = async (station_id, year_month_day) =
                 result = {
                     station_id: station_id,
                     date: new Date(date),
-                    temperature_mean: isNaN(temperature_mean) ? undefined : temperature_mean,
-                    temperature_min: isNaN(temperature_min) ? undefined : temperature_min,
-                    temperature_max: isNaN(temperature_max) ? undefined : temperature_max,
-                    humidity_mean: isNaN(humidity_mean) ? undefined : humidity_mean
+                    mean_temperature: isNaN(temperature_mean) ? undefined : temperature_mean,
+                    min_temperature: isNaN(temperature_min) ? undefined : temperature_min,
+                    max_temperature: isNaN(temperature_max) ? undefined : temperature_max,
+                    mean_humidity: isNaN(humidity_mean) ? undefined : humidity_mean
                 };
             }
         });
