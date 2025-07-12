@@ -75,8 +75,6 @@ export const fetchLatestWeatherStationsData = async () => {
 
             const temperature = replaceWithUndefined(parseFloat(cols[9]));
             const hist_mean_1961_1990 = (parseFloat(cols[10]));
-            const hist_mean_1971_2000 = (parseFloat(cols[11]));
-            const hist_mean_1981_2010 = (parseFloat(cols[12]));
 
             return {
                 station_id: cols[0].replace(/^0+/, ''), // Remove leading zeros
@@ -90,13 +88,9 @@ export const fetchLatestWeatherStationsData = async () => {
                 max_temperature: replaceWithUndefined(parseFloat(cols[7])),
                 humidity: replaceWithUndefined(parseFloat(cols[6])),
                 hist_mean_1961_1990: hist_mean_1961_1990,
-                hist_mean_1971_2000: hist_mean_1971_2000,
-                hist_mean_1981_2010: hist_mean_1981_2010,
                 subtitle: `${cols[2] ? cols[2] + ' Uhr' : 'unbekannt'}`,
                 // Calculate temperature anomaly from 1961-1990 baseline
                 anomaly_1961_1990: temperature !== undefined ? temperature - hist_mean_1961_1990 : undefined,
-                anomaly_1971_2000: temperature !== undefined ? temperature - hist_mean_1971_2000 : undefined,
-                anomaly_1981_2010: temperature !== undefined ? temperature - hist_mean_1981_2010 : undefined
             };
         }).filter(Boolean); // Remove null entries
 
