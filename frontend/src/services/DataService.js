@@ -2,7 +2,6 @@ import { getNow } from "../utils/dateUtils";
 
 /**
  * Service to fetch weather stations data from CSV file
- * @param {string} url - Name of the CSV file (default: '/active_stations_daily.csv')
  * @returns {Promise<Array>} Array of station data objects
  */
 export const fetchLatestWeatherStationsData = async () => {
@@ -12,9 +11,10 @@ export const fetchLatestWeatherStationsData = async () => {
         const year = today.getFullYear();
         const month = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
         const day = String(today.getDate()).padStart(2, '0');
+        const hour = String(today.getHours()).padStart(2, '0'); // Get current hour (00-23)
         let year_month_day = `${year}${month}${day}`;
 
-        const url = `/station_data/10min_station_data_${year_month_day}_with_hist_means.csv?t=${Date.now()}`;
+        const url = `/station_data/10min_station_data_${year_month_day}_with_hist_means.csv?t=${year}${month}${day}${hour}`;
 
         const response = await fetch(url, { cache: 'no-store' });
 
@@ -103,6 +103,62 @@ export const fetchLatestWeatherStationsData = async () => {
         return data;
     } catch (error) {
         console.error(`Error loading weather stations data:`, error);
+        throw error;
+    }
+};
+/**
+ * Service to fetch daily weather station data from CSV file
+ * @param {string} station_id - station ID of a station to fetch data for
+ * @param {string} year_month_day - date in YYYYMMDD format to fetch data for
+ * @returns {Promise<Array>} Array of station data objects
+ */
+export const fetchDailyWeatherStationData = async (station_id, year_month_day) => {
+    try {
+        const url = `/data/daily_recent_by_station/${station_id}.csv`;
+
+        const response = await fetch(url, { cache: 'no-store' });
+
+        // in case of a 404 error, error out
+        if (!response.ok) {
+            throw new Error(`Failed to fetch data from ${url}: ${response.status} ${response.statusText}.`);
+        }
+
+        const text = await response.text();
+
+        const lines = text.split('\n');
+
+        let result = null;
+
+        lines.slice(1).forEach(line => {
+            if (!line.trim()) return null; // Skip empty lines
+
+            const cols = line.split(',').map(col => col.trim());
+
+            const date = cols[0];
+            const temperature_mean = parseFloat(cols[1]);
+            const temperature_min = parseFloat(cols[2]);
+            const temperature_max = parseFloat(cols[3]);
+            const humidity_mean = parseFloat(cols[4]);
+
+            if (date === year_month_day) {
+                result = {
+                    station_id: station_id,
+                    date: new Date(date),
+                    temperature_mean: isNaN(temperature_mean) ? undefined : temperature_mean,
+                    temperature_min: isNaN(temperature_min) ? undefined : temperature_min,
+                    temperature_max: isNaN(temperature_max) ? undefined : temperature_max,
+                    humidity_mean: isNaN(humidity_mean) ? undefined : humidity_mean
+                };
+            }
+        });
+
+        if (!result) {
+            throw new Error(`No data found for station ${station_id} on ${year_month_day}.`);
+        }
+
+        return result;
+    } catch (error) {
+        console.error(`Error loading daily weather stations data:`, error);
         throw error;
     }
 };
