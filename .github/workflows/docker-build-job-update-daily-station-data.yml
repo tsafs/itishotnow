@@ -1,4 +1,4 @@
-name: Build Docker Image for Job Update 10min Station Data
+name: Build Docker Image for Job Update Daily Station Data
 
 on:
   push:
