@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Fetch 10min Station data",
+            "name": "Fetch 10min station data",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/analysis/stations/fetch_station_data.py",
@@ -13,7 +13,15 @@
             "args": "--granularity 10min --type now --output-dir ./data/10min_station_data"
         },
         {
-            "name": "Extract 10min Station data",
+            "name": "Fetch daily station data",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/analysis/stations/fetch_station_data.py",
+            "console": "integratedTerminal",
+            "args": "--granularity daily --type recent --output-dir ./data/daily_station_data"
+        },
+        {
+            "name": "Extract 10min station data",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/analysis/stations/extract_10min_station_data.py",
