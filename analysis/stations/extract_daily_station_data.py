@@ -199,15 +199,11 @@ def process_station_data(file_path, from_date, invalid_value):
         return False, {}
 
 
-def write_results_to_csv(stations, output_dir):
-    """Write processed stations to CSV file including data points."""
+def write_station_to_csv(station, output_dir):
+    """Write a single station's data to CSV file."""
+    output_file = Path(output_dir) / f"{station['station_id']}.csv"
 
-    # Create output dir if it does not exist
-    os.makedirs(output_dir, exist_ok=True)
-
-    for station in stations:
-        output_file = Path(output_dir) / f"{station['station_id']}.csv"
-
+    try:
         with open(output_file, "w", newline="", encoding="utf-8") as csvfile:
             fieldnames = [
                 "date",
@@ -229,21 +225,19 @@ def write_results_to_csv(stations, output_dir):
                         data_by_date[date] = {field: "" for field in fieldnames}
                         data_by_date[date]["date"] = date
 
-                    if metric == "temperature_mean":
-                        data_by_date[date]["temperature_mean"] = value
-                    elif metric == "temperature_min":
-                        data_by_date[date]["temperature_min"] = value
-                    elif metric == "temperature_max":
-                        data_by_date[date]["temperature_max"] = value
-                    elif metric == "humidity_mean":
-                        data_by_date[date]["humidity_mean"] = value
+                    data_by_date[date][metric] = value
 
             for date, row in data_by_date.items():
                 writer.writerow(row)
 
+        return True
+    except Exception as e:
+        print(f"Error writing station {station['station_id']} to CSV: {e}")
+        return False
+
 
 def extract_daily_station_data(data_dir, from_date, invalid_value, output_dir):
-    """Main function to extract and process 10-minute station data."""
+    """Main function to extract and process daily station data."""
 
     # Read station descriptions from the data directory
     stations = read_station_descriptions(data_dir)
@@ -251,39 +245,52 @@ def extract_daily_station_data(data_dir, from_date, invalid_value, output_dir):
     # Get recent data files and latest pull date
     station_files = find_recent_data_files(data_dir)
 
-    # Process stations based on data availability
-    processed_stations = []
+    # Create output directory if it doesn't exist
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Process stations one by one
     print(f"Processing stations with data on reference date: {from_date}")
 
-    for station in stations:
-        station_id = station["station_id"]
-        station_id = station_id.lstrip(
+    successful_stations = 0
+    total_stations = len(stations)
+
+    for i, station in enumerate(stations, 1):
+        station_id = station["station_id"].lstrip(
             "0"
         )  # Ensure leading zeros are stripped for matching
 
-        if station_id in station_files:
-            has_valid_data, data = process_station_data(
-                station_files[station_id], from_date, invalid_value
+        print(
+            f"Processing station {i}/{total_stations}: {station_id} - {station['station_name']}..."
+        )
+
+        if station_id not in station_files:
+            print(f"  Station {station_id} has no daily data file, skipping")
+            continue
+
+        has_valid_data, data = process_station_data(
+            station_files[station_id], from_date, invalid_value
+        )
+
+        if not has_valid_data:
+            print(
+                f"  Station {station_id} has no valid data for the specified time range, skipping"
             )
+            continue
 
-            if has_valid_data:
-                # Add the latest data to the station record
-                station["data"] = data
-                processed_stations.append(station)
-                print(f"Station {station_id} processed successfully")
-            else:
-                print(
-                    f"Station {station_id} has no valid data for the in the specified time range"
-                )
-        else:
-            print(f"Station {station_id} has no daily data file")
+        # Add data to the station record
+        station["data"] = data
 
-    print(f"Processed {len(processed_stations)} stations with valid data")
+        # Write this station to CSV immediately
+        if write_station_to_csv(station, output_dir):
+            successful_stations += 1
+            print(f"  Station {station_id} processed and saved successfully")
 
-    # Write results to CSV
-    write_results_to_csv(processed_stations, output_dir)
+        # Clear data after writing to save memory
+        station.pop("data", None)
 
-    print("Processing complete!")
+    print(
+        f"Processing complete! Successfully processed {successful_stations} out of {total_stations} stations"
+    )
 
 
 def main():
