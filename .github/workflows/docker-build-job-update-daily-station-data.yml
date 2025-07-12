@@ -1,0 +1,41 @@
+name: Build Docker Image for Job Update 10min Station Data
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "jobs/job-update-daily-station-data/**"
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the repo
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Sometimes old or cached credentials can cause issues
+      - name: Clear Docker config
+        run: rm -f ~/.docker/config.json
+
+      # Login to GitHub Container Registry
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Build the Docker image with both tags
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t ghcr.io/tsafs/itishotnow:daily-latest -f jobs/job-update-daily-station-data/Dockerfile .
+
+      # Push both Docker image tags to Docker Hub
+      - name: Push Docker image
+        run: |
+          docker push ghcr.io/tsafs/itishotnow:daily-latest
