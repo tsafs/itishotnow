@@ -2,10 +2,7 @@
 
 import os
 import sys
-import datetime
-import argparse
 from pathlib import Path
-import pandas as pd
 
 # Direct imports of functions from other scripts
 from fetch_station_data import fetch_station_data
