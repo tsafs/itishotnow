@@ -204,7 +204,7 @@ def process_interpolated_hourly_temperatures(station_data_file, time_periods=Non
     os.makedirs(temp_dir, exist_ok=True)
 
     # Process each date group
-    for (day, month), group_data in date_groups:
+    for (month, day), group_data in date_groups:
         month_str = f"{month:02d}"
         day_str = f"{day:02d}"
 
