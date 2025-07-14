@@ -14,9 +14,9 @@ export const fetchLatestWeatherStationsData = async () => {
         const hour = String(today.getHours()).padStart(2, '0'); // Get current hour (00-23)
         let year_month_day = `${year}${month}${day}`;
 
-        const url = `/station_data/10min_station_data_${year_month_day}_with_hist_means.csv?t=${year}${month}${day}${hour}`;
+        const url = `/station_data/10min_station_data_${year_month_day}_with_hist_means.csv?t=${year}${month}${day}${hour}a`;
 
-        const response = await fetch(url, { cache: 'no-store' });
+        const response = await fetch(url);
 
         // in case of a 404 error, error out
         if (!response.ok) {
@@ -57,13 +57,6 @@ export const fetchLatestWeatherStationsData = async () => {
 
             // Parse date from mm.dd.yyyy HH:MM to dd.mm.yyyy HH:MM
             let dateString = cols[2];
-            if (dateString) {
-                const dateParts = dateString.match(/(\d{2})\.(\d{2})\.(\d{4})\s+(\d{2}:\d{2})/);
-                if (dateParts) {
-                    const [, month, day, year, time] = dateParts;
-                    dateString = `${day}.${month}.${year}\u00A0${time}`;
-                }
-            }
 
             const replaceWithUndefined = (value) => {
                 if (value === -999) {
@@ -103,12 +96,18 @@ export const fetchLatestWeatherStationsData = async () => {
 /**
  * Service to fetch daily weather station data from CSV file
  * @param {string} station_id - station ID of a station to fetch data for
- * @param {string} year_month_day - date in YYYYMMDD format to fetch data for
- * @returns {Promise<{data: Object, dateRange: {from: string, to: string}}>} Data for requested date and available date range
+ * @returns {Promise<{data: Object, dateRange: {from: string, to: string}}>} Historical data for station
  */
-export const fetchDailyWeatherStationData = async (station_id, year_month_day) => {
+export const fetchDailyWeatherStationData = async (station_id) => {
     try {
-        const url = `/data/daily_recent_by_station/${station_id}.csv`;
+        // Get today's date in YYYYMMDDHH format
+        const today = getNow();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+        const day = String(today.getDate()).padStart(2, '0');
+        const hour = String(today.getHours()).padStart(2, '0'); // Get current hour (00-23)
+
+        const url = `/data/daily_recent_by_station/${station_id}.csv?t=${year}${month}${day}${hour}`;
 
         const response = await fetch(url, { cache: 'no-store' });
 
@@ -124,7 +123,6 @@ export const fetchDailyWeatherStationData = async (station_id, year_month_day) =
         // Variables for storing date range
         let earliestDate = null;
         let latestDate = null;
-        let result = null;
 
         // Skip header line
         const dataLines = lines.slice(1);
@@ -140,7 +138,7 @@ export const fetchDailyWeatherStationData = async (station_id, year_month_day) =
         latestDate = dataLines[dataLines.length - 1].split(',')[0].trim();
 
         // Find the specific date we're looking for
-        dataLines.forEach(line => {
+        const data = dataLines.map(line => {
             const cols = line.split(',').map(col => col.trim());
 
             const date = cols[0];
@@ -149,23 +147,24 @@ export const fetchDailyWeatherStationData = async (station_id, year_month_day) =
             const temperature_max = parseFloat(cols[3]);
             const humidity_mean = parseFloat(cols[4]);
 
-            if (date === year_month_day) {
-                result = {
-                    station_id: station_id,
-                    date: date,
-                    mean_temperature: isNaN(temperature_mean) ? undefined : temperature_mean,
-                    min_temperature: isNaN(temperature_min) ? undefined : temperature_min,
-                    max_temperature: isNaN(temperature_max) ? undefined : temperature_max,
-                    mean_humidity: isNaN(humidity_mean) ? undefined : humidity_mean
-                };
-            }
+            return {
+                date: date,
+                mean_temperature: isNaN(temperature_mean) ? undefined : temperature_mean,
+                min_temperature: isNaN(temperature_min) ? undefined : temperature_min,
+                max_temperature: isNaN(temperature_max) ? undefined : temperature_max,
+                mean_humidity: isNaN(humidity_mean) ? undefined : humidity_mean
+            };
         });
 
-        if (!result) {
-            throw new Error(`No data found for station ${station_id} on ${year_month_day}.`);
+        if (!data || !data.length) {
+            throw new Error(`No historical data found for station ${station_id}.`);
         }
 
-        // Return both the requested data and the date range
+        let result = {}
+        for (let item of data) {
+            result[item.date] = item;
+        }
+
         return {
             data: result,
             dateRange: {
