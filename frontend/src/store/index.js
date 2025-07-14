@@ -3,7 +3,6 @@ import citiesReducer from './slices/citiesSlice';
 import selectedCityReducer from './slices/selectedCitySlice';
 import rememberedCitiesReducer from './slices/rememberedCitiesSlice';
 import selectedDateReducer from './slices/selectedDateSlice';
-import weatherStationDataReducer from './slices/weatherStationDataSlice';
 
 export const store = configureStore({
     reducer: {
@@ -11,6 +10,5 @@ export const store = configureStore({
         selectedCity: selectedCityReducer,
         rememberedCities: rememberedCitiesReducer,
         selectedDate: selectedDateReducer,
-        weatherStationData: weatherStationDataReducer,
     },
 });

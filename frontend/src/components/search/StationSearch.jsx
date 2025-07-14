@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { FaSearch } from 'react-icons/fa';
 import { PREDEFINED_CITIES } from '../../constants/map';
-import { selectCity } from '../../store/slices/selectedCitySlice';
+import { selectCity } from '../../store/slices/rememberedCitiesSlice';
 import './StationSearch.css';
 
 /**

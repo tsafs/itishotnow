@@ -4,7 +4,7 @@ import * as d3 from 'd3';
 import MapTooltip from './MapTooltip';
 import { MAP_ZOOM_LEVEL, MAP_CENTER, MAP_DIMENSIONS, PREDEFINED_CITIES } from '../../constants/map';
 import { getAnomalyColor } from '../../utils/TemperatureUtils';
-import { selectCity } from '../../store/slices/selectedCitySlice';
+import { selectCity } from '../../store/slices/rememberedCitiesSlice';
 import './StationMarkers.css';
 
 // Helper function to check if two cities are the same

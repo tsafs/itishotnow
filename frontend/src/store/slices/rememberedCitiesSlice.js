@@ -1,4 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit';
+import { setSelectedCity } from './selectedCitySlice';
 
 // Helper function to check if two cities are the same
 const isSameCity = (city1, city2) => {
@@ -28,5 +29,15 @@ const rememberedCitiesSlice = createSlice({
 });
 
 export const { addRememberedCity, clearRememberedCities } = rememberedCitiesSlice.actions;
+
+// Create a thunk that sets the selected city and adds it to remembered cities if needed
+export const selectCity = (city, isPredefinedCity = false) => (dispatch) => {
+    dispatch(setSelectedCity(city));
+
+    // If not a predefined city, add it to remembered cities
+    if (!isPredefinedCity) {
+        dispatch(addRememberedCity(city));
+    }
+};
 
 export default rememberedCitiesSlice.reducer;
