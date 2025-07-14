@@ -9,6 +9,7 @@ import { fetchLatestWeatherStationsData, fetchGermanCities, findNearestStationsF
 import './App.css';
 
 // Lazy load components
+const CountryHeatmapPlot = React.lazy(() => import('./components/analysis/CountryHeatmapPlot/View'));
 const D3MapView = React.lazy(() => import('./components/d3map/D3MapView'));
 const HistoricalAnalysis = React.lazy(() => import('./components/analysis/HistoricalAnalysis'));
 const ImpressumPage = React.lazy(() => import('./pages/ImpressumPage'));
@@ -16,97 +17,104 @@ const Closing = React.lazy(() => import('./components/closing/Closing'));
 
 // Create an AppContent component to use router hooks
 function AppContent() {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const navigate = useNavigate();
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const navigate = useNavigate();
 
-  useEffect(() => {
-    // Handle redirect from error.html
-    const params = new URLSearchParams(window.location.search);
-    const redirectPath = params.get('redirect');
-    if (redirectPath) {
-      // Remove the query parameter and navigate to the correct path
-      window.history.replaceState(null, '', redirectPath);
-      // Actually navigate to the path using React Router
-      navigate(redirectPath);
-      return; // Skip data loading on initial redirect
-    }
+    useEffect(() => {
+        // Handle redirect from error.html
+        const params = new URLSearchParams(window.location.search);
+        const redirectPath = params.get('redirect');
+        if (redirectPath) {
+            // Remove the query parameter and navigate to the correct path
+            window.history.replaceState(null, '', redirectPath);
+            // Actually navigate to the path using React Router
+            navigate(redirectPath);
+            return; // Skip data loading on initial redirect
+        }
 
-    const loadData = async () => {
-      setLoading(true);
-      try {
-        // Fetch weather stations data
-        const stationsData = await fetchLatestWeatherStationsData();
+        const loadData = async () => {
+            setLoading(true);
+            try {
+                // Fetch weather stations data
+                const stationsData = await fetchLatestWeatherStationsData();
 
-        // Fetch cities data
-        const citiesData = await fetchGermanCities();
+                // Fetch cities data
+                const citiesData = await fetchGermanCities();
 
-        // Find nearest weather station for each city
-        const citiesWithNearestStations = findNearestStationsForCities(citiesData, stationsData);
+                // Find nearest weather station for each city
+                const citiesWithNearestStations = findNearestStationsForCities(citiesData, stationsData);
 
-        // Dispatch cities to Redux store
-        store.dispatch(setCities(citiesWithNearestStations));
-      } catch (error) {
-        console.error("Failed to load data:", error);
-        setError("Failed to load data. Please try again later.");
-      } finally {
-        setLoading(false);
-      }
-    };
+                // Dispatch cities to Redux store
+                store.dispatch(setCities(citiesWithNearestStations));
+            } catch (error) {
+                console.error("Failed to load data:", error);
+                setError("Failed to load data. Please try again later.");
+            } finally {
+                setLoading(false);
+            }
+        };
 
-    loadData();
-  }, [navigate]);
+        loadData();
+    }, [navigate]);
 
-  const MainPage = () => (
-    <>
-      <div>
-        <Suspense fallback={<div className="loading-container">Loading map data...</div>}>
-          {!loading && !error && <D3MapView />}
-          {error && <div className="error-container">{error}</div>}
-        </Suspense>
-      </div>
+    const MainPage = () => (
+        <>
+            <div>
+                <Suspense fallback={<div className="loading-container">Loading map data...</div>}>
+                    {!loading && !error && <CountryHeatmapPlot />}
+                    {error && <div className="error-container">{error}</div>}
+                </Suspense>
+            </div>
 
-      <div>
-        <Suspense fallback={<div className="loading-container">Loading analysis data...</div>}>
-          <HistoricalAnalysis />
-        </Suspense>
-      </div>
+            <div>
+                <Suspense fallback={<div className="loading-container">Loading map data...</div>}>
+                    {!loading && !error && <D3MapView />}
+                    {error && <div className="error-container">{error}</div>}
+                </Suspense>
+            </div>
 
-      <div>
-        <Closing />
-      </div>
-    </>
-  );
+            <div>
+                <Suspense fallback={<div className="loading-container">Loading analysis data...</div>}>
+                    <HistoricalAnalysis />
+                </Suspense>
+            </div>
 
-  return (
-    <div className="app-container">
-      <Header />
-      <main className="content-wrapper">
-        <Routes>
-          <Route path="/" element={<MainPage />} />
-          <Route path="/impressum" element={
-            <Suspense fallback={<div className="loading-container">Loading...</div>}>
-              <ImpressumPage />
-            </Suspense>
-          } />
-          {/* Redirect any other routes to home */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </main>
-      <Footer />
-    </div>
-  );
+            <div>
+                <Closing />
+            </div>
+        </>
+    );
+
+    return (
+        <div className="app-container">
+            <Header />
+            <main className="content-wrapper">
+                <Routes>
+                    <Route path="/" element={<MainPage />} />
+                    <Route path="/impressum" element={
+                        <Suspense fallback={<div className="loading-container">Loading...</div>}>
+                            <ImpressumPage />
+                        </Suspense>
+                    } />
+                    {/* Redirect any other routes to home */}
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+            </main>
+            <Footer />
+        </div>
+    );
 }
 
 // Main App component that provides the Router context
 function App() {
-  return (
-    <Provider store={store}>
-      <BrowserRouter>
-        <AppContent />
-      </BrowserRouter>
-    </Provider>
-  );
+    return (
+        <Provider store={store}>
+            <BrowserRouter>
+                <AppContent />
+            </BrowserRouter>
+        </Provider>
+    );
 }
 
 export default App;

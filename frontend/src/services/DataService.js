@@ -173,6 +173,21 @@ export const fetchEuropeTopoJSON = async () => {
     }
 };
 
+/**
+ * Service to fetch GeoJSON data
+ * @returns {Promise<Object>} GeoJSON
+ */
+export const fetchGeoJSON = async (url) => {
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error("Error loading TopoJSON:", error);
+        throw error;
+    }
+};
+
 
 /**
  * Service to fetch weather stations data from a remote CSV file, specifically for rolling averages.
@@ -266,7 +281,7 @@ export const fetchGermanCities = async () => {
  * Calculates the distance between two points in kilometers using the Haversine formula
  * @param {number} lat1 - Latitude of the first point
  * @param {number} lon1 - Longitude of the first point
- * @param {number} lat2 - Latitude of the second point
+//  * @param {number} lat2 - Latitude of the second point
  * @param {number} lon2 - Longitude of the second point
  * @returns {number} Distance in kilometers
  */
