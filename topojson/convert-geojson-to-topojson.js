@@ -3,9 +3,9 @@ const path = require('path');
 const topojson = require('topojson-server');
 
 // Path to the input GeoJSON file
-const inputPath = path.join(__dirname, 'json', 'europe.geojson');
+const inputPath = path.join(__dirname, 'json', 'germany_10m_admin_0.json');
 // Path to the output TopoJSON file
-const outputPath = path.join(__dirname, 'json', 'europe.topojson');
+const outputPath = path.join(__dirname, 'json', 'germany_10m_admin_0.topojson');
 
 // Read the input GeoJSON file
 fs.readFile(inputPath, 'utf8', (err, data) => {
