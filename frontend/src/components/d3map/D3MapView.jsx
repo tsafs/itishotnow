@@ -6,6 +6,8 @@ import ContentSplit from '../layout/ContentSplit';
 import { PREDEFINED_CITIES } from '../../constants/map';
 import { selectCity } from '../../store/slices/selectedCitySlice';
 import './D3MapView.css';
+import { updateDataByDate } from '../../store/slices/weatherStationDataSlice';
+import { getNow } from '../../utils/dateUtils';
 
 const DEFAULT_CITY = "berlin"; // Default city to select
 
@@ -24,6 +26,7 @@ const D3MapView = () => {
 
             if (defaultCity) {
                 dispatch(selectCity(defaultCity, true));
+                dispatch(updateDataByDate(defaultCity.station_id, getNow().toISOString()));
             }
         }
     }, [cities, selectedCity, dispatch]);
