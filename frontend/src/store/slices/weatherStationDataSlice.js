@@ -20,12 +20,7 @@ const initialState = {
         error: null,
         data: null,
         station_id: null,
-    },
-    // Currently selected climate data (either live or historical)
-    selectedData: {
-        data: null,
-        type: null, // 'live' or 'historical'
-        station_id: null
+        date: null
     },
     // Store historical means separately since they're only available in latest data
     historicalMeans: {
@@ -71,44 +66,23 @@ const weatherStationDataSlice = createSlice({
         fetchHistoricalDataSuccess: (state, action) => {
             state.historicalData.loading = false;
             state.historicalData.data = action.payload.data;
-            state.historicalData.station_id = action.payload.station_id;
-            if (action.payload.dateRange && action.payload.station_id) {
-                state.availableDates[action.payload.station_id] = action.payload.dateRange;
+            state.historicalData.station_id = action.payload.data.station_id;
+            state.historicalData.date = action.payload.data.date;
+
+            // Add historical means to the historical data if available
+            if (state.historicalMeans[action.payload.data.station_id]) {
+                state.historicalData.data.hist_mean_1961_1990 =
+                    state.historicalMeans[action.payload.data.station_id].hist_mean_1961_1990;
+            }
+
+            // Store the date range information if provided
+            if (action.payload.dateRange && action.payload.data.station_id) {
+                state.availableDates[action.payload.data.station_id] = action.payload.dateRange;
             }
         },
         fetchHistoricalDataFailure: (state, action) => {
             state.historicalData.loading = false;
             state.historicalData.error = action.payload;
-        },
-        setSelectedData: (state, action) => {
-            state.selectedData = action.payload;
-        },
-        // Set selected data to live data for a specific station
-        selectLiveData: (state, action) => {
-            const station_id = action.payload;
-            const liveData = state.latestData.data.find(station =>
-                station.station_id === station_id);
-
-            if (liveData) {
-                state.selectedData = {
-                    data: liveData,
-                    type: 'live',
-                    station_id
-                };
-            }
-        },
-        // Set selected data to historical data
-        selectHistoricalData: (state, action) => {
-            const { station_id, date } = action.payload;
-            if (state.historicalData.data &&
-                state.historicalData.station_id === station_id &&
-                Object.keys(state.historicalData.data).includes(date)) {
-                state.selectedData = {
-                    data: state.historicalData.data[date],
-                    type: 'historical',
-                    station_id
-                };
-            }
         }
     }
 });
@@ -119,10 +93,7 @@ export const {
     fetchLatestDataFailure,
     fetchHistoricalDataStart,
     fetchHistoricalDataSuccess,
-    fetchHistoricalDataFailure,
-    setSelectedData,
-    selectLiveData,
-    selectHistoricalData
+    fetchHistoricalDataFailure
 } = weatherStationDataSlice.actions;
 
 // Thunks
@@ -131,6 +102,10 @@ export const fetchLatestStations = () => async (dispatch) => {
     try {
         // Fetch weather stations data
         const stationsData = await fetchLatestWeatherStationsData();
+        stationsData.forEach(station => {
+            // Mark this data as "live data"
+            station.dataType = 'live';
+        });
         dispatch(fetchLatestDataSuccess(stationsData));
 
         // Fetch cities data and find nearest stations in one go
@@ -147,39 +122,28 @@ export const fetchLatestStations = () => async (dispatch) => {
     }
 };
 
-export const fetchHistoricalStation = (station_id, date) => async (dispatch) => {
+export const fetchHistoricalStation = (station_id, date) => async (dispatch, getState) => {
     dispatch(fetchHistoricalDataStart());
     try {
+        // fetchDailyWeatherStationData now returns both data and dateRange
         const { data, dateRange } = await fetchDailyWeatherStationData(station_id, date);
-        dispatch(fetchHistoricalDataSuccess({ station_id, data, dateRange }));
+
+        // Mark this data as "historical data"
+        data.dataType = 'historical';
+
+        // Retrieve historical mean from state if available
+        const state = getState();
+        if (state.weatherStationData.historicalMeans[station_id]) {
+            data.hist_mean_1961_1990 = state.weatherStationData.historicalMeans[station_id].hist_mean_1961_1990;
+        }
+
+        // Pass both data and dateRange to the reducer
+        dispatch(fetchHistoricalDataSuccess({ data, dateRange }));
+
         return data;
     } catch (error) {
         dispatch(fetchHistoricalDataFailure(error.message));
         throw error;
-    }
-};
-
-// New function to handle data selection based on selected date
-export const updateDataByDate = (station_id, dateString) => (dispatch) => {
-    if (!station_id) return;
-
-    // Convert ISO string to Date object
-    const selectedDate = new Date(dateString);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    if (selectedDate.toDateString() === today.toDateString()) {
-        // If today is selected, show live data
-        dispatch(selectLiveData(station_id));
-    } else {
-        // For any other date, show historical data
-        // Format date as YYYYMMDD
-        const year = selectedDate.getFullYear();
-        const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-        const day = String(selectedDate.getDate()).padStart(2, '0');
-        const formattedDate = `${year}${month}${day}`;
-
-        dispatch(selectHistoricalData({ station_id, date: formattedDate }));
     }
 };
 
@@ -188,10 +152,7 @@ export const selectLatestStationsData = (state) => state.weatherStationData.late
 export const selectHistoricalStationData = (state) => state.weatherStationData.historicalData;
 export const selectHistoricalMean = (state, station_id) =>
     state.weatherStationData.historicalMeans[station_id]?.hist_mean_1961_1990;
-export const selectAvailableDateRange = (state, station_id) => {
-    if (!station_id) return null;
-    return state.weatherStationData.availableDates[station_id];
-}
-export const selectCurrentClimateData = (state) => state.weatherStationData.selectedData;
+export const selectAvailableDateRange = (state, station_id) =>
+    state.weatherStationData.availableDates[station_id];
 
 export default weatherStationDataSlice.reducer;
