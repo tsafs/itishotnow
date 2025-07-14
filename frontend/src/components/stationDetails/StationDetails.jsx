@@ -1,95 +1,49 @@
-import { useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { analyzeTemperatureAnomaly } from '../../utils/TemperatureUtils';
-import { selectHistoricalMean, selectCurrentClimateData } from '../../store/slices/weatherStationDataSlice';
+import { selectHistoricalMean } from '../../store/slices/weatherStationDataSlice';
 import './StationDetails.css';
 
 /**
  * Panel component to display city information with nearest weather station data
+ * @param {Object} props
+ * @param {Object} props.selectedStation - Selected city/station data object
  */
 const StationDetails = () => {
     const selectedCity = useSelector(state => state.selectedCity);
-    const selectedData = useSelector(selectCurrentClimateData);
-    const historicalMean = useSelector(state =>
-        selectedCity?.station_id ? selectHistoricalMean(state, selectedCity.station_id) : null
-    );
+    const historicalMean = useSelector(state => selectHistoricalMean(state, selectedCity?.station_id));
     const [anomalyDetails, setAnomalyDetails] = useState(null);
     const [subtitle, setSubtitle] = useState('');
-    const [climateData, setClimateData] = useState({});
 
-    // This will be our climate data from either live or historical source
+    // Extract anomaly from selected station
     useEffect(() => {
-        if (selectedData && selectedData.data) {
-            console.log(selectedData.type);
-            let data = {};
-            if (selectedData.type === 'live') {
-                data = {
-                    date: selectedData.data.data_date,
-                    temperature: selectedData.data.temperature,
-                    min_temperature: selectedData.data.min_temperature,
-                    max_temperature: selectedData.data.max_temperature,
-                    humidity: selectedData.data.humidity
-                };
-            } else {
-                // Convert YYYYMMDD to YYYY.MM.DD
-                const formattedDate = selectedData.data.date.replace(
-                    /(\d{4})(\d{2})(\d{2})/,
-                    '$3.$2.$1'
-                );
-
-                data = {
-                    date: formattedDate,
-                    temperature: selectedData.data.mean_temperature,
-                    min_temperature: selectedData.data.min_temperature,
-                    max_temperature: selectedData.data.max_temperature,
-                    humidity: selectedData.data.mean_humidity
-                };
-            }
-            console.log(`Climate data updated: ${JSON.stringify(data)}`);
-            setClimateData(data);
-        } else {
-            setClimateData({});
-        }
-    }, [selectedData]);
-
-    // Calculate anomaly when climate data or historical mean changes
-    useEffect(() => {
-        if (climateData.temperature === undefined || historicalMean === undefined) {
+        if (!selectedCity || !selectedCity.nearestStation || !historicalMean) {
             setAnomalyDetails(null);
-            return;
-        }
-        setAnomalyDetails(analyzeTemperatureAnomaly(selectedData.type === "live", climateData.temperature - historicalMean));
-    }, [selectedData, climateData, historicalMean]);
-
-    // Update subtitle based on selected city and data type
-    useEffect(() => {
-        if (!selectedCity) {
             setSubtitle('');
             return;
         }
+
+        let difference = null;
+        if (selectedCity.temperature !== undefined
+            && historicalMean !== undefined
+            && historicalMean !== null) {
+            difference = selectedCity.temperature - historicalMean;
+        }
+        setAnomalyDetails(analyzeTemperatureAnomaly(difference));
 
         // Format the distance to show as km
         const formattedDistance = selectedCity.distanceToStation ?
             `(${Math.round(selectedCity.distanceToStation)}km)` : '';
 
         let subtitleText = '';
-
-        // Add station name if available
-        if (selectedCity.nearestStation?.station_name) {
+        if (selectedCity.nearestStation.station_name) {
             subtitleText = `Wetterstation: ${selectedCity.nearestStation.station_name} ${formattedDistance}`;
         }
-
-        // Add date/time information
-        if (climateData.date) {
-            if (selectedData?.type === "live") {
-                subtitleText += ` ${climateData.date}\u00A0Uhr`;
-            } else if (selectedData?.type === "historical") {
-                subtitleText += ` ${climateData.date}`;
-            }
+        if (selectedCity.data_date) {
+            subtitleText += ` ${selectedCity.data_date}\u00A0Uhr`;
         }
-
         setSubtitle(subtitleText);
-    }, [selectedCity, selectedData, climateData]);
+    }, [selectedCity, historicalMean]);
 
     // If no city is selected, show a placeholder
     if (!selectedCity) {
@@ -114,36 +68,34 @@ const StationDetails = () => {
 
             <div className="station-metrics">
                 <div className="metric-cell metric-cell-highlight">
-                    <span className="metric-label">
-                        {selectedData.type === "live" ? "Zuletzt" : "Mittel"}
-                    </span>
+                    <span className="metric-label">Zuletzt</span>
                     <span className="metric-value">
-                        {climateData.temperature !== undefined
-                            ? `${climateData.temperature.toFixed(1)}°C`
+                        {selectedCity.temperature !== undefined
+                            ? `${selectedCity.temperature.toFixed(1)}°C`
                             : "k. A."}
                     </span>
                 </div>
                 <div className="metric-cell">
                     <span className="metric-label">Min</span>
                     <span className="metric-value">
-                        {climateData.min_temperature !== undefined
-                            ? `${climateData.min_temperature.toFixed(1)}°C`
+                        {selectedCity.min_temperature !== undefined
+                            ? `${selectedCity.min_temperature.toFixed(1)}°C`
                             : "k. A."}
                     </span>
                 </div>
                 <div className="metric-cell">
                     <span className="metric-label">Max</span>
                     <span className="metric-value">
-                        {climateData.max_temperature !== undefined
-                            ? `${climateData.max_temperature.toFixed(1)}°C`
+                        {selectedCity.max_temperature !== undefined
+                            ? `${selectedCity.max_temperature.toFixed(1)}°C`
                             : "k. A."}
                     </span>
                 </div>
                 <div className="metric-cell">
                     <span className="metric-label">Luft</span>
                     <span className="metric-value">
-                        {climateData.humidity !== undefined
-                            ? `${climateData.humidity.toFixed(0)}%`
+                        {selectedCity.humidity !== undefined
+                            ? `${selectedCity.humidity.toFixed(0)}%`
                             : "k. A."}
                     </span>
                 </div>

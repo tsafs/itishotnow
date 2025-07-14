@@ -90,7 +90,7 @@ function interpolateColor(color1, color2, ratio) {
  * @param {number} anomaly - Temperature anomaly value (difference from historical average)
  * @returns {Object} Object containing comparison message and detailed explanation
  */
-export const analyzeTemperatureAnomaly = (isLiveData, anomaly) => {
+export const analyzeTemperatureAnomaly = (anomaly) => {
     if (anomaly === undefined || anomaly === null) {
         return {
             comparisonMessage: "Keine Ahnung.",
@@ -98,40 +98,34 @@ export const analyzeTemperatureAnomaly = (isLiveData, anomaly) => {
         };
     }
 
-    let comparisonMessage = null;
-    const verb = isLiveData ? "ist" : "war";
+    let comparisonMessage = '';
 
     // Determine message based on direct temperature anomaly ranges
     if (anomaly <= -10) {
-        comparisonMessage = `Es ${verb} eiskalt!`;
+        comparisonMessage = "Es ist eiskalt!";
     } else if (anomaly <= -8) {
-        comparisonMessage = `Es ${verb} sehr kalt!`;
+        comparisonMessage = "Es ist sehr kalt!";
     } else if (anomaly <= -6) {
-        comparisonMessage = `Es ${verb} kalt!`;
+        comparisonMessage = "Es ist kalt!";
     } else if (anomaly <= -4) {
-        comparisonMessage = `Es ${verb} sehr kühl!`;
+        comparisonMessage = "Es ist sehr kühl!";
     } else if (anomaly <= -2) {
-        comparisonMessage = `Es ${verb} kühl`;
+        comparisonMessage = "Es ist kühl";
     } else if (anomaly < 2) {
-        comparisonMessage = `Es ${verb} ziemlich normal`;
+        comparisonMessage = "Es ist ziemlich normal";
     } else if (anomaly < 4) {
-        comparisonMessage = `Es ${verb} warm`;
+        comparisonMessage = "Es ist warm";
     } else if (anomaly < 6) {
-        comparisonMessage = `Es ${verb} sehr warm!`;
+        comparisonMessage = "Es ist sehr warm!";
     } else if (anomaly < 8) {
-        comparisonMessage = `Es ${verb} heiß!`;
+        comparisonMessage = "Es ist heiß!";
     } else if (anomaly < 10) {
-        comparisonMessage = `Es ${verb} sehr heiß!`;
+        comparisonMessage = "Es ist sehr heiß!";
     } else {
-        comparisonMessage = `Es ${verb} brütend heiß!`;
+        comparisonMessage = "Es ist brütend heiß!";
     }
 
-    let anomalyMessage = null;
-    if (!isLiveData) {
-        anomalyMessage = `Die mittlere Temperatur lag ${Math.abs(anomaly).toFixed(1)}\u00A0°C ${anomaly > 0 ? 'über' : 'unter'} dem historischen\u00A0Mittelwert.`;
-    } else {
-        anomalyMessage = `Die aktuelle Temperatur liegt ${Math.abs(anomaly).toFixed(1)}\u00A0°C ${anomaly > 0 ? 'über' : 'unter'} dem historischen\u00A0Mittelwert.`;
-    }
+    const anomalyMessage = `Die aktuelle Temperatur liegt ${Math.abs(anomaly).toFixed(1)}\u00A0°C ${anomaly > 0 ? 'über' : 'unter'} dem historischen\u00A0Mittelwert.`;
 
     return {
         comparisonMessage,
