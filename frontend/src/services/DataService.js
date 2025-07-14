@@ -104,7 +104,7 @@ export const fetchLatestWeatherStationsData = async () => {
  * Service to fetch daily weather station data from CSV file
  * @param {string} station_id - station ID of a station to fetch data for
  * @param {string} year_month_day - date in YYYYMMDD format to fetch data for
- * @returns {Promise<Array>} Array of station data objects
+ * @returns {Promise<{data: Object, dateRange: {from: string, to: string}}>} Data for requested date and available date range
  */
 export const fetchDailyWeatherStationData = async (station_id, year_month_day) => {
     try {
@@ -119,13 +119,28 @@ export const fetchDailyWeatherStationData = async (station_id, year_month_day) =
 
         const text = await response.text();
 
-        const lines = text.split('\n');
+        const lines = text.split('\n').filter(line => line.trim());
 
+        // Variables for storing date range
+        let earliestDate = null;
+        let latestDate = null;
         let result = null;
 
-        lines.slice(1).forEach(line => {
-            if (!line.trim()) return null; // Skip empty lines
+        // Skip header line
+        const dataLines = lines.slice(1);
 
+        if (dataLines.length === 0) {
+            throw new Error(`No data found for station ${station_id}.`);
+        }
+
+        // First line has earliest date (assuming file is chronologically ordered)
+        earliestDate = dataLines[0].split(',')[0].trim();
+
+        // Last line has latest date
+        latestDate = dataLines[dataLines.length - 1].split(',')[0].trim();
+
+        // Find the specific date we're looking for
+        dataLines.forEach(line => {
             const cols = line.split(',').map(col => col.trim());
 
             const date = cols[0];
@@ -137,7 +152,7 @@ export const fetchDailyWeatherStationData = async (station_id, year_month_day) =
             if (date === year_month_day) {
                 result = {
                     station_id: station_id,
-                    date: new Date(date),
+                    date: date,
                     mean_temperature: isNaN(temperature_mean) ? undefined : temperature_mean,
                     min_temperature: isNaN(temperature_min) ? undefined : temperature_min,
                     max_temperature: isNaN(temperature_max) ? undefined : temperature_max,
@@ -150,7 +165,14 @@ export const fetchDailyWeatherStationData = async (station_id, year_month_day) =
             throw new Error(`No data found for station ${station_id} on ${year_month_day}.`);
         }
 
-        return result;
+        // Return both the requested data and the date range
+        return {
+            data: result,
+            dateRange: {
+                from: earliestDate,
+                to: latestDate
+            }
+        };
     } catch (error) {
         console.error(`Error loading daily weather stations data:`, error);
         throw error;
@@ -260,76 +282,4 @@ export const fetchGermanCities = async () => {
         console.error("Error loading German cities data:", error);
         throw error;
     }
-};
-
-/**
- * Calculates the distance between two points in kilometers using the Haversine formula
- * @param {number} lat1 - Latitude of the first point
- * @param {number} lon1 - Longitude of the first point
- * @param {number} lat2 - Latitude of the second point
- * @param {number} lon2 - Longitude of the second point
- * @returns {number} Distance in kilometers
- */
-export const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371; // Radius of the Earth in km
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-        Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-};
-
-/**
- * Finds the nearest weather station for each city
- * @param {Array} cities - Array of city objects
- * @param {Array} stations - Array of weather station objects
- * @returns {Array} Cities with nearest station information
- */
-export const findNearestStationsForCities = (cities, stations) => {
-    return cities.map(city => {
-        let nearestStation = null;
-        let minDistance = Infinity;
-
-        // Find the nearest station for this city
-        stations.forEach(station => {
-            // Some stations might have invalid coordinates
-            if (isNaN(station.station_lat) || isNaN(station.station_lon)) {
-                return;
-            }
-
-            const distance = calculateDistance(
-                city.lat, city.lon,
-                station.station_lat, station.station_lon
-            );
-
-            if (distance < minDistance) {
-                minDistance = distance;
-                nearestStation = station;
-            }
-        });
-
-        // Create a copy of the city with nearest station info
-        return {
-            ...city,
-            nearestStation,
-            distanceToStation: minDistance,
-            // Add these properties for compatibility with existing components
-            station_id: nearestStation?.station_id,
-            station_name: city.city_name,
-            station_lat: city.lat,
-            station_lon: city.lon,
-            temperature: nearestStation?.temperature,
-            min_temperature: nearestStation?.min_temperature,
-            max_temperature: nearestStation?.max_temperature,
-            humidity: nearestStation?.humidity,
-            anomaly_1961_1990: nearestStation?.anomaly_1961_1990,
-            anomaly_1971_2000: nearestStation?.anomaly_1971_2000,
-            anomaly_1981_2010: nearestStation?.anomaly_1981_2010,
-            data_date: nearestStation?.data_date,
-            subtitle: `${nearestStation?.data_date ? nearestStation.data_date + ' Uhr' : 'unbekannt'}`
-        };
-    });
 };

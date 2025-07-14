@@ -4,7 +4,7 @@ import StationDetails from '../stationDetails/StationDetails';
 import MapContainer from './MapContainer';
 import ContentSplit from '../layout/ContentSplit';
 import { PREDEFINED_CITIES } from '../../constants/map';
-import { selectCity } from '../../store/slices/rememberedCitiesSlice';
+import { selectCity } from '../../store/slices/selectedCitySlice';
 import './D3MapView.css';
 
 const DEFAULT_CITY = "berlin"; // Default city to select
