@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { analyzeTemperatureAnomaly } from '../../utils/TemperatureUtils';
 import { selectCityMappedData } from '../../store/slices/cityDataSlice';
@@ -19,6 +19,7 @@ const StationDetails = () => {
     const [item, setItem] = useState(null);
     const [anomaly, setAnomaly] = useState(null);
     const [subtitle, setSubtitle] = useState('');
+    const [anomalyDetails, setAnomalyDetails] = useState(null);
 
     // Get selected item
     useEffect(() => {
@@ -28,13 +29,14 @@ const StationDetails = () => {
         if (item === undefined) return;
 
         setItem(item);
+        setSubtitle(null);
+        setAnomaly(null);
+        setAnomalyDetails(null);
     }, [selectedCityId, mappedCities]);
 
     // Calculate anomaly
     useEffect(() => {
         if (!hourlyData || !item) return;
-
-        setAnomaly(null);
 
         const hour = extractHourFromDateString(item.station.data_date);
         if (!hour) return;
@@ -64,14 +66,9 @@ const StationDetails = () => {
     }, [item]);
 
     // Calculate comparison details using the utility function
-    const anomalyDetails = useMemo(() => {
-        if (anomaly === undefined || anomaly === null) {
-            return {
-                comparisonMessage: "Keine historischen Daten verfügbar.",
-                anomalyMessage: null
-            };
-        }
-        return analyzeTemperatureAnomaly(anomaly);
+    useEffect(() => {
+        if (!anomaly) return;
+        setAnomalyDetails(analyzeTemperatureAnomaly(anomaly));
     }, [anomaly]);
 
     // If no city is selected, show a placeholder
@@ -87,7 +84,7 @@ const StationDetails = () => {
 
     return (
         <>
-            {item && (
+            {item && anomaly && subtitle && (
                 <div className="station-info-panel">
                     <h2 className="station-name">{item.city.cityName}</h2>
 
@@ -132,16 +129,23 @@ const StationDetails = () => {
                         </div>
                     </div>
 
-                    {anomalyDetails.comparisonMessage && anomalyDetails.anomalyMessage && (
-                        <div className="temperature-comparison">
+                    <div className="temperature-comparison">
+                        {!anomalyDetails && (
                             <div className="message">
-                                {anomalyDetails.comparisonMessage}
+                                Keine historischen Daten verfügbar.
                             </div>
-                            <div className="anomaly">
-                                {anomalyDetails.anomalyMessage}
-                            </div>
-                        </div>
-                    )}
+                        )}
+                        {anomalyDetails && (
+                            <>
+                                <div className="message">
+                                    {anomalyDetails.comparisonMessage}
+                                </div>
+                                <div className="anomaly">
+                                    {anomalyDetails.anomalyMessage}
+                                </div>
+                            </>
+                        )}
+                    </div>
                 </div>
             )}
         </>
