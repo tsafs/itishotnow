@@ -92,7 +92,7 @@ const StationSearch = () => {
                             filteredCities.map((item, index) => {
                                 // Only show temperature if city has a nearest station with data
                                 const hasTemperature = item.station &&
-                                    item.city.station.temperature !== undefined;
+                                    item.station.temperature !== undefined;
 
                                 const isSelected = item.city.cityId === selectedCityId
 
