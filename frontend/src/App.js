@@ -11,7 +11,6 @@ import { fetchHistoricalData, selectHistoricalDataStatus } from './store/slices/
 import { fetchHourlyData, selectInterpolatedHourlyDataStatus } from './store/slices/interpolatedHourlyDataSlice';
 import { fetchLiveData, selectLiveData, selectLiveDataStatus } from './store/slices/liveDataSlice';
 import { fetchCityData, selectCityRawData, selectCityDataStatus, setCityMappedData, selectCityMappedData } from './store/slices/cityDataSlice';
-import { fetchRollingAverageData, selectRollingAverageDataStatus } from './store/slices/rollingAverageDataSlice';
 import { selectCity } from './store/slices/selectedCitySlice';
 
 import './App.css';
@@ -42,7 +41,6 @@ function AppContent() {
     const historicalDataStatus = useSelector(selectHistoricalDataStatus);
     const hourlyDataStatus = useSelector(selectInterpolatedHourlyDataStatus);
     const cityDataStatus = useSelector(selectCityDataStatus);
-    const rollingAverageDataStatus = useSelector(selectRollingAverageDataStatus);
 
     // Handle redirect from error.html
     useEffect(() => {
@@ -109,34 +107,12 @@ function AppContent() {
         }
     }, [cityMappedData, selectedCityId, dispatch]);
 
-    // Fetch other data reliant on the selected city
-    useEffect(() => {
-        if (!selectedCityId || !cityMappedData) return;
-
-        const selectedStationId = cityMappedData[selectedCityId]?.station.station_id;
-        if (!selectedStationId) return;
-
-        const loadData = async () => {
-            try {
-                await Promise.all([
-                    dispatch(fetchRollingAverageData({ stationId: selectedStationId })),
-                ]);
-            } catch (error) {
-                console.error("Failed to load data:", error);
-                setError("Failed to load data. Please try again later.");
-            }
-        };
-
-        loadData();
-    }, [dispatch, selectedCityId, cityMappedData]);
-
     // Check if all data is loaded and set loading state to false
     useEffect(() => {
         if (liveDataStatus !== "succeeded"
             || cityDataStatus !== "succeeded"
             || historicalDataStatus !== "succeeded"
             || hourlyDataStatus !== "succeeded"
-            || rollingAverageDataStatus !== "succeeded"
             || !cityMappedData
         ) return;
 
@@ -148,7 +124,6 @@ function AppContent() {
         cityDataStatus,
         historicalDataStatus,
         hourlyDataStatus,
-        rollingAverageDataStatus,
         cityMappedData
     ]);
 

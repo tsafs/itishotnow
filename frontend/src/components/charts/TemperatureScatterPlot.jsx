@@ -2,18 +2,24 @@ import { useEffect, useRef, useState } from 'react';
 import * as Plot from "@observablehq/plot";
 import { html } from 'htl';
 import * as d3 from "d3";
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { getNow } from '../../utils/dateUtils';
 import { filterTemperatureDataByDateWindow } from '../../utils/rollingAverageUtils';
 import './TemperatureScatterPlot.css';
 import { selectCityMappedData } from '../../store/slices/cityDataSlice';
 import { selectRollingAverageData } from '../../store/slices/rollingAverageDataSlice';
+import { fetchRollingAverageData, selectRollingAverageDataStatus, selectRollingAverageDataError } from '../../store/slices/rollingAverageDataSlice';
 
 const TemperatureScatterPlot = () => {
+    const dispatch = useDispatch();
+
     const containerRef = useRef();
     const mappedCities = useSelector(selectCityMappedData);
     const selectedCityId = useSelector(state => state.selectedCity.cityId);
-    const data = useSelector(selectRollingAverageData);
+    const rollingAverageData = useSelector(selectRollingAverageData);
+    const rollingAverageDataStatus = useSelector(selectRollingAverageDataStatus);
+    const rollingAverageDataError = useSelector(selectRollingAverageDataError);
+
     const [error, setError] = useState(null);
     const [selectedStation, setSelectedStation] = useState(null);
 
@@ -27,9 +33,26 @@ const TemperatureScatterPlot = () => {
         setSelectedStation(mappedCities[selectedCityId].station)
     }, [selectedCityId, mappedCities]);
 
+    // Fetch other data reliant on the selected city
+    useEffect(() => {
+        if (!selectedCityId || !selectedStation) return;
+
+        const loadData = async () => {
+            try {
+                await Promise.all([
+                    dispatch(fetchRollingAverageData({ stationId: selectedStation.station_id })),
+                ]);
+            } catch (error) {
+                console.error("Failed to load data:", error);
+            }
+        };
+
+        loadData();
+    }, [dispatch, selectedCityId, selectedStation]);
+
     // Create the plot using Observable Plot
     useEffect(() => {
-        if (!data.length || error || !selectedStation) return;
+        if (rollingAverageDataStatus !== "succeeded" || rollingAverageDataError || !selectedStation) return;
 
         // Clear any existing plot
         if (containerRef.current) {
@@ -45,7 +68,7 @@ const TemperatureScatterPlot = () => {
         try {
             // Filter data for our date window (±7 days)
             const { primaryDayData, surroundingDaysData } =
-                filterTemperatureDataByDateWindow(data, todayMonthDay, 7, fromYear, toYear);
+                filterTemperatureDataByDateWindow(rollingAverageData, todayMonthDay, 7, fromYear, toYear);
 
             if (primaryDayData.length === 0) {
                 setError(`No data found for ${todayMonthDay} in the selected time period`);
@@ -250,7 +273,7 @@ const TemperatureScatterPlot = () => {
             console.error("Error creating plot:", err);
             setError("Failed to create plot visualization");
         }
-    }, [data, error, selectedStation, fromYear, toYear]);
+    }, [rollingAverageData, rollingAverageDataStatus, rollingAverageDataError, selectedStation, fromYear, toYear]);
 
     return (
         <div className="temperature-scatter-container">
