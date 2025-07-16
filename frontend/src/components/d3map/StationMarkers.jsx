@@ -4,34 +4,30 @@ import * as d3 from 'd3';
 import MapTooltip from './MapTooltip';
 import { MAP_ZOOM_LEVEL, MAP_CENTER, MAP_DIMENSIONS, PREDEFINED_CITIES } from '../../constants/map';
 import { getAnomalyColor } from '../../utils/TemperatureUtils';
-import { selectCity } from '../../store/slices/rememberedCitiesSlice';
+import { selectCity } from '../../store/slices/selectedCitySlice';
+import { selectCityMappedData } from '../../store/slices/cityDataSlice';
+import { selectInterpolatedHourlyData } from '../../store/slices/interpolatedHourlyDataSlice';
+import { extractHourFromDateString } from '../../utils/dataUtils';
 import './StationMarkers.css';
-
-// Helper function to check if two cities are the same
-const isSameCity = (city1, city2) => {
-    if (!city1 || !city2) return false;
-    return city1.city_name === city2.city_name &&
-        city1.lat === city2.lat &&
-        city1.lon === city2.lon;
-};
 
 const StationMarkers = () => {
     const dispatch = useDispatch();
-    const cities = useSelector(state => state.cities);
-    const selectedCity = useSelector(state => state.selectedCity);
-    const rememberedCities = useSelector(state => state.rememberedCities);
+    const rememberedCityIds = useSelector(state => state.rememberedCities);
+    const mappedCities = useSelector(selectCityMappedData);
+    const selectedCityId = useSelector(state => state.selectedCity.cityId);
+    const hourlyData = useSelector(selectInterpolatedHourlyData);
 
     const markersRef = useRef(null);
     const tooltipRef = useRef(null);
 
     // Use useCallback to memoize the handleCitySelect function
     const handleCitySelect = useCallback((city) => {
-        const isPredefined = PREDEFINED_CITIES.includes(city.city_name);
-        dispatch(selectCity(city, isPredefined));
+        const isPredefined = PREDEFINED_CITIES.includes(city.cityName);
+        dispatch(selectCity(city.cityId, isPredefined));
     }, [dispatch]);
 
     useEffect(() => {
-        if (!cities || !cities.length || !markersRef.current) return;
+        if (!mappedCities || !hourlyData || !markersRef.current) return;
 
         // Clear previous content
         d3.select(markersRef.current).selectAll("*").remove();
@@ -48,25 +44,19 @@ const StationMarkers = () => {
             .translate([MAP_DIMENSIONS.width / 2, MAP_DIMENSIONS.height / 2]);
 
         // Filter cities to show only predefined ones, the selected city, and remembered cities
-        const citiesToDisplay = cities.filter(city => {
-            // Skip cities without a matched station
-            if (!city.nearestStation) return false;
-
+        const citiesToDisplay = Object.values(mappedCities).filter(item => {
             // Always include the currently selected city if it exists
-            if (selectedCity &&
-                city.city_name === selectedCity.city_name &&
-                city.lat === selectedCity.lat &&
-                city.lon === selectedCity.lon) {
+            if (item.city.cityId === selectedCityId) {
                 return true;
             }
 
             // Include cities from the predefined list
-            if (PREDEFINED_CITIES.includes(city.city_name)) {
+            if (PREDEFINED_CITIES.includes(item.city.cityName)) {
                 return true;
             }
 
             // Include cities that have been previously selected (remembered)
-            if (rememberedCities.some(rememberedCity => isSameCity(rememberedCity, city))) {
+            if (rememberedCityIds.some(id => id === item.city.cityId)) {
                 return true;
             }
 
@@ -74,36 +64,36 @@ const StationMarkers = () => {
         });
 
         // Draw city markers
-        citiesToDisplay.forEach(city => {
-            // Create unique identifier for each city based on name and coordinates
-            const cityId = `${city.city_name}-${city.lat}-${city.lon}`;
-            const selectedCityId = selectedCity ?
-                `${selectedCity.city_name}-${selectedCity.lat}-${selectedCity.lon}` : null;
+        citiesToDisplay.forEach(item => {
+            const isSelected = selectedCityId === item.city.cityId;
 
-            const isSelected = selectedCityId === cityId;
-            const coords = projection([parseFloat(city.lon), parseFloat(city.lat)]);
+            const coords = projection([parseFloat(item.city.lon), parseFloat(item.city.lat)]);
 
             if (!coords) return; // Skip if coordinates can't be projected
 
-            // Use anomaly from the nearest weather station
-            const selectedAnomaly = Math.round(city.nearestStation.anomaly_1961_1990);
+            // Calculate anomaly value
+            const hour = extractHourFromDateString(item.station.data_date);
+            if (!hour) return;
+
+            const temperatureAtHour = hourlyData[item.station.station_id]?.hourlyTemps[`hour_${hour}`];
+            if (temperatureAtHour === null || temperatureAtHour === undefined) return;
+
+            const anomaly = Math.round(item.station.temperature - temperatureAtHour);
 
             // Determine text color class based on anomaly value
-            const textColorClass = (selectedAnomaly < -6 || selectedAnomaly > 6) ? 'light-text' : 'dark-text';
+            const textColorClass = (anomaly < -6 || anomaly > 6) ? 'light-text' : 'dark-text';
 
             // Get color based on temperature anomaly
-            const markerColor = getAnomalyColor(selectedAnomaly);
+            const markerColor = getAnomalyColor(anomaly);
 
             // Check if this is a remembered city
-            const isRemembered = rememberedCities.some(
-                rememberedCity => isSameCity(rememberedCity, city)
-            ) && !isSelected;
+            const isRemembered = rememberedCityIds.some(id => id === item.city.cityId) && !isSelected;
 
             const cityGroup = d3.select(markersRef.current).append("g")
                 .attr("class", `city${isSelected ? " selected" : ""}${isRemembered ? " remembered" : ""}`)
                 .attr("transform", `translate(${coords[0]}, ${coords[1]})`)
                 .style("cursor", "pointer")
-                .attr("data-city-id", cityId);
+                .attr("data-city-id", item.city.cityId);
 
             // Add circle for city - make it bigger to fit the text
             cityGroup.append("circle")
@@ -116,7 +106,7 @@ const StationMarkers = () => {
             cityGroup.append("text")
                 .attr("class", textColorClass)
                 .attr("style", `font-size: ${isSelected ? 1.2 : 0.9}em;`)
-                .text(`${selectedAnomaly.toFixed(0)}`);
+                .text(`${anomaly.toFixed(0)}`);
 
             // Add event handlers
             cityGroup
@@ -132,7 +122,7 @@ const StationMarkers = () => {
                         d3.select(this).select("text").transition().duration(10).style("font-size", "1.2em");
                     }
 
-                    tooltipRef.current.show(city, markerX, markerY);
+                    tooltipRef.current.show(item.city.cityName, markerX, markerY);
                 })
                 .on("mouseout", function () {
                     // Return to original size if not selected
@@ -147,11 +137,11 @@ const StationMarkers = () => {
                     setTimeout(() => {
                         tooltipRef.current.hide();
                     }, 1000);
-                    handleCitySelect(city);
+                    handleCitySelect(item.city);
                 });
         });
 
-    }, [cities, selectedCity, rememberedCities, dispatch, handleCitySelect]);
+    }, [mappedCities, hourlyData, selectedCityId, rememberedCityIds, dispatch, handleCitySelect]);
 
     // Clean up tooltip when component unmounts
     useEffect(() => {

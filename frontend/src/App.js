@@ -1,12 +1,21 @@
 import React, { Suspense, useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { Provider } from 'react-redux';
+import { Provider, useDispatch, useSelector } from 'react-redux';
 import { store } from './store';
-import { setCities } from './store/slices/citiesSlice';
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
-import { fetchLatestWeatherStationsData, fetchGermanCities, findNearestStationsForCities } from './services/DataService';
+import { mapCitiesToClosestWeatherStations } from './services/CityService';
+import { PREDEFINED_CITIES } from './constants/map';
+
+import { fetchHistoricalData, selectHistoricalDataStatus } from './store/slices/historicalDataSlice';
+import { fetchHourlyData, selectInterpolatedHourlyDataStatus } from './store/slices/interpolatedHourlyDataSlice';
+import { fetchLiveData, selectLiveData, selectLiveDataStatus } from './store/slices/liveDataSlice';
+import { fetchCityData, selectCityRawData, selectCityDataStatus, setCityMappedData, selectCityMappedData } from './store/slices/cityDataSlice';
+import { fetchRollingAverageData, selectRollingAverageDataStatus } from './store/slices/rollingAverageDataSlice';
+import { selectCity } from './store/slices/selectedCitySlice';
+
 import './App.css';
+import { getNow } from './utils/dateUtils';
 
 // Lazy load components
 const D3MapView = React.lazy(() => import('./components/d3map/D3MapView'));
@@ -14,99 +23,179 @@ const HistoricalAnalysis = React.lazy(() => import('./components/analysis/Histor
 const ImpressumPage = React.lazy(() => import('./pages/ImpressumPage'));
 const Closing = React.lazy(() => import('./components/closing/Closing'));
 
-// Create an AppContent component to use router hooks
+const DEFAULT_CITY = "berlin"; // Default city to select
+
 function AppContent() {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const navigate = useNavigate();
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
 
-  useEffect(() => {
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [areCitiesMapped, setAreCitiesMapped] = useState(false);
+
+    const liveData = useSelector(selectLiveData);
+    const cityRawData = useSelector(selectCityRawData);
+    const cityMappedData = useSelector(selectCityMappedData);
+    const selectedCityId = useSelector(state => state.selectedCity.cityId);
+
+    const liveDataStatus = useSelector(selectLiveDataStatus);
+    const historicalDataStatus = useSelector(selectHistoricalDataStatus);
+    const hourlyDataStatus = useSelector(selectInterpolatedHourlyDataStatus);
+    const cityDataStatus = useSelector(selectCityDataStatus);
+    const rollingAverageDataStatus = useSelector(selectRollingAverageDataStatus);
+
     // Handle redirect from error.html
-    const params = new URLSearchParams(window.location.search);
-    const redirectPath = params.get('redirect');
-    if (redirectPath) {
-      // Remove the query parameter and navigate to the correct path
-      window.history.replaceState(null, '', redirectPath);
-      // Actually navigate to the path using React Router
-      navigate(redirectPath);
-      return; // Skip data loading on initial redirect
-    }
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const redirectPath = params.get('redirect');
+        if (redirectPath) {
+            window.history.replaceState(null, '', redirectPath);
+            navigate(redirectPath);
+        }
+    }, [navigate]);
 
-    const loadData = async () => {
-      setLoading(true);
-      try {
-        // Fetch weather stations data
-        const stationsData = await fetchLatestWeatherStationsData();
+    useEffect(() => {
+        const loadData = async () => {
+            setLoading(true);
+            try {
+                // Get today's date for historical data
+                const today = getNow();
+                const month = today.getMonth() + 1; // JavaScript months are 0-indexed
+                const day = today.getDate();
 
-        // Fetch cities data
-        const citiesData = await fetchGermanCities();
+                // Load weather stations and cities data
+                await Promise.all([
+                    dispatch(fetchLiveData()),
+                    dispatch(fetchCityData()),
+                    dispatch(fetchHistoricalData({ month, day })),
+                    dispatch(fetchHourlyData({ month, day }))
+                ]);
+            } catch (error) {
+                console.error("Failed to load data:", error);
+                setError("Failed to load data. Please try again later.");
+            }
+        };
 
-        // Find nearest weather station for each city
-        const citiesWithNearestStations = findNearestStationsForCities(citiesData, stationsData);
+        loadData();
+    }, [dispatch]);
 
-        // Dispatch cities to Redux store
-        store.dispatch(setCities(citiesWithNearestStations));
-      } catch (error) {
-        console.error("Failed to load data:", error);
-        setError("Failed to load data. Please try again later.");
-      } finally {
+    useEffect(() => {
+        if (liveDataStatus !== "succeeded" || cityDataStatus !== "succeeded" || areCitiesMapped) {
+            return;
+        }
+
+        const result = mapCitiesToClosestWeatherStations(
+            cityRawData,
+            liveData,
+        );
+
+        dispatch(setCityMappedData(result));
+        setAreCitiesMapped(true);
+    }, [dispatch, liveData, liveDataStatus, cityRawData, cityDataStatus, areCitiesMapped]);
+
+    // Set default city when cities are loaded
+    useEffect(() => {
+        if (selectedCityId || !cityMappedData) {
+            return;
+        }
+
+        // Try to find the default city in the predefined list first
+        const item = Object.values(cityMappedData).find(item =>
+            PREDEFINED_CITIES.includes(item.city.cityName) &&
+            item.city.cityName.toLowerCase().includes(DEFAULT_CITY));
+
+        if (item) {
+            dispatch(selectCity(item.city.cityId, true));
+        }
+    }, [cityMappedData, selectedCityId, dispatch]);
+
+    // Fetch other data reliant on the selected city
+    useEffect(() => {
+        if (!selectedCityId || !cityMappedData) return;
+
+        const selectedStationId = cityMappedData[selectedCityId]?.station.station_id;
+        if (!selectedStationId) return;
+
+        const loadData = async () => {
+            try {
+                await Promise.all([
+                    dispatch(fetchRollingAverageData({ stationId: selectedStationId })),
+                ]);
+            } catch (error) {
+                console.error("Failed to load data:", error);
+                setError("Failed to load data. Please try again later.");
+            }
+        };
+
+        loadData();
+    }, [dispatch, selectedCityId, cityMappedData]);
+
+    // Check if all data is loaded and set loading state to false
+    useEffect(() => {
+        if (liveDataStatus !== "succeeded"
+            || cityDataStatus !== "succeeded"
+            || historicalDataStatus !== "succeeded"
+            || hourlyDataStatus !== "succeeded"
+            || rollingAverageDataStatus !== "succeeded"
+            || !cityMappedData
+        ) return;
+
+        // If all data is loaded, set loading to false
         setLoading(false);
-      }
-    };
+        setError(null);
+    }, [
+        liveDataStatus,
+        cityDataStatus,
+        historicalDataStatus,
+        hourlyDataStatus,
+        rollingAverageDataStatus,
+        cityMappedData
+    ]);
 
-    loadData();
-  }, [navigate]);
-
-  const MainPage = () => (
-    <>
-      <div>
-        <Suspense fallback={<div className="loading-container">Loading map data...</div>}>
-          {!loading && !error && <D3MapView />}
-          {error && <div className="error-container">{error}</div>}
-        </Suspense>
-      </div>
-
-      <div>
-        <Suspense fallback={<div className="loading-container">Loading analysis data...</div>}>
-          <HistoricalAnalysis />
-        </Suspense>
-      </div>
-
-      <div>
-        <Closing />
-      </div>
-    </>
-  );
-
-  return (
-    <div className="app-container">
-      <Header />
-      <main className="content-wrapper">
-        <Routes>
-          <Route path="/" element={<MainPage />} />
-          <Route path="/impressum" element={
-            <Suspense fallback={<div className="loading-container">Loading...</div>}>
-              <ImpressumPage />
+    const MainPage = () => (
+        <>
+            <Suspense fallback={<div className="loading-container">Loading map data...</div>}>
+                {!loading && !error &&
+                    <>
+                        <D3MapView />
+                        <HistoricalAnalysis />
+                    </>
+                }
+                {error && <div className="error-container">{error}</div>}
             </Suspense>
-          } />
-          {/* Redirect any other routes to home */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </main>
-      <Footer />
-    </div>
-  );
+            <Closing />
+        </>
+    );
+
+    return (
+        <div className="app-container">
+            <Header />
+            <main className="content-wrapper">
+                <Routes>
+                    <Route path="/" element={<MainPage />} />
+                    <Route path="/impressum" element={
+                        <Suspense fallback={<div className="loading-container">Loading...</div>}>
+                            <ImpressumPage />
+                        </Suspense>
+                    } />
+                    {/* Redirect any other routes to home */}
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+            </main>
+            <Footer />
+        </div>
+    );
 }
 
 // Main App component that provides the Router context
 function App() {
-  return (
-    <Provider store={store}>
-      <BrowserRouter>
-        <AppContent />
-      </BrowserRouter>
-    </Provider>
-  );
+    return (
+        <Provider store={store}>
+            <BrowserRouter>
+                <AppContent />
+            </BrowserRouter>
+        </Provider>
+    );
 }
 
 export default App;
