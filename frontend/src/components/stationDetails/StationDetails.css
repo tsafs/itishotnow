@@ -13,16 +13,19 @@
     padding: 30px 0;
 }
 
-.station-name {
+.station-name,
+.station-name-placeholder {
     margin: 0;
     font-size: 1.6rem;
     font-weight: 600;
     color: #333;
 }
 
-.station-subtitle {
+.station-subtitle,
+.station-subtitle-placeholder {
     font-size: 0.9rem;
     color: #666;
+    margin-top: 5px;
     margin-bottom: 30px;
     max-width: 300px;
     white-space-collapse: preserve;
@@ -50,7 +53,8 @@
     text-transform: uppercase;
 }
 
-.metric-value {
+.metric-value,
+.metric-value-placeholder {
     font-size: 1.2rem;
     font-weight: bold;
     color: #333;
@@ -68,19 +72,32 @@
 .temperature-comparison {
     display: flex;
     flex-direction: column;
+    align-items: flex-end;
     margin-top: 30px;
     color: #333;
+    max-width: 300px;
 }
 
-.temperature-comparison .message {
+.temperature-comparison .message .temperature-comparison .message-placeholder {
     font-size: 1.4rem;
     font-weight: 600;
 }
 
-.temperature-comparison .anomaly {
+.temperature-comparison .anomaly,
+.temperature-comparison .anomaly-placeholder {
     margin-top: 5px;
     font-size: 0.8rem;
     /* font-weight: 600; */
+}
+
+.station-name-placeholder,
+.station-subtitle-placeholder,
+.metric-value-placeholder,
+.temperature-comparison .message-placeholder,
+.temperature-comparison .anomaly-placeholder {
+    background-color: #555;
+    color: transparent;
+    border-radius: 4px;
 }
 
 @media (max-width: 768px) {
@@ -106,6 +123,6 @@
     }
 
     .temperature-comparison {
-        text-align: center;
+        align-items: center;
     }
 }

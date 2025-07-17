@@ -111,6 +111,8 @@ export const analyzeTemperatureAnomaly = (anomaly) => {
         comparisonMessage = "Es ist sehr kühl!";
     } else if (anomaly <= -2) {
         comparisonMessage = "Es ist kühl";
+    } else if (anomaly === 0) {
+        comparisonMessage = "Es ist exakt durchschnittlich";
     } else if (anomaly < 2) {
         comparisonMessage = "Es ist ziemlich normal";
     } else if (anomaly < 4) {

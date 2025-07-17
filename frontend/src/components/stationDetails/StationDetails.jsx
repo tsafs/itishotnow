@@ -28,10 +28,14 @@ const StationDetails = () => {
         const item = mappedCities[selectedCityId];
         if (item === undefined) return;
 
-        setItem(item);
-        setSubtitle(null);
+        // Simulate loading delay
+        setItem(null);
         setAnomaly(null);
+        setSubtitle('');
         setAnomalyDetails(null);
+        setTimeout(() => {
+            setItem(item);
+        }, 1000)
     }, [selectedCityId, mappedCities]);
 
     // Calculate anomaly
@@ -44,7 +48,7 @@ const StationDetails = () => {
         const temperatureAtHour = hourlyData[item.station.station_id]?.hourlyTemps[`hour_${hour}`];
         if (temperatureAtHour === null || temperatureAtHour === undefined) return;
 
-        const anomalyAtHour = Math.round(item.station.temperature - temperatureAtHour);
+        const anomalyAtHour = Math.round((item.station.temperature - temperatureAtHour) * 10) / 10;
         setAnomaly(anomalyAtHour);
     }, [hourlyData, item]);
 
@@ -67,7 +71,8 @@ const StationDetails = () => {
 
     // Calculate comparison details using the utility function
     useEffect(() => {
-        if (!anomaly) return;
+        if (anomaly === null) return;
+        console.log("Calculating anomaly details for:", anomaly);
         setAnomalyDetails(analyzeTemperatureAnomaly(anomaly));
     }, [anomaly]);
 
@@ -83,72 +88,107 @@ const StationDetails = () => {
     }
 
     return (
-        <>
-            {item && anomaly && subtitle && (
-                <div className="station-info-panel">
-                    <h2 className="station-name">{item.city.cityName}</h2>
+        <div className="station-info-panel">
+            {item && (<h2 className="station-name">{item.city.cityName}</h2>)}
+            {!item && (<h2 className="station-name-placeholder">Eine Stadt</h2>)}
 
-                    {subtitle && (
-                        <div className="station-subtitle">
-                            {subtitle}
-                        </div>
-                    )}
-
-                    <div className="station-metrics">
-                        <div className="metric-cell metric-cell-highlight">
-                            <span className="metric-label">Zuletzt</span>
-                            <span className="metric-value">
-                                {item.station.temperature !== undefined
-                                    ? `${item.station.temperature.toFixed(1)}°C`
-                                    : "k. A."}
-                            </span>
-                        </div>
-                        <div className="metric-cell">
-                            <span className="metric-label">Min</span>
-                            <span className="metric-value">
-                                {item.station.min_temperature !== undefined
-                                    ? `${item.station.min_temperature.toFixed(1)}°C`
-                                    : "k. A."}
-                            </span>
-                        </div>
-                        <div className="metric-cell">
-                            <span className="metric-label">Max</span>
-                            <span className="metric-value">
-                                {item.station.max_temperature !== undefined
-                                    ? `${item.station.max_temperature.toFixed(1)}°C`
-                                    : "k. A."}
-                            </span>
-                        </div>
-                        <div className="metric-cell">
-                            <span className="metric-label">Luft</span>
-                            <span className="metric-value">
-                                {item.station.humidity !== undefined
-                                    ? `${item.station.humidity.toFixed(0)}%`
-                                    : "k. A."}
-                            </span>
-                        </div>
-                    </div>
-
-                    <div className="temperature-comparison">
-                        {!anomalyDetails && (
-                            <div className="message">
-                                Keine historischen Daten verfügbar.
-                            </div>
-                        )}
-                        {anomalyDetails && (
-                            <>
-                                <div className="message">
-                                    {anomalyDetails.comparisonMessage}
-                                </div>
-                                <div className="anomaly">
-                                    {anomalyDetails.anomalyMessage}
-                                </div>
-                            </>
-                        )}
-                    </div>
+            {subtitle && (
+                <div className="station-subtitle">
+                    {subtitle}
                 </div>
             )}
-        </>
+            {!subtitle && (
+                <div className="station-subtitle-placeholder">
+                    Wetterstation: Eine-Wetterstation (6km) 88.88.2025 19:20 Uhr
+                </div>
+            )}
+
+            <div className="station-metrics">
+                <div className="metric-cell metric-cell-highlight">
+                    <span className="metric-label">Zuletzt</span>
+                    {item && (
+                        <span className="metric-value">
+                            {item.station.temperature !== undefined
+                                ? `${item.station.temperature.toFixed(1)}°C`
+                                : "k. A."}
+                        </span>
+                    )}
+                    {!item && (
+                        <span className="metric-value-placeholder">
+                            20.5°C
+                        </span>
+                    )}
+                </div>
+                <div className="metric-cell">
+                    <span className="metric-label">Min</span>
+                    {item && (
+                        <span className="metric-value">
+                            {item.station.min_temperature !== undefined
+                                ? `${item.station.min_temperature.toFixed(1)}°C`
+                                : "k. A."}
+                        </span>
+                    )}
+                    {!item && (
+                        <span className="metric-value-placeholder">
+                            14.1°C
+                        </span>
+                    )}
+                </div>
+                <div className="metric-cell">
+                    <span className="metric-label">Max</span>
+                    {item && (
+                        <span className="metric-value">
+                            {item.station.max_temperature !== undefined
+                                ? `${item.station.max_temperature.toFixed(1)}°C`
+                                : "k. A."}
+                        </span>
+                    )}
+                    {!item && (
+                        <span className="metric-value-placeholder">
+                            28.1°C
+                        </span>
+                    )}
+                </div>
+                <div className="metric-cell">
+                    <span className="metric-label">Luft</span>
+                    {item && (
+                        <span className="metric-value">
+                            {item.station.humidity !== undefined
+                                ? `${item.station.humidity.toFixed(0)}%`
+                                : "k. A."}
+                        </span>
+                    )}
+                    {!item && (
+                        <span className="metric-value-placeholder">
+                            64%
+                        </span>
+                    )}
+                </div>
+            </div>
+
+            <div className="temperature-comparison">
+                {!anomalyDetails && (
+                    <>
+                        <div className="message-placeholder">
+                            Absolut keine Ahnung
+                        </div>
+                        <div className="anomaly-placeholder">
+                            Die aktuelle Temperatur liegt 3.1&nbsp;°C unter dem historischen&nbsp;Mittelwert.
+                        </div>
+                    </>
+                )}
+                {anomalyDetails && (
+                    <>
+                        <div className="message">
+                            {anomalyDetails.comparisonMessage}
+                        </div>
+                        <span className="anomaly">
+                            {anomalyDetails.anomalyMessage}
+                        </span>
+                    </>
+                )}
+            </div>
+        </div>
     );
 };
 
