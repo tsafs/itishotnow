@@ -6,12 +6,10 @@ import { MAP_DIMENSIONS } from '../../constants/map';
 import './MapContainer.css';
 
 const MapContainer = () => {
-    const svgRef = useRef(null);
 
     return (
         <div className="d3-map-container">
             <svg
-                ref={svgRef}
                 className="d3-map"
                 width={MAP_DIMENSIONS.width}
                 height={MAP_DIMENSIONS.height}

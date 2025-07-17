@@ -127,20 +127,22 @@ function AppContent() {
         cityMappedData
     ]);
 
-    const MainPage = () => (
-        <>
-            <Suspense fallback={<div className="loading-container">Loading map data...</div>}>
-                {!loading && !error &&
-                    <>
-                        <D3MapView />
-                        <HistoricalAnalysis />
-                    </>
-                }
-                {error && <div className="error-container">{error}</div>}
-            </Suspense>
-            <Closing />
-        </>
-    );
+    const MainPage = React.useMemo(() => {
+        return () => (
+            <>
+                <Suspense fallback={<div className="loading-container">Loading map data...</div>}>
+                    {!loading && !error &&
+                        <>
+                            <D3MapView />
+                            <HistoricalAnalysis />
+                        </>
+                    }
+                    {error && <div className="error-container">{error}</div>}
+                </Suspense>
+                <Closing />
+            </>
+        );
+    }, [loading, error]);
 
     return (
         <div className="app-container">
