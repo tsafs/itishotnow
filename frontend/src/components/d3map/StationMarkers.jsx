@@ -5,29 +5,33 @@ import MapTooltip from './MapTooltip';
 import { MAP_ZOOM_LEVEL, MAP_CENTER, MAP_DIMENSIONS, PREDEFINED_CITIES } from '../../constants/map';
 import { getAnomalyColor } from '../../utils/TemperatureUtils';
 import { selectCity } from '../../store/slices/selectedCitySlice';
-import { selectCityMappedData } from '../../store/slices/cityDataSlice';
+import { selectCities, selectAreCitiesCorrelated } from '../../store/slices/cityDataSlice';
 import { selectInterpolatedHourlyData } from '../../store/slices/interpolatedHourlyDataSlice';
 import { extractHourFromDateString } from '../../utils/dataUtils';
+import { selectLiveData } from '../../store/slices/liveDataSlice';
 import './StationMarkers.css';
 
 const StationMarkers = () => {
     const dispatch = useDispatch();
     const rememberedCityIds = useSelector(state => state.rememberedCities);
-    const mappedCities = useSelector(selectCityMappedData);
+    const cities = useSelector(selectCities);
+    const areCitiesCorrelated = useSelector(selectAreCitiesCorrelated);
     const selectedCityId = useSelector(state => state.selectedCity.cityId);
     const hourlyData = useSelector(selectInterpolatedHourlyData);
+    const stations = useSelector(state => state.stations.stations);
+    const liveData = useSelector(selectLiveData);
 
     const markersRef = useRef(null);
     const tooltipRef = useRef(null);
 
     // Use useCallback to memoize the handleCitySelect function
     const handleCitySelect = useCallback((city) => {
-        const isPredefined = PREDEFINED_CITIES.includes(city.cityName);
-        dispatch(selectCity(city.cityId, isPredefined));
+        const isPredefined = PREDEFINED_CITIES.includes(city.name);
+        dispatch(selectCity(city.id, isPredefined));
     }, [dispatch]);
 
     useEffect(() => {
-        if (!mappedCities || !hourlyData || !markersRef.current) return;
+        if (!areCitiesCorrelated || !stations || !liveData || !hourlyData || !markersRef.current) return;
 
         // Clear previous content
         d3.select(markersRef.current).selectAll("*").remove();
@@ -44,19 +48,19 @@ const StationMarkers = () => {
             .translate([MAP_DIMENSIONS.width / 2, MAP_DIMENSIONS.height / 2]);
 
         // Filter cities to show only predefined ones, the selected city, and remembered cities
-        const citiesToDisplay = Object.values(mappedCities).filter(item => {
+        const citiesToDisplay = Object.values(cities).filter(city => {
             // Always include the currently selected city if it exists
-            if (item.city.cityId === selectedCityId) {
+            if (city.id === selectedCityId) {
                 return true;
             }
 
             // Include cities from the predefined list
-            if (PREDEFINED_CITIES.includes(item.city.cityName)) {
+            if (PREDEFINED_CITIES.includes(city.name)) {
                 return true;
             }
 
             // Include cities that have been previously selected (remembered)
-            if (rememberedCityIds.some(id => id === item.city.cityId)) {
+            if (rememberedCityIds.some(id => id === city.id)) {
                 return true;
             }
 
@@ -64,21 +68,28 @@ const StationMarkers = () => {
         });
 
         // Draw city markers
-        citiesToDisplay.forEach(item => {
-            const isSelected = selectedCityId === item.city.cityId;
+        citiesToDisplay.forEach(city => {
+            const station = stations[city.stationId];
+            if (!station) return;
 
-            const coords = projection([parseFloat(item.city.lon), parseFloat(item.city.lat)]);
+            // Get live data for this station
+            const data = liveData[station.id];
+            if (!data) return;
+
+            const isSelected = selectedCityId === city.id;
+
+            const coords = projection([parseFloat(city.lon), parseFloat(city.lat)]);
 
             if (!coords) return; // Skip if coordinates can't be projected
 
             // Calculate anomaly value
-            const hour = extractHourFromDateString(item.station.data_date);
+            const hour = extractHourFromDateString(data.date);
             if (!hour) return;
 
-            const temperatureAtHour = hourlyData[item.station.station_id]?.hourlyTemps[`hour_${hour}`];
+            const temperatureAtHour = hourlyData[station.id]?.hourlyTemps[`hour_${hour}`];
             if (temperatureAtHour === null || temperatureAtHour === undefined) return;
 
-            const anomaly = Math.round(item.station.temperature - temperatureAtHour);
+            const anomaly = Math.round(data.temperature - temperatureAtHour);
 
             // Determine text color class based on anomaly value
             const textColorClass = (anomaly < -6 || anomaly > 6) ? 'light-text' : 'dark-text';
@@ -87,13 +98,13 @@ const StationMarkers = () => {
             const markerColor = getAnomalyColor(anomaly);
 
             // Check if this is a remembered city
-            const isRemembered = rememberedCityIds.some(id => id === item.city.cityId) && !isSelected;
+            const isRemembered = rememberedCityIds.some(id => id === city.id) && !isSelected;
 
             const cityGroup = d3.select(markersRef.current).append("g")
                 .attr("class", `city${isSelected ? " selected" : ""}${isRemembered ? " remembered" : ""}`)
                 .attr("transform", `translate(${coords[0]}, ${coords[1]})`)
                 .style("cursor", "pointer")
-                .attr("data-city-id", item.city.cityId);
+                .attr("data-city-id", city.id);
 
             // Add circle for city - make it bigger to fit the text
             cityGroup.append("circle")
@@ -122,7 +133,7 @@ const StationMarkers = () => {
                         d3.select(this).select("text").transition().duration(10).style("font-size", "1.2em");
                     }
 
-                    tooltipRef.current.show(item.city.cityName, markerX, markerY);
+                    tooltipRef.current.show(city.name, markerX, markerY);
                 })
                 .on("mouseout", function () {
                     // Return to original size if not selected
@@ -137,11 +148,11 @@ const StationMarkers = () => {
                     setTimeout(() => {
                         tooltipRef.current.hide();
                     }, 1000);
-                    handleCitySelect(item.city);
+                    handleCitySelect(city);
                 });
         });
 
-    }, [mappedCities, hourlyData, selectedCityId, rememberedCityIds, dispatch, handleCitySelect]);
+    }, [cities, areCitiesCorrelated, stations, liveData, hourlyData, selectedCityId, rememberedCityIds, dispatch, handleCitySelect]);
 
     // Clean up tooltip when component unmounts
     useEffect(() => {

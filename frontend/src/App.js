@@ -1,16 +1,15 @@
-import React, { Suspense, useState, useEffect } from 'react';
+import React, { Suspense, useState, useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { Provider, useDispatch, useSelector } from 'react-redux';
 import { store } from './store';
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
-import { mapCitiesToClosestWeatherStations } from './services/CityService';
+import { findClosestWeatherStationsForCities } from './services/CityService';
 import { PREDEFINED_CITIES } from './constants/map';
-
-import { fetchHistoricalData, selectHistoricalDataStatus } from './store/slices/historicalDataSlice';
-import { fetchHourlyData, selectInterpolatedHourlyDataStatus } from './store/slices/interpolatedHourlyDataSlice';
-import { fetchLiveData, selectLiveData, selectLiveDataStatus } from './store/slices/liveDataSlice';
-import { fetchCityData, selectCityRawData, selectCityDataStatus, setCityMappedData, selectCityMappedData } from './store/slices/cityDataSlice';
+import { fetchHistoricalData } from './store/slices/historicalDataSlice';
+import { fetchHourlyData } from './store/slices/interpolatedHourlyDataSlice';
+import { fetchLiveData, selectLiveDataStatus } from './store/slices/liveDataSlice';
+import { fetchCityData, selectCities, selectAreCitiesCorrelated, selectCityDataStatus, setCities } from './store/slices/cityDataSlice';
 import { selectCity } from './store/slices/selectedCitySlice';
 
 import './App.css';
@@ -28,18 +27,15 @@ function AppContent() {
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
-    const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [areCitiesMapped, setAreCitiesMapped] = useState(false);
+    const didFetchDataRef = useRef(false);
 
-    const liveData = useSelector(selectLiveData);
-    const cityRawData = useSelector(selectCityRawData);
-    const cityMappedData = useSelector(selectCityMappedData);
+    const stations = useSelector(state => state.stations.stations);
+    const cities = useSelector(selectCities);
+    const areCitiesCorrelated = useSelector(selectAreCitiesCorrelated);
     const selectedCityId = useSelector(state => state.selectedCity.cityId);
 
     const liveDataStatus = useSelector(selectLiveDataStatus);
-    const historicalDataStatus = useSelector(selectHistoricalDataStatus);
-    const hourlyDataStatus = useSelector(selectInterpolatedHourlyDataStatus);
     const cityDataStatus = useSelector(selectCityDataStatus);
 
     // Handle redirect from error.html
@@ -53,8 +49,11 @@ function AppContent() {
     }, [navigate]);
 
     useEffect(() => {
+        if (didFetchDataRef.current) return;
+
+        didFetchDataRef.current = true;
+
         const loadData = async () => {
-            setLoading(true);
             try {
                 // Get today's date for historical data
                 const today = getNow();
@@ -78,60 +77,42 @@ function AppContent() {
     }, [dispatch]);
 
     useEffect(() => {
-        if (liveDataStatus !== "succeeded" || cityDataStatus !== "succeeded" || areCitiesMapped) {
+        if (liveDataStatus !== "succeeded" || cityDataStatus !== "succeeded" || areCitiesCorrelated) {
             return;
         }
-
-        const result = mapCitiesToClosestWeatherStations(
-            cityRawData,
-            liveData,
+        const correlatedCities = findClosestWeatherStationsForCities(
+            cities,
+            stations,
         );
 
-        dispatch(setCityMappedData(result));
-        setAreCitiesMapped(true);
-    }, [dispatch, liveData, liveDataStatus, cityRawData, cityDataStatus, areCitiesMapped]);
+        const serialized = {}
+        for (const [id, city] of Object.entries(correlatedCities)) { 
+            serialized[id] = city.toJSON();
+        }
+        dispatch(setCities(serialized));
+    }, [dispatch, stations, liveDataStatus, cities, cityDataStatus, areCitiesCorrelated]);
 
     // Set default city when cities are loaded
     useEffect(() => {
-        if (selectedCityId || !cityMappedData) {
+        if (selectedCityId || areCitiesCorrelated) {
             return;
         }
 
         // Try to find the default city in the predefined list first
-        const item = Object.values(cityMappedData).find(item =>
-            PREDEFINED_CITIES.includes(item.city.cityName) &&
-            item.city.cityName.toLowerCase().includes(DEFAULT_CITY));
+        const city = Object.values(cities).find(city =>
+            PREDEFINED_CITIES.includes(city.name) &&
+            city.name.toLowerCase().includes(DEFAULT_CITY));
 
-        if (item) {
-            dispatch(selectCity(item.city.cityId, true));
+        if (city) {
+            dispatch(selectCity(city.id, true));
         }
-    }, [cityMappedData, selectedCityId, dispatch]);
-
-    // Check if all data is loaded and set loading state to false
-    useEffect(() => {
-        if (liveDataStatus !== "succeeded"
-            || cityDataStatus !== "succeeded"
-            || historicalDataStatus !== "succeeded"
-            || hourlyDataStatus !== "succeeded"
-            || !cityMappedData
-        ) return;
-
-        // If all data is loaded, set loading to false
-        setLoading(false);
-        setError(null);
-    }, [
-        liveDataStatus,
-        cityDataStatus,
-        historicalDataStatus,
-        hourlyDataStatus,
-        cityMappedData
-    ]);
+    }, [cities, selectedCityId, areCitiesCorrelated, dispatch]);
 
     const MainPage = React.useMemo(() => {
         return () => (
             <>
                 <Suspense fallback={<div className="loading-container">Loading map data...</div>}>
-                    {!loading && !error &&
+                    {!error &&
                         <>
                             <D3MapView />
                             <HistoricalAnalysis />
@@ -142,7 +123,7 @@ function AppContent() {
                 <Closing />
             </>
         );
-    }, [loading, error]);
+    }, [error]);
 
     return (
         <div className="app-container">

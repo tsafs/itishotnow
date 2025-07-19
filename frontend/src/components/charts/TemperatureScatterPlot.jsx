@@ -6,41 +6,34 @@ import { useSelector, useDispatch } from 'react-redux';
 import { getNow } from '../../utils/dateUtils';
 import { filterTemperatureDataByDateWindow } from '../../utils/rollingAverageUtils';
 import './TemperatureScatterPlot.css';
-import { selectCityMappedData } from '../../store/slices/cityDataSlice';
 import { selectRollingAverageData } from '../../store/slices/rollingAverageDataSlice';
-import { fetchRollingAverageData, selectRollingAverageDataStatus, selectRollingAverageDataError } from '../../store/slices/rollingAverageDataSlice';
+import { fetchRollingAverageData, selectRollingAverageDataStatus } from '../../store/slices/rollingAverageDataSlice';
+import { useSelectedItem } from '../../store/hooks/selectedItemHook';
 
 const TemperatureScatterPlot = () => {
     const dispatch = useDispatch();
 
     const containerRef = useRef();
-    const mappedCities = useSelector(selectCityMappedData);
-    const selectedCityId = useSelector(state => state.selectedCity.cityId);
+    const selectedItem = useSelectedItem();
+
     const rollingAverageData = useSelector(selectRollingAverageData);
     const rollingAverageDataStatus = useSelector(selectRollingAverageDataStatus);
-    const rollingAverageDataError = useSelector(selectRollingAverageDataError);
 
     const [error, setError] = useState(null);
-    const [selectedStation, setSelectedStation] = useState(null);
 
     const fromYear = 1951;
     const toYear = 2024;
     const baselineStartYear = 1961; // Define baseline start year
     const baselineEndYear = 1990;   // Define baseline end year
 
-    useEffect(() => {
-        if (!selectedCityId || !mappedCities) return;
-        setSelectedStation(mappedCities[selectedCityId].station)
-    }, [selectedCityId, mappedCities]);
-
     // Fetch other data reliant on the selected city
     useEffect(() => {
-        if (!selectedCityId || !selectedStation) return;
+        if (!selectedItem) return;
 
         const loadData = async () => {
             try {
                 await Promise.all([
-                    dispatch(fetchRollingAverageData({ stationId: selectedStation.station_id })),
+                    dispatch(fetchRollingAverageData({ stationId: selectedItem.station.id })),
                 ]);
             } catch (error) {
                 console.error("Failed to load data:", error);
@@ -48,11 +41,11 @@ const TemperatureScatterPlot = () => {
         };
 
         loadData();
-    }, [dispatch, selectedCityId, selectedStation]);
+    }, [dispatch, selectedItem]);
 
     // Create the plot using Observable Plot
     useEffect(() => {
-        if (rollingAverageDataStatus !== "succeeded" || rollingAverageDataError || !selectedStation) return;
+        if (rollingAverageDataStatus !== "succeeded" || !selectedItem) return;
 
         // Clear any existing plot
         if (containerRef.current) {
@@ -123,9 +116,9 @@ const TemperatureScatterPlot = () => {
 
             // Add today's data point if available
             let todayDataPoint = null;
-            if (selectedStation.min_temperature && selectedStation.max_temperature) {
+            if (selectedItem.data.minTemperature && selectedItem.data.maxTemperature) {
                 // Workaround until the true mean is calculated on the backend job:
-                const averageTemperature = (selectedStation.min_temperature + selectedStation.max_temperature) / 2;
+                const averageTemperature = (selectedItem.data.minTemperature + selectedItem.data.maxTemperature) / 2;
                 const todayAnomaly = averageTemperature - averageTempForPrimaryDay;
                 todayDataPoint = {
                     year: getNow().getFullYear(),
@@ -163,7 +156,7 @@ const TemperatureScatterPlot = () => {
 
             // Create the plot
             const plot = Plot.plot({
-                title: html`<p class="title">Abweichung zum Referenzzeitraum von 1961 bis 1990 in ${selectedStation.station_name}</p>`,
+                title: html`<p class="title">Abweichung zum Referenzzeitraum von 1961 bis 1990 in ${selectedItem.station.name}</p>`,
                 y: {
                     label: "Temperaturabweichung (°C)",
                     grid: true,
@@ -273,7 +266,7 @@ const TemperatureScatterPlot = () => {
             console.error("Error creating plot:", err);
             setError("Failed to create plot visualization");
         }
-    }, [rollingAverageData, rollingAverageDataStatus, rollingAverageDataError, selectedStation, fromYear, toYear]);
+    }, [rollingAverageData, rollingAverageDataStatus, selectedItem, fromYear, toYear]);
 
     return (
         <div className="temperature-scatter-container">

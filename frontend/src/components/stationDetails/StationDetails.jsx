@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { analyzeTemperatureAnomaly } from '../../utils/TemperatureUtils';
-import { selectCityMappedData } from '../../store/slices/cityDataSlice';
 import { selectInterpolatedHourlyData } from '../../store/slices/interpolatedHourlyDataSlice';
 import { extractHourFromDateString } from '../../utils/dataUtils';
+import { useSelectedItem } from '../../store/hooks/selectedItemHook';
 import './StationDetails.css';
 
 /**
@@ -12,9 +12,9 @@ import './StationDetails.css';
  * @param {Object} props.selectedStation - Selected city/station data object
  */
 const StationDetails = () => {
-    const mappedCities = useSelector(selectCityMappedData);
     const selectedCityId = useSelector(state => state.selectedCity.cityId);
     const hourlyData = useSelector(selectInterpolatedHourlyData);
+    const selectedItem = useSelectedItem();
 
     const [item, setItem] = useState(null);
     const [anomaly, setAnomaly] = useState(null);
@@ -23,10 +23,7 @@ const StationDetails = () => {
 
     // Get selected item
     useEffect(() => {
-        if (!selectedCityId || !mappedCities) return;
-
-        const item = mappedCities[selectedCityId];
-        if (item === undefined) return;
+        if (!selectedItem) return;
 
         // Simulate loading delay
         setItem(null);
@@ -34,21 +31,21 @@ const StationDetails = () => {
         setSubtitle('');
         setAnomalyDetails(null);
         setTimeout(() => {
-            setItem(item);
-        }, 1000)
-    }, [selectedCityId, mappedCities]);
+            setItem(selectedItem);
+        }, 250);
+    }, [selectedItem]);
 
     // Calculate anomaly
     useEffect(() => {
         if (!hourlyData || !item) return;
 
-        const hour = extractHourFromDateString(item.station.data_date);
+        const hour = extractHourFromDateString(item.data.date);
         if (!hour) return;
 
-        const temperatureAtHour = hourlyData[item.station.station_id]?.hourlyTemps[`hour_${hour}`];
+        const temperatureAtHour = hourlyData[item.station.id]?.hourlyTemps[`hour_${hour}`];
         if (temperatureAtHour === null || temperatureAtHour === undefined) return;
 
-        const anomalyAtHour = Math.round((item.station.temperature - temperatureAtHour) * 10) / 10;
+        const anomalyAtHour = Math.round((item.data.temperature - temperatureAtHour) * 10) / 10;
         setAnomaly(anomalyAtHour);
     }, [hourlyData, item]);
 
@@ -57,14 +54,14 @@ const StationDetails = () => {
         if (!item) return;
 
         // Format the distance to show as km
-        const formattedDistance = `(${Math.round(item.distance)}km)`;
+        const formattedDistance = `(${Math.round(item.city.distanceToStation)}km)`;
 
         let subtitleText = '';
-        if (item.station.station_name) {
-            subtitleText = `Wetterstation: ${item.station.station_name} ${formattedDistance}`;
+        if (item.station.name) {
+            subtitleText = `Wetterstation: ${item.station.name} ${formattedDistance}`;
         }
-        if (item.station.data_date) {
-            subtitleText += ` ${item.station.data_date}\u00A0Uhr`;
+        if (item.data.date) {
+            subtitleText += ` ${item.data.date}\u00A0Uhr`;
         }
         setSubtitle(subtitleText);
     }, [item]);
@@ -72,7 +69,6 @@ const StationDetails = () => {
     // Calculate comparison details using the utility function
     useEffect(() => {
         if (anomaly === null) return;
-        console.log("Calculating anomaly details for:", anomaly);
         setAnomalyDetails(analyzeTemperatureAnomaly(anomaly));
     }, [anomaly]);
 
@@ -89,7 +85,7 @@ const StationDetails = () => {
 
     return (
         <div className="station-info-panel">
-            {item && (<h2 className="station-name">{item.city.cityName}</h2>)}
+            {item && (<h2 className="station-name">{item.city.name}</h2>)}
             {!item && (<h2 className="station-name-placeholder">Eine Stadt</h2>)}
 
             {subtitle && (
@@ -108,8 +104,8 @@ const StationDetails = () => {
                     <span className="metric-label">Zuletzt</span>
                     {item && (
                         <span className="metric-value">
-                            {item.station.temperature !== undefined
-                                ? `${item.station.temperature.toFixed(1)}°C`
+                            {item.data.temperature !== undefined
+                                ? `${item.data.temperature.toFixed(1)}°C`
                                 : "k. A."}
                         </span>
                     )}
@@ -123,8 +119,8 @@ const StationDetails = () => {
                     <span className="metric-label">Min</span>
                     {item && (
                         <span className="metric-value">
-                            {item.station.min_temperature !== undefined
-                                ? `${item.station.min_temperature.toFixed(1)}°C`
+                            {item.data.minTemperature !== undefined
+                                ? `${item.data.minTemperature.toFixed(1)}°C`
                                 : "k. A."}
                         </span>
                     )}
@@ -138,8 +134,8 @@ const StationDetails = () => {
                     <span className="metric-label">Max</span>
                     {item && (
                         <span className="metric-value">
-                            {item.station.max_temperature !== undefined
-                                ? `${item.station.max_temperature.toFixed(1)}°C`
+                            {item.data.maxTemperature !== undefined
+                                ? `${item.data.maxTemperature.toFixed(1)}°C`
                                 : "k. A."}
                         </span>
                     )}
@@ -153,8 +149,8 @@ const StationDetails = () => {
                     <span className="metric-label">Luft</span>
                     {item && (
                         <span className="metric-value">
-                            {item.station.humidity !== undefined
-                                ? `${item.station.humidity.toFixed(0)}%`
+                            {item.data.humidity !== undefined
+                                ? `${item.data.humidity.toFixed(0)}%`
                                 : "k. A."}
                         </span>
                     )}

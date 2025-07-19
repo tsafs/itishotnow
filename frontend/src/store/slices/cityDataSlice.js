@@ -1,12 +1,17 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
 import { fetchGermanCities } from '../../services/CityService';
+import City from '../../classes/City';
 
 export const fetchCityData = createAsyncThunk(
     'cityData/fetchData',
     async (_, { rejectWithValue }) => {
         try {
             const data = await fetchGermanCities();
-            return data;
+            let result = {}
+            for (const city of data) {
+                result[city.id] = city.toJSON();
+            }
+            return result;
         } catch (error) {
             return rejectWithValue(error.message);
         }
@@ -16,24 +21,26 @@ export const fetchCityData = createAsyncThunk(
 const cityDataSlice = createSlice({
     name: 'cityData',
     initialState: {
-        rawData: [],
-        mappedData: null,
+        data: [],
+        areCitiesCorrelated: false,
         status: 'idle', // 'idle' | 'loading' | 'succeeded' | 'failed'
         error: null,
     },
     reducers: {
-        setCityMappedData: (state, action) => {
-            state.mappedData = action.payload;
+        setCities: (state, action) => {
+            state.data = action.payload;
+            state.areCitiesCorrelated = true;
         }
     },
     extraReducers: (builder) => {
         builder
             .addCase(fetchCityData.pending, (state) => {
                 state.status = 'loading';
+                state.areCitiesCorrelated = false;
             })
             .addCase(fetchCityData.fulfilled, (state, action) => {
                 state.status = 'succeeded';
-                state.rawData = action.payload;
+                state.data = action.payload;
                 state.error = null;
             })
             .addCase(fetchCityData.rejected, (state, action) => {
@@ -43,12 +50,21 @@ const cityDataSlice = createSlice({
     },
 });
 
-export const { setCityMappedData } = cityDataSlice.actions;
+export const { setCities } = cityDataSlice.actions;
 
 // Selectors
-export const selectCityRawData = (state) => state.cityData.rawData;
-export const selectCityMappedData = (state) => state.cityData.mappedData;
+export const selectCities = createSelector(
+    state => state.cityData.data,
+    (data) => {
+        const result = {};
+        for (const [cityId, cityData] of Object.entries(data || {})) {
+            result[cityId] = City.fromJSON(cityData);
+        }
+        return result;
+    }
+);
 export const selectCityDataStatus = (state) => state.cityData.status;
 export const selectCityDataError = (state) => state.cityData.error;
+export const selectAreCitiesCorrelated = (state) => state.cityData.areCitiesCorrelated;
 
 export default cityDataSlice.reducer;

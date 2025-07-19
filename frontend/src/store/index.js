@@ -1,6 +1,7 @@
 import { configureStore } from '@reduxjs/toolkit';
 import cityDataReducer from './slices/cityDataSlice';
 import selectedCityReducer from './slices/selectedCitySlice';
+import stationsReducer from './slices/stationSlice';
 import rememberedCitiesReducer from './slices/rememberedCitiesSlice';
 import selectedDateReducer from './slices/selectedDateSlice';
 import historicalDataReducer from './slices/historicalDataSlice';
@@ -18,5 +19,6 @@ export const store = configureStore({
         rememberedCities: rememberedCitiesReducer,
         selectedDate: selectedDateReducer,
         rollingAverageData: rollingAverageDataReducer,
+        stations: stationsReducer,
     },
 });

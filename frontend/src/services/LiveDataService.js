@@ -1,3 +1,5 @@
+import Station from "../classes/Station";
+import StationData from "../classes/StationData";
 import { getNow } from "../utils/dateUtils";
 
 const replaceWithUndefined = (value) => {
@@ -61,27 +63,36 @@ export const fetchLiveData = async () => {
             const stationName = cols[1].replace(/,\s*$/, '').replace(/^"|"$/g, '');
 
             return {
-                station_id: cols[0],
-                station_name: stationName,
-                data_date: cols[2],
-                elevation: parseFloat(cols[3]),
-                station_lat: parseFloat(cols[4]),
-                station_lon: parseFloat(cols[5]),
-                temperature: replaceWithUndefined(parseFloat(cols[9])),
-                min_temperature: replaceWithUndefined(parseFloat(cols[8])),
-                max_temperature: replaceWithUndefined(parseFloat(cols[7])),
-                humidity: replaceWithUndefined(parseFloat(cols[6])),
-                subtitle: `${cols[2] ? cols[2] + ' Uhr' : 'k. A.'}`
+                station: new Station(
+                    cols[0],
+                    stationName,
+                    parseFloat(cols[3]),
+                    parseFloat(cols[4]),
+                    parseFloat(cols[5])
+                ),
+                data: new StationData(
+                    cols[0],
+                    cols[2],
+                    replaceWithUndefined(parseFloat(cols[9])),
+                    replaceWithUndefined(parseFloat(cols[8])),
+                    replaceWithUndefined(parseFloat(cols[7])),
+                    replaceWithUndefined(parseFloat(cols[6]))
+                )
             };
         }).filter(Boolean); // Remove null entries
 
         // Convert data to dictionary
-        let result = {};
+        let stations = {};
         for (let item of data) {
-            result[item.station_id] = item;
+            stations[item.station.id] = item.station;
         }
 
-        return result;
+        let stationData = {};
+        for (let item of data) {
+            stationData[item.data.stationId] = item.data;
+        }
+
+        return { stations, stationData };
     } catch (error) {
         console.error(`Error fetching live data: ${error.message}`);
         throw error;

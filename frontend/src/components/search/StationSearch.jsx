@@ -4,13 +4,16 @@ import { useNavigate } from 'react-router-dom';
 import { FaSearch } from 'react-icons/fa';
 import { PREDEFINED_CITIES } from '../../constants/map';
 import { selectCity } from '../../store/slices/selectedCitySlice';
-import { selectCityMappedData } from '../../store/slices/cityDataSlice';
+import { selectCities, selectAreCitiesCorrelated } from '../../store/slices/cityDataSlice';
+import { selectLiveData } from '../../store/slices/liveDataSlice';
 import './StationSearch.css';
 
 const StationSearch = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
-    const mappedCities = useSelector(selectCityMappedData);
+    const cities = useSelector(selectCities);
+    const areCitiesCorrelated = useSelector(selectAreCitiesCorrelated);
+    const liveData = useSelector(selectLiveData);
     const selectedCityId = useSelector(state => state.selectedCity.cityId);
 
     const [searchTerm, setSearchTerm] = useState('');
@@ -22,8 +25,8 @@ const StationSearch = () => {
 
     // Handle city selection
     const handleCitySelect = (city) => {
-        const isPredefined = PREDEFINED_CITIES.includes(city.cityName);
-        dispatch(selectCity(city.cityId, isPredefined));
+        const isPredefined = PREDEFINED_CITIES.includes(city.name);
+        dispatch(selectCity(city.id, isPredefined));
         setSearchTerm('');
         setIsDropdownOpen(false);
         navigate('/'); // Navigate to home page when a city is selected
@@ -45,6 +48,8 @@ const StationSearch = () => {
 
     // Filter cities based on search term - no fuzzy search
     useEffect(() => {
+        if (!areCitiesCorrelated) return;
+
         if (!searchTerm.trim()) {
             setFilteredCities([]);
             return;
@@ -53,16 +58,16 @@ const StationSearch = () => {
         const searchTermLower = searchTerm.toLowerCase();
 
         // Only do exact matches (includes)
-        let filtered = Object.values(mappedCities).filter(item =>
-            item.city.cityName.toLowerCase().includes(searchTermLower)
+        let filtered = Object.values(cities).filter(city =>
+            city.name.toLowerCase().includes(searchTermLower)
         );
 
         // Sort results by name length (shorter names first)
-        filtered.sort((a, b) => a.city.cityName.length - b.city.cityName.length);
+        filtered.sort((a, b) => a.name.length - b.name.length);
 
         // Limit to 15 results
         setFilteredCities(filtered.slice(0, 15));
-    }, [searchTerm, mappedCities]);
+    }, [searchTerm, cities, areCitiesCorrelated]);
 
     // Reset focused index when filtered cities change
     useEffect(() => {
@@ -86,28 +91,30 @@ const StationSearch = () => {
                     className="station-search-input"
                 />
 
-                {isDropdownOpen && searchTerm && (
+                {isDropdownOpen && searchTerm && liveData && areCitiesCorrelated && (
                     <div className="station-search-dropdown">
                         {filteredCities.length > 0 ? (
-                            filteredCities.map((item, index) => {
-                                // Only show temperature if city has a nearest station with data
-                                const hasTemperature = item.station &&
-                                    item.station.temperature !== undefined;
+                            filteredCities.map((city, index) => {
+                                const data = liveData[city.stationId];
+                                if (!data) return <></>;
 
-                                const isSelected = item.city.cityId === selectedCityId
+                                // Only show temperature if city has a nearest station with data
+                                const hasTemperature = data.temperature !== undefined;
+
+                                const isSelected = city.id === selectedCityId
 
                                 return (
                                     <div
-                                        key={`${item.city.cityName}-${item.city.lat}-${item.city.lon}-${index}`}
-                                        onClick={() => handleCitySelect(item.city)}
+                                        key={city.id}
+                                        onClick={() => handleCitySelect(city)}
                                         className={`station-search-item ${isSelected ?
                                             'station-search-item-selected' : ''} ${focusedIndex === index ? 'station-search-item-focused' : ''}`}
-                                        title={`${item.city.cityName}${hasTemperature ? `: ${item.station.temperature.toFixed(1)}°C` : ''}`}
+                                        title={`${city.name}${hasTemperature ? `: ${data.temperature.toFixed(1)}°C` : ''}`}
                                     >
-                                        <span>{item.city.cityName}</span>
+                                        <span>{city.name}</span>
                                         <span className="station-search-item-temperature">
                                             {hasTemperature ?
-                                                `${item.station.temperature.toFixed(1)}°C` : ''}
+                                                `${data.temperature.toFixed(1)}°C` : ''}
                                         </span>
                                     </div>
                                 );

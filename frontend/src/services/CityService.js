@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
+import City from '../classes/City';
 
 /**
  * Service to fetch German cities from CSV file
@@ -20,18 +21,15 @@ export const fetchGermanCities = async () => {
         const cities = lines.slice(1).map(line => {
             if (!line.trim()) return null; // Skip empty lines
 
-            const [cityName, lat, lon] = line.split(',');
-            if (!cityName || !lat || !lon) return null;
+            const [name, lat, lon] = line.split(',');
+            if (!name || !lat || !lon) return null;
 
-            return {
-                cityId: uuidv4(),
-                cityName: cityName.trim(),
-                lat: parseFloat(lat),
-                lon: parseFloat(lon),
-                // This will be filled with nearest station data later
-                nearestStation: null,
-                distanceToStation: null
-            };
+            return new City(
+                uuidv4(),
+                name.trim(),
+                parseFloat(lat),
+                parseFloat(lon)
+            );
         }).filter(Boolean); // Remove null entries
 
         return cities;
@@ -67,21 +65,22 @@ export const calculateDistance = (lat1, lon1, lat2, lon2) => {
  * @param {Object} stations - Dictionary of stationId -> station
  * @returns {Array} Cities with nearest station information
  */
-export const mapCitiesToClosestWeatherStations = (cities, stations) => {
-    const mappedCities = cities.map(city => {
+export const findClosestWeatherStationsForCities = (cities, stations) => {
+    const result = {};
+    Object.values(cities).forEach(city => {
         let nearestStation = null;
         let minDistance = Infinity;
 
         // Find the nearest station for this city
         Object.values(stations).forEach(station => {
             // Some stations might have invalid coordinates
-            if (isNaN(station.station_lat) || isNaN(station.station_lon)) {
+            if (isNaN(station.lat) || isNaN(station.lon)) {
                 return;
             }
 
             const distance = calculateDistance(
                 city.lat, city.lon,
-                station.station_lat, station.station_lon
+                station.lat, station.lon
             );
 
             if (distance < minDistance) {
@@ -91,18 +90,15 @@ export const mapCitiesToClosestWeatherStations = (cities, stations) => {
         });
 
         // Create a copy of the city with nearest station info
-        return {
-            city,
-            station: nearestStation,
-            distance: minDistance,
-        };
+        result[city.id] = new City(
+            city.id,
+            city.name,
+            city.lat,
+            city.lon,
+            nearestStation.id,
+            minDistance
+        );
     });
-
-    // Convert to dictionary of stationId -> mappedCity
-    let result = {}
-    for (let item of mappedCities) {
-        result[item.city.cityId] = item;
-    }
 
     return result;
 };
