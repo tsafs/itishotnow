@@ -4,6 +4,7 @@ import { analyzeTemperatureAnomaly } from '../../utils/TemperatureUtils';
 import { selectInterpolatedHourlyData } from '../../store/slices/interpolatedHourlyDataSlice';
 import { extractHourFromDateString } from '../../utils/dataUtils';
 import { useSelectedItem } from '../../store/hooks/selectedItemHook';
+import { CITY_SELECT_TIMEOUT } from '../../constants/page';
 import './StationDetails.css';
 
 /**
@@ -32,7 +33,7 @@ const StationDetails = () => {
         setAnomalyDetails(null);
         setTimeout(() => {
             setItem(selectedItem);
-        }, 250);
+        }, CITY_SELECT_TIMEOUT);
     }, [selectedItem]);
 
     // Calculate anomaly

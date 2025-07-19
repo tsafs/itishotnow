@@ -63,6 +63,17 @@ export const selectCities = createSelector(
         return result;
     }
 );
+export const selectCorrelatedCities = createSelector(
+    state => state.cityData,
+    (cityData) => {
+        if (!cityData.areCitiesCorrelated) return null;
+        const result = {};
+        for (const [id, city] of Object.entries(cityData.data)) {
+            result[id] = City.fromJSON(city);
+        }
+        return result;
+    }
+);
 export const selectCityDataStatus = (state) => state.cityData.status;
 export const selectCityDataError = (state) => state.cityData.error;
 export const selectAreCitiesCorrelated = (state) => state.cityData.areCitiesCorrelated;
