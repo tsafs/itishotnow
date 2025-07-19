@@ -11,45 +11,67 @@ export const calculateAnomaly = (currentTemp, historicalTemp) => {
     return currentTemp - historicalTemp;
 };
 
+const blueWhiteRedScheme = [
+    { threshold: -10, color: "#13437D" },
+    { threshold: -8, color: "#07579C" },
+    { threshold: -6, color: "#3A7D9D" },
+    { threshold: -4, color: "#78BFD6" },
+    { threshold: -2, color: "#DBF6FF" },
+    { threshold: 0, color: "#FFFFFF" },
+    { threshold: 2, color: "#FFE0E0" },
+    { threshold: 4, color: "#FB9171" },
+    { threshold: 6, color: "#F03C2B" },
+    { threshold: 8, color: "#A60F13" },
+    { threshold: 10, color: "#5F0000" }
+];
+
+const turboScheme = [
+    { threshold: -10, color: "#23171B" },
+    { threshold: -8, color: "#4B48C3" },
+    { threshold: -6, color: "#238FF8" },
+    { threshold: -4, color: "#25CECF" },
+    { threshold: -2, color: "#44F58D" },
+    { threshold: 0, color: "#8AFC56" },
+    { threshold: 2, color: "#D8E135" },
+    { threshold: 4, color: "#FFA924" },
+    { threshold: 6, color: "#F86218" },
+    { threshold: 8, color: "#BC2309" },
+    { threshold: 10, color: "#900C00" }
+];
+
 /**
  * Generates a color based on temperature anomaly
  * @param {number} anomaly - Temperature difference from historical average
  * @returns {string} - HEX color code from blue (cold) to white (neutral) to red (hot) to purple (very hot)
  */
-export const getAnomalyColor = (anomaly) => {
+export const getAnomalyColor = (anomaly, colorScheme) => {
+    let scheme;
+    if (!colorScheme || colorScheme === "BlueWhiteRed") {
+        scheme = blueWhiteRedScheme;
+    } else if (colorScheme === "Turbo") {
+        scheme = turboScheme;
+    } else {
+        throw new Error(`Unknown color scheme: ${colorScheme}`);
+    }
+
     if (anomaly === null || anomaly === undefined) {
         return "#aaaaaa"; // Default grey color for missing data
     }
 
-    // Define our color stops for the gradient
-    const colorStops = [
-        { threshold: -10, color: "#13437D" },
-        { threshold: -8, color: "#07579C" },
-        { threshold: -6, color: "#3A7D9D" },
-        { threshold: -4, color: "#78BFD6" },
-        { threshold: -2, color: "#DBF6FF" },
-        { threshold: 0, color: "#FFFFFF" },
-        { threshold: 2, color: "#FFE0E0" },
-        { threshold: 4, color: "#FB9171" },
-        { threshold: 6, color: "#F03C2B" },
-        { threshold: 8, color: "#A60F13" },
-        { threshold: 10, color: "#5F0000" }
-    ];
-
     // Find the right color segment for the anomaly
-    for (let i = 0; i < colorStops.length - 1; i++) {
-        if (anomaly >= colorStops[i].threshold && anomaly <= colorStops[i + 1].threshold) {
+    for (let i = 0; i < scheme.length - 1; i++) {
+        if (anomaly >= scheme[i].threshold && anomaly <= scheme[i + 1].threshold) {
             // Linear interpolation between the two color stops
-            const ratio = (anomaly - colorStops[i].threshold) /
-                (colorStops[i + 1].threshold - colorStops[i].threshold);
+            const ratio = (anomaly - scheme[i].threshold) /
+                (scheme[i + 1].threshold - scheme[i].threshold);
 
-            return interpolateColor(colorStops[i].color, colorStops[i + 1].color, ratio);
+            return interpolateColor(scheme[i].color, scheme[i + 1].color, ratio);
         }
     }
 
     // Handle extremes
-    if (anomaly < colorStops[0].threshold) return colorStops[0].color;
-    return colorStops[colorStops.length - 1].color;
+    if (anomaly < scheme[0].threshold) return scheme[0].color;
+    return scheme[scheme.length - 1].color;
 };
 
 /**
@@ -127,7 +149,7 @@ export const analyzeTemperatureAnomaly = (anomaly) => {
         comparisonMessage = "Es ist brütend heiß!";
     }
 
-    const anomalyMessage = `Die aktuelle Temperatur liegt ${Math.abs(anomaly).toFixed(1)}\u00A0°C ${anomaly > 0 ? 'über' : 'unter'} dem historischen\u00A0Mittelwert.`;
+    const anomalyMessage = `Die maximale Temperatur liegt ${Math.abs(anomaly).toFixed(1)}\u00A0°C ${anomaly > 0 ? 'über' : 'unter'} dem historischen\u00A0Mittelwert.`;
 
     return {
         comparisonMessage,

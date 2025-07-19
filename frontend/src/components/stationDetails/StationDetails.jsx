@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { analyzeTemperatureAnomaly } from '../../utils/TemperatureUtils';
-import { selectInterpolatedHourlyData } from '../../store/slices/interpolatedHourlyDataSlice';
-import { extractHourFromDateString } from '../../utils/dataUtils';
 import { useSelectedItem } from '../../store/hooks/selectedItemHook';
 import { CITY_SELECT_TIMEOUT } from '../../constants/page';
 import './StationDetails.css';
+import { useHistoricalData } from '../../store/hooks/historicalDataHook';
 
 /**
  * Panel component to display city information with nearest weather station data
@@ -14,7 +13,7 @@ import './StationDetails.css';
  */
 const StationDetails = () => {
     const selectedCityId = useSelector(state => state.selectedCity.cityId);
-    const hourlyData = useSelector(selectInterpolatedHourlyData);
+    const historicalData = useHistoricalData();
     const selectedItem = useSelectedItem();
 
     const [item, setItem] = useState(null);
@@ -38,17 +37,14 @@ const StationDetails = () => {
 
     // Calculate anomaly
     useEffect(() => {
-        if (!hourlyData || !item) return;
+        if (!historicalData || historicalData.length === 0 || !item) return;
 
-        const hour = extractHourFromDateString(item.data.date);
-        if (!hour) return;
+        const maxTemperature = historicalData[item.station.id]?.tasmax;
+        if (maxTemperature === undefined || maxTemperature === null) return;
 
-        const temperatureAtHour = hourlyData[item.station.id]?.hourlyTemps[`hour_${hour}`];
-        if (temperatureAtHour === null || temperatureAtHour === undefined) return;
-
-        const anomalyAtHour = Math.round((item.data.temperature - temperatureAtHour) * 10) / 10;
-        setAnomaly(anomalyAtHour);
-    }, [hourlyData, item]);
+        const maxAnomaly = Math.round((item.data.maxTemperature - maxTemperature) * 10) / 10;
+        setAnomaly(maxAnomaly);
+    }, [historicalData, item]);
 
     // Calculate subtitle text
     useEffect(() => {
@@ -101,65 +97,69 @@ const StationDetails = () => {
             )}
 
             <div className="station-metrics">
-                <div className="metric-cell metric-cell-highlight">
-                    <span className="metric-label">Zuletzt</span>
-                    {item && (
-                        <span className="metric-value">
-                            {item.data.temperature !== undefined
-                                ? `${item.data.temperature.toFixed(1)}°C`
-                                : "k. A."}
-                        </span>
-                    )}
-                    {!item && (
-                        <span className="metric-value-placeholder">
-                            20.5°C
-                        </span>
-                    )}
+                <div className="metric-double-cell">
+                    <div className="metric-cell metric-cell-highlight">
+                        <span className="metric-label">Zuletzt</span>
+                        {item && (
+                            <span className="metric-value">
+                                {item.data.temperature !== undefined
+                                    ? `${item.data.temperature.toFixed(1)}°C`
+                                    : "k. A."}
+                            </span>
+                        )}
+                        {!item && (
+                            <span className="metric-value-placeholder">
+                                20.5°C
+                            </span>
+                        )}
+                    </div>
+                    <div className="metric-cell">
+                        <span className="metric-label">Min</span>
+                        {item && (
+                            <span className="metric-value">
+                                {item.data.minTemperature !== undefined
+                                    ? `${item.data.minTemperature.toFixed(1)}°C`
+                                    : "k. A."}
+                            </span>
+                        )}
+                        {!item && (
+                            <span className="metric-value-placeholder">
+                                14.1°C
+                            </span>
+                        )}
+                    </div>
                 </div>
-                <div className="metric-cell">
-                    <span className="metric-label">Min</span>
-                    {item && (
-                        <span className="metric-value">
-                            {item.data.minTemperature !== undefined
-                                ? `${item.data.minTemperature.toFixed(1)}°C`
-                                : "k. A."}
-                        </span>
-                    )}
-                    {!item && (
-                        <span className="metric-value-placeholder">
-                            14.1°C
-                        </span>
-                    )}
-                </div>
-                <div className="metric-cell">
-                    <span className="metric-label">Max</span>
-                    {item && (
-                        <span className="metric-value">
-                            {item.data.maxTemperature !== undefined
-                                ? `${item.data.maxTemperature.toFixed(1)}°C`
-                                : "k. A."}
-                        </span>
-                    )}
-                    {!item && (
-                        <span className="metric-value-placeholder">
-                            28.1°C
-                        </span>
-                    )}
-                </div>
-                <div className="metric-cell">
-                    <span className="metric-label">Luft</span>
-                    {item && (
-                        <span className="metric-value">
-                            {item.data.humidity !== undefined
-                                ? `${item.data.humidity.toFixed(0)}%`
-                                : "k. A."}
-                        </span>
-                    )}
-                    {!item && (
-                        <span className="metric-value-placeholder">
-                            64%
-                        </span>
-                    )}
+                <div className="metric-double-cell">
+                    <div className="metric-cell">
+                        <span className="metric-label">Max</span>
+                        {item && (
+                            <span className="metric-value">
+                                {item.data.maxTemperature !== undefined
+                                    ? `${item.data.maxTemperature.toFixed(1)}°C`
+                                    : "k. A."}
+                            </span>
+                        )}
+                        {!item && (
+                            <span className="metric-value-placeholder">
+                                28.1°C
+                            </span>
+                        )}
+                    </div>
+                    <div className="metric-cell">
+                        <span className="metric-label">Luft</span>
+                        {item && (
+                            <span className="metric-value">
+                                {item.data.humidity !== undefined
+                                    ? `${item.data.humidity.toFixed(0)}%`
+                                    : "k. A."}
+                            </span>
+                        )}
+                        {!item && (
+                            <span className="metric-value-placeholder">
+                                64%
+                            </span>
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -170,7 +170,7 @@ const StationDetails = () => {
                             Absolut keine Ahnung
                         </div>
                         <div className="anomaly-placeholder">
-                            Die aktuelle Temperatur liegt 3.1&nbsp;°C unter dem historischen&nbsp;Mittelwert.
+                            Die maximale Temperatur liegt 3.1&nbsp;°C unter dem historischen&nbsp;Mittelwert.
                         </div>
                     </>
                 )}
