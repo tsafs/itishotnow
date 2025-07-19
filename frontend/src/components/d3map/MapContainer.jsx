@@ -1,4 +1,3 @@
-import { useRef } from 'react';
 import EuropeMap from './EuropeMap';
 import StationMarkers from './StationMarkers';
 import MapLegend from './MapLegend';
