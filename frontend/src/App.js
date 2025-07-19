@@ -1,12 +1,19 @@
-import React, { Suspense, useState, useEffect } from 'react';
+import React, { Suspense, useState, useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { Provider } from 'react-redux';
+import { Provider, useDispatch, useSelector } from 'react-redux';
 import { store } from './store';
-import { setCities } from './store/slices/citiesSlice';
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
-import { fetchLatestWeatherStationsData, fetchGermanCities, findNearestStationsForCities } from './services/DataService';
+import { findClosestWeatherStationsForCities } from './services/CityService';
+import { PREDEFINED_CITIES } from './constants/map';
+import { fetchHistoricalData } from './store/slices/historicalDataSlice';
+import { fetchHourlyData } from './store/slices/interpolatedHourlyDataSlice';
+import { fetchLiveData, selectLiveDataStatus } from './store/slices/liveDataSlice';
+import { fetchCityData, selectCities, selectAreCitiesCorrelated, selectCityDataStatus, setCities } from './store/slices/cityDataSlice';
+import { selectCity } from './store/slices/selectedCitySlice';
+
 import './App.css';
+import { getNow } from './utils/dateUtils';
 
 // Lazy load components
 const CountryHeatmapPlot = React.lazy(() => import('./components/analysis/CountryHeatmapPlot/View'));
@@ -15,76 +22,109 @@ const HistoricalAnalysis = React.lazy(() => import('./components/analysis/Histor
 const ImpressumPage = React.lazy(() => import('./pages/ImpressumPage'));
 const Closing = React.lazy(() => import('./components/closing/Closing'));
 
-// Create an AppContent component to use router hooks
+const DEFAULT_CITY = "berlin"; // Default city to select
+
 function AppContent() {
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const dispatch = useDispatch();
     const navigate = useNavigate();
 
+    const [error, setError] = useState(null);
+    const didFetchDataRef = useRef(false);
+
+    const stations = useSelector(state => state.stations.stations);
+    const cities = useSelector(selectCities);
+    const areCitiesCorrelated = useSelector(selectAreCitiesCorrelated);
+    const selectedCityId = useSelector(state => state.selectedCity.cityId);
+
+    const liveDataStatus = useSelector(selectLiveDataStatus);
+    const cityDataStatus = useSelector(selectCityDataStatus);
+
+    // Handle redirect from error.html
     useEffect(() => {
-        // Handle redirect from error.html
         const params = new URLSearchParams(window.location.search);
         const redirectPath = params.get('redirect');
         if (redirectPath) {
-            // Remove the query parameter and navigate to the correct path
             window.history.replaceState(null, '', redirectPath);
-            // Actually navigate to the path using React Router
             navigate(redirectPath);
-            return; // Skip data loading on initial redirect
         }
+    }, [navigate]);
+
+    useEffect(() => {
+        if (didFetchDataRef.current) return;
+
+        didFetchDataRef.current = true;
 
         const loadData = async () => {
-            setLoading(true);
             try {
-                // Fetch weather stations data
-                const stationsData = await fetchLatestWeatherStationsData();
+                // Get today's date for historical data
+                const today = getNow();
+                const month = today.getMonth() + 1; // JavaScript months are 0-indexed
+                const day = today.getDate();
 
-                // Fetch cities data
-                const citiesData = await fetchGermanCities();
-
-                // Find nearest weather station for each city
-                const citiesWithNearestStations = findNearestStationsForCities(citiesData, stationsData);
-
-                // Dispatch cities to Redux store
-                store.dispatch(setCities(citiesWithNearestStations));
+                // Load weather stations and cities data
+                await Promise.all([
+                    dispatch(fetchLiveData()),
+                    dispatch(fetchCityData()),
+                    dispatch(fetchHistoricalData({ month, day })),
+                    dispatch(fetchHourlyData({ month, day }))
+                ]);
             } catch (error) {
                 console.error("Failed to load data:", error);
                 setError("Failed to load data. Please try again later.");
-            } finally {
-                setLoading(false);
             }
         };
 
         loadData();
-    }, [navigate]);
+    }, [dispatch]);
 
-    const MainPage = () => (
-        <>
-            <div>
+    useEffect(() => {
+        if (liveDataStatus !== "succeeded" || cityDataStatus !== "succeeded" || areCitiesCorrelated) {
+            return;
+        }
+        const correlatedCities = findClosestWeatherStationsForCities(
+            cities,
+            stations,
+        );
+
+        const serialized = {}
+        for (const [id, city] of Object.entries(correlatedCities)) { 
+            serialized[id] = city.toJSON();
+        }
+        dispatch(setCities(serialized));
+    }, [dispatch, stations, liveDataStatus, cities, cityDataStatus, areCitiesCorrelated]);
+
+    // Set default city when cities are loaded
+    useEffect(() => {
+        if (selectedCityId || areCitiesCorrelated) {
+            return;
+        }
+
+        // Try to find the default city in the predefined list first
+        const city = Object.values(cities).find(city =>
+            PREDEFINED_CITIES.includes(city.name) &&
+            city.name.toLowerCase().includes(DEFAULT_CITY));
+
+        if (city) {
+            dispatch(selectCity(city.id, true));
+        }
+    }, [cities, selectedCityId, areCitiesCorrelated, dispatch]);
+
+    const MainPage = React.useMemo(() => {
+        return () => (
+            <>
                 <Suspense fallback={<div className="loading-container">Loading map data...</div>}>
-                    {!loading && !error && <CountryHeatmapPlot />}
+                    {!error &&
+                        <>
+                            <D3MapView />
+                            <HistoricalAnalysis />
+                        </>
+                    }
                     {error && <div className="error-container">{error}</div>}
                 </Suspense>
-            </div>
-
-            <div>
-                <Suspense fallback={<div className="loading-container">Loading map data...</div>}>
-                    {!loading && !error && <D3MapView />}
-                    {error && <div className="error-container">{error}</div>}
-                </Suspense>
-            </div>
-
-            <div>
-                <Suspense fallback={<div className="loading-container">Loading analysis data...</div>}>
-                    <HistoricalAnalysis />
-                </Suspense>
-            </div>
-
-            <div>
                 <Closing />
-            </div>
-        </>
-    );
+            </>
+        );
+    }, [error]);
 
     return (
         <div className="app-container">

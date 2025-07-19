@@ -1,8 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as Plot from "@observablehq/plot";
 import * as d3 from "d3";
 import { useSelector } from 'react-redux';
 import { fetchHyrasMappedWeatherStations, fetchRollingAverageForStation } from '../../services/DataService';
+import { getNow } from '../../utils/DateUtils';
 import './TemperaturePercentogram.css';
 
 /**
@@ -18,7 +19,7 @@ const filterTemperatureDataByDateWindow = (data, targetMonthDay, windowDays = 7)
     const windowDates = [];
 
     // Create a reference date for this year
-    const currentYear = new Date().getFullYear();
+    const currentYear = getNow().getFullYear();
     const targetDate = new Date(currentYear, targetMonth - 1, targetDay);
 
     // Add days before and after
@@ -126,7 +127,7 @@ const TemperaturePercentogram = ({ fromYear = 1961, toYear = 1990 }) => {
         }
 
         // Parse the date to get day and month
-        const today = new Date();
+        const today = getNow();
         const month = String(today.getMonth() + 1).padStart(2, '0');
         const day = String(today.getDate()).padStart(2, '0');
         const todayMonthDay = `${month}-${day}`;

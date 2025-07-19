@@ -50,7 +50,15 @@
             "request": "launch",
             "program": "${workspaceFolder}/analysis/hyras/extract_hyras_data.py",
             "console": "integratedTerminal",
-            "args": "--file ./data/hyras/reference_periods/tasmin_hyras_1_{1960-1991}_v6-0_de.nc --file ./data/hyras/reference_periods/tasmax_hyras_1_{1960-1991}_v6-0_de.nc --stations ./data/10min_station_data/10min_station_data.csv --output-dir ./data/10min_station_data/hyras/1960-1991 --param tasmin --param tasmax"
+            "args": "--file ./data/hyras/reference_periods/tasmin_hyras_1_{1960-1991}_v6-1_de.nc --file ./data/hyras/reference_periods/tasmax_hyras_1_{1960-1991}_v6-1_de.nc --file ./data/hyras/reference_periods/tas_hyras_1_{1960-1991}_v6-1_de.nc --stations ./data/10min_station_data/10min_station_data_20250714_with_hist_means.csv --output-dir ./data/10min_station_data/hyras/1960-1991 --param tasmin --param tasmax --param tas"
+        },
+        {
+            "name": "Transform HYRAS Climate Metrics Into Yearly Averages By Day",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/analysis/hyras/transform_hyras_data.py",
+            "console": "integratedTerminal",
+            "args": "--input-dir ./data/hyras/selected_data_by_station/1960_1991 --output-dir ./data/hyras/yearly_mean_by_day/1961_1990 --from-year 1961 --to-year 1990"
         },
         {
             "name": "Filter 10min station data available in HYRAS grid",
