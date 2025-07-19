@@ -58,11 +58,7 @@ const EuropeMap = () => {
 
     }, [mapData]);
 
-    return <>
-        {mapData && (
-            <g ref={mapGroupRef}></g>
-        )}
-    </>;
+    return <g ref={mapGroupRef}></g>;
 };
 
 export default EuropeMap;

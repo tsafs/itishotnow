@@ -152,8 +152,8 @@ const DateSelection = () => {
                         selected={selectedDate ? new Date(selectedDate) : undefined}
                         onSelect={handleDateSelect}
                         startMonth={new Date(FROM_YEAR, 0)}
-                        endMonth={new Date()}
-                        disabled={{ after: new Date() }}
+                        endMonth={getNow()}
+                        disabled={{ after: getNow() }}
                         navLayout='around'
                         showOutsideDays
                     />
