@@ -16,7 +16,7 @@ import './App.css';
 import { getNow } from './utils/dateUtils';
 
 // Lazy load components
-const D3MapView = React.lazy(() => import('./components/d3map/D3MapView'));
+const CountryHeatmapPlot = React.lazy(() => import('./components/analysis/CountryHeatmapPlot/View'));
 const HistoricalAnalysis = React.lazy(() => import('./components/analysis/HistoricalAnalysis'));
 const ImpressumPage = React.lazy(() => import('./pages/ImpressumPage'));
 const Closing = React.lazy(() => import('./components/closing/Closing'));
@@ -86,7 +86,7 @@ function AppContent() {
         );
 
         const serialized = {}
-        for (const [id, city] of Object.entries(correlatedCities)) { 
+        for (const [id, city] of Object.entries(correlatedCities)) {
             serialized[id] = city.toJSON();
         }
         dispatch(setCities(serialized));
@@ -114,7 +114,7 @@ function AppContent() {
                 <Suspense fallback={<div className="loading-container">Loading map data...</div>}>
                     {!error &&
                         <>
-                            <D3MapView />
+                            <CountryHeatmapPlot />
                             <HistoricalAnalysis />
                         </>
                     }

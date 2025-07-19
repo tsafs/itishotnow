@@ -3,12 +3,12 @@
     flex-direction: column;
     align-items: flex-end;
     max-width: 340px;
-    height: 75%;
+    border-right: 1px solid #666;
+    padding-right: 20px;
 }
 
 .station-info-placeholder {
     font-size: 1rem;
-    color: #666;
     text-align: center;
     padding: 30px 0;
 }
@@ -24,7 +24,6 @@
 .station-subtitle,
 .station-subtitle-placeholder {
     font-size: 0.9rem;
-    color: #666;
     margin-top: 5px;
     margin-bottom: 30px;
     max-width: 300px;
@@ -37,6 +36,13 @@
     flex-direction: row;
     flex-wrap: wrap;
     gap: 10px;
+    justify-content: flex-end;
+}
+
+.metric-double-cell {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
 }
 
 .metric-cell {
@@ -48,7 +54,6 @@
 
 .metric-label {
     font-size: 0.8rem;
-    color: #666;
     font-weight: bold;
     text-transform: uppercase;
 }
@@ -57,8 +62,8 @@
 .metric-value-placeholder {
     font-size: 1.2rem;
     font-weight: bold;
-    color: #333;
     margin-top: 4px;
+    color: #333;
 }
 
 .metric-cell-highlight {
@@ -74,7 +79,6 @@
     flex-direction: column;
     align-items: flex-end;
     margin-top: 30px;
-    color: #333;
     max-width: 300px;
 }
 
@@ -82,13 +86,13 @@
 .temperature-comparison .message-placeholder {
     font-size: 1.4rem;
     font-weight: 600;
+    color: #333;
 }
 
 .temperature-comparison .anomaly,
 .temperature-comparison .anomaly-placeholder {
     margin-top: 5px;
     font-size: 0.8rem;
-    /* font-weight: 600; */
 }
 
 .station-name-placeholder,
@@ -104,9 +108,10 @@
 @media (max-width: 768px) {
     .station-info-panel {
         margin-top: 20px;
-        margin-bottom: 20px;
-        padding: 0px;
         align-items: center;
+        border-right: none;
+        border-bottom: 1px solid #666;
+        padding: 0 20px 30px 20px;
     }
 
     .station-metrics {
