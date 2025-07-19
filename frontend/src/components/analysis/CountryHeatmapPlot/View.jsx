@@ -24,6 +24,18 @@ const getDataForPlot = (correlatedData) => {
     }));
 };
 
+// Helper to get fontSize and dy based on screen width
+const getTextStyle = () => {
+    const width = window.innerWidth;
+    if (width <= 480) {
+        return { fontSize: 16, dy: 10 };
+    } else if (width <= 768) {
+        return { fontSize: 14, dy: 9 };
+    } else {
+        return { fontSize: 12, dy: 8 };
+    }
+};
+
 const HistoricalAnalysis = () => {
     const dispatch = useDispatch();
     const correlatedData = useCorrelatedData();
@@ -126,6 +138,8 @@ const HistoricalAnalysis = () => {
             return isPredefined || isRemembered || isSelected;
         });
 
+        const { fontSize, dy } = getTextStyle();
+
         const dynamicPlot = Plot.plot({
             projection: {
                 type: "mercator",
@@ -150,8 +164,8 @@ const HistoricalAnalysis = () => {
                     fill: "currentColor",
                     stroke: "white",
                     lineAnchor: "top",
-                    dy: 7,
-                    fontSize: 10,
+                    dy,
+                    fontSize,
                 })
             ]
         });
