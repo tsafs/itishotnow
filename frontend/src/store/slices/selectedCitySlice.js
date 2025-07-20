@@ -1,6 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { addRememberedCity } from './rememberedCitiesSlice';
-import { getNow } from '../../utils/dateUtils';
 import { selectCorrelatedCities } from './cityDataSlice';
 import { fetchDailyDataForStation } from './historicalDataForStationSlice';
 
@@ -30,16 +29,9 @@ export const selectCity = (cityId, isPredefinedCity = false) => (dispatch, getSt
     setTimeout(() => {
         const state = getState();
         const city = selectCorrelatedCities(state)?.[cityId];
-
         if (!city) return;
 
-        const today = getNow();
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = String(today.getDate()).padStart(2, '0');
-        const formattedDate = `${year}${month}${day}`;
-
-        dispatch(fetchDailyDataForStation(city.station_id, formattedDate));
+        dispatch(fetchDailyDataForStation({ stationId: city.stationId }));
     }, 1000);
 };
 

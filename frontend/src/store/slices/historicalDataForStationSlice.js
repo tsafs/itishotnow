@@ -37,7 +37,7 @@ const historicalDailyDataSlice = createSlice({
             .addCase(fetchDailyDataForStation.fulfilled, (state, action) => {
                 state.status = 'succeeded';
                 state.error = null;
-                const [stationId, data, dateRange] = action.payload;
+                const { stationId, data, dateRange } = action.payload;
 
                 if (!state.data) {
                     state.data = {};

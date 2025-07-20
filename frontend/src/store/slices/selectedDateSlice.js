@@ -4,19 +4,15 @@ import { getNow } from '../../utils/dateUtils';
 
 const selectedDateSlice = createSlice({
     name: 'selectedDate',
-    initialState: getNow().toISOString(),
+    initialState: getNow().toISO(),
     reducers: {
-        setSelectedDate: (state, action) => {
+        setSelectedDate: (_, action) => {
             return action.payload;
         },
     },
 });
 
 const { setSelectedDate } = selectedDateSlice.actions;
-
-export const selectDate = (date) => (dispatch) => {
-    dispatch(setSelectedDate(date));
-};
 
 export const useSelectedDate = () => {
     return useSelector(state => state.selectedDate);

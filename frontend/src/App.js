@@ -58,8 +58,8 @@ function AppContent() {
             try {
                 // Get today's date for historical data
                 const today = getNow();
-                const month = today.getMonth() + 1; // JavaScript months are 0-indexed
-                const day = today.getDate();
+                const month = today.month;
+                const day = today.day;
 
                 // Load weather stations and cities data
                 await Promise.all([

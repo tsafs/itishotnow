@@ -54,8 +54,8 @@ const TemperatureScatterPlot = () => {
 
         // Parse the date to get day and month
         const today = getNow();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = String(today.getDate()).padStart(2, '0');
+        const month = String(today.month).padStart(2, '0');
+        const day = String(today.day).padStart(2, '0');
         const todayMonthDay = `${month}-${day}`;
 
         try {
@@ -121,10 +121,10 @@ const TemperatureScatterPlot = () => {
                 const averageTemperature = (selectedItem.data.minTemperature + selectedItem.data.maxTemperature) / 2;
                 const todayAnomaly = averageTemperature - averageTempForPrimaryDay;
                 todayDataPoint = {
-                    year: getNow().getFullYear(),
+                    year: getNow().year,
                     temperature: averageTemperature,
                     anomaly: todayAnomaly,
-                    date: `${getNow().getFullYear()}-${month}-${day}`,
+                    date: `${getNow().year}-${month}-${day}`,
                     isPrimaryDay: true,
                     isCurrent: true
                 };

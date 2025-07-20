@@ -1,4 +1,5 @@
 import { getNow } from "./dateUtils";
+import { DateTime } from "luxon";
 
 /**
  * Filter temperature data to include only dates within a window around a target date
@@ -14,16 +15,15 @@ export const filterTemperatureDataByDateWindow = (data, targetMonthDay, windowDa
     const [targetMonth, targetDay] = targetMonthDay.split('-').map(Number);
     const windowDates = [];
 
-    // Create a reference date for this year
-    const currentYear = getNow().getFullYear();
-    const targetDate = new Date(currentYear, targetMonth - 1, targetDay);
+    // Create a reference date for this year using Luxon
+    const currentYear = getNow().year;
+    const targetDate = DateTime.local(currentYear, targetMonth, targetDay);
 
-    // Add days before and after
+    // Add days before and after using Luxon
     for (let i = -windowDays; i <= windowDays; i++) {
-        const windowDate = new Date(targetDate);
-        windowDate.setDate(targetDate.getDate() + i);
-        const windowMonth = String(windowDate.getMonth() + 1).padStart(2, '0');
-        const windowDay = String(windowDate.getDate()).padStart(2, '0');
+        const windowDate = targetDate.plus({ days: i });
+        const windowMonth = String(windowDate.month).padStart(2, '0');
+        const windowDay = String(windowDate.day).padStart(2, '0');
         windowDates.push(`${windowMonth}-${windowDay}`);
     }
 

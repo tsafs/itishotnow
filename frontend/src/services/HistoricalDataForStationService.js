@@ -7,14 +7,11 @@ import { getNow } from "../utils/dateUtils";
  */
 export const fetchDailyWeatherStationData = async (stationId) => {
     try {
-        // Get today's date in YYYYMMDDHH format
+        // Get today's date in YYYYMMDDHH format using Luxon
         const today = getNow();
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
-        const day = String(today.getDate()).padStart(2, '0');
-        const hour = String(today.getHours()).padStart(2, '0'); // Get current hour (00-23)
+        const cacheBuster = today.toFormat('yyyyLLddHH');
 
-        const url = `/data/daily_recent_by_station/${stationId}.csv?t=${year}${month}${day}${hour}`;
+        const url = `/data/daily_recent_by_station/${stationId}.csv?t=${cacheBuster}`;
 
         const response = await fetch(url, { cache: 'no-store' });
 
