@@ -1,5 +1,8 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { addRememberedCity } from './rememberedCitiesSlice';
+import { getNow } from '../../utils/dateUtils';
+import { selectCorrelatedCities } from './cityDataSlice';
+import { fetchDailyDataForStation } from './historicalDataForStationSlice';
 
 const selectedCitySlice = createSlice({
     name: 'selectedCity',
@@ -14,7 +17,7 @@ const selectedCitySlice = createSlice({
 });
 
 // Create a thunk that sets the selected city and adds it to remembered cities if needed
-export const selectCity = (cityId, isPredefinedCity = false) => (dispatch) => {
+export const selectCity = (cityId, isPredefinedCity = false) => (dispatch, getState) => {
     // Only store the cityId in the selected city slice
     dispatch(setSelectedCity(cityId));
 
@@ -22,31 +25,23 @@ export const selectCity = (cityId, isPredefinedCity = false) => (dispatch) => {
     if (!isPredefinedCity) {
         dispatch(addRememberedCity(cityId));
     }
+
+    // Preload historical data
+    setTimeout(() => {
+        const state = getState();
+        const city = selectCorrelatedCities(state)?.[cityId];
+
+        if (!city) return;
+
+        const today = getNow();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const formattedDate = `${year}${month}${day}`;
+
+        dispatch(fetchDailyDataForStation(city.station_id, formattedDate));
+    }, 1000);
 };
 
 export const { setSelectedCity } = selectedCitySlice.actions;
-
-// Unified action creator to handle city selection, remembering, and loading appropriate data
-export const selectCity = (city, isPredefinedCity = false) => (dispatch, getState) => {
-    dispatch(setSelectedCity(city));
-
-    // If not a predefined city, add it to remembered cities
-    if (!isPredefinedCity) {
-        dispatch(addRememberedCity(city));
-    }
-
-    // If city has a station_id, preload historical data
-    if (city && city.station_id) {
-        setTimeout(() => {
-            const today = getNow();
-            const year = today.getFullYear();
-            const month = String(today.getMonth() + 1).padStart(2, '0');
-            const day = String(today.getDate()).padStart(2, '0');
-            const formattedDate = `${year}${month}${day}`;
-
-            dispatch(fetchHistoricalStation(city.station_id, formattedDate));
-        }, 1000);
-    }
-};
-
 export default selectedCitySlice.reducer;

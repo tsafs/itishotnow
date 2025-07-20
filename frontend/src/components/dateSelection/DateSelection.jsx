@@ -1,12 +1,15 @@
-import { useState, useEffect, useRef } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { FaCalendarDay } from 'react-icons/fa';
 import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
 import { selectDate } from '../../store/slices/selectedDateSlice'
 import { getNow } from '../../utils/dateUtils';
-import { selectAvailableDateRange, updateDataByDate } from '../../store/slices/weatherStationDataSlice';
+// import { updateDataByDate } from '../../store/slices/weatherStationDataSlice';
+import { useHistoricalDailyDataDateRangeForStation } from '../../store/slices/historicalDataForStationSlice';
+import { useSelectedItem } from '../../store/hooks/selectedItemHook';
+import { useSelectedDate } from '../../store/slices/selectedDateSlice';
 import './DateSelection.css';
 
 /**
@@ -19,9 +22,9 @@ const FROM_YEAR = 2025;
 const DateSelection = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
-    const selectedDate = useSelector(state => state.selectedDate);
-    const selectedCity = useSelector(state => state.selectedCity);
-    const historicalDateRange = useSelector(state => selectAvailableDateRange(state, selectedCity?.station_id))
+    const selectedDate = useSelectedDate();;
+    const selectedItem = useSelectedItem();
+    const historicalDateRange = useHistoricalDailyDataDateRangeForStation(selectedItem?.station.id);
 
     const [isYesterdaySelected, setIsYesterdaySelected] = useState(false);
     const [isTodaySelected, setIsTodaySelected] = useState(true);
@@ -48,16 +51,16 @@ const DateSelection = () => {
         setIsYesterdayRendered(isWithinRange);
     }, [historicalDateRange])
 
-    const handleDateSelection = (date) => {
+    const handleDateSelection = useCallback((date) => {
         console.log(`Selected date: ${date.toISOString()}`);
         dispatch(selectDate(date.toISOString()));
 
         // If there's a selected city, update its climate data based on the new date
-        if (selectedCity?.station_id) {
-            console.log(`Updating data for station ${selectedCity.station_id} on date ${date.toISOString()}`);
-            dispatch(updateDataByDate(selectedCity.station_id, date.toISOString()));
+        if (selectedItem?.station.id) {
+            console.log(`Updating data for station ${selectedItem.station.id} on date ${date.toISOString()}`);
+            // dispatch(updateDataByDate(selectedItem.station.id, date.toISOString()));
         }
-    };
+    }, [dispatch, selectedItem]);
 
     // Handle today selection
     const handleTodayClick = () => {
