@@ -1,5 +1,3 @@
-import { useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
 import StationDetails from '../stationDetails/StationDetails';
 import MapContainer from './MapContainer';
 import ContentSplit from '../layout/ContentSplit';

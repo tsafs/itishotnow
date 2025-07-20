@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import StationSearch from '../search/StationSearch';
-import DateSelection from '../dateSelection/DateSelection';
+// import DateSelection from '../dateSelection/DateSelection';
 import './Header.css';
 
 const Header = () => {
@@ -49,9 +49,9 @@ const Header = () => {
                     <h1 className="site-title">Ist es jetzt wirklich&nbsp;warm?</h1>
                 </Link>
                 <div className="menu-container">
-                    <div className="header-date-selection">
+                    {/* <div className="header-date-selection">
                         <DateSelection />
-                    </div>
+                    </div> */}
                     <div className="header-search">
                         <StationSearch showSearchIcon={true} />
                     </div>

@@ -1,17 +1,28 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { getNow } from '../../utils/dateUtils';
 import { addRememberedCity } from './rememberedCitiesSlice';
-import { fetchHistoricalStation } from './weatherStationDataSlice';
 
 const selectedCitySlice = createSlice({
     name: 'selectedCity',
-    initialState: null,
+    initialState: {
+        cityId: null
+    },
     reducers: {
         setSelectedCity: (state, action) => {
-            return action.payload;
+            state.cityId = action.payload;
         },
     },
 });
+
+// Create a thunk that sets the selected city and adds it to remembered cities if needed
+export const selectCity = (cityId, isPredefinedCity = false) => (dispatch) => {
+    // Only store the cityId in the selected city slice
+    dispatch(setSelectedCity(cityId));
+
+    // If not a predefined city, add it to remembered cities
+    if (!isPredefinedCity) {
+        dispatch(addRememberedCity(cityId));
+    }
+};
 
 export const { setSelectedCity } = selectedCitySlice.actions;
 

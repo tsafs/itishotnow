@@ -9,15 +9,14 @@ class MapTooltip {
             .style('opacity', 0);
     }
 
-    show(data, markerX, markerY) {
-        if (!data) return;
+    show(name, markerX, markerY) {
+        if (!name) return;
 
         // Get page coordinates from marker coordinates
         const pageX = window.pageXOffset + markerX;
         const pageY = window.pageYOffset + markerY;
 
-        const displayName = data.city_name || data.station_name || 'Unbekannt';
-        let tooltipContent = `<div class="station-tooltip-content">${displayName}</div>`;
+        let tooltipContent = `<div class="station-tooltip-content">${name}</div>`;
 
         this.tooltip
             .html(tooltipContent)

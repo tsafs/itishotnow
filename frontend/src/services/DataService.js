@@ -1,98 +1,55 @@
-import { getNow } from "../utils/dateUtils";
-
 /**
- * Service to fetch weather stations data from CSV file
- * @returns {Promise<Array>} Array of station data objects
+ * Service to fetch historical average data for a specific day (month and day)
+ * @param {string|number} month - Month in MM format (01-12)
+ * @param {string|number} day - Day in DD format (01-31)
+ * @returns {Promise<Array>} Array of historical data objects by station
  */
-export const fetchLatestWeatherStationsData = async () => {
+export const fetchHistoricalDataForDay = async (month, day) => {
     try {
-        // Get today's date in YYYYMMDD format
-        const today = getNow();
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
-        const day = String(today.getDate()).padStart(2, '0');
-        const hour = String(today.getHours()).padStart(2, '0'); // Get current hour (00-23)
-        let year_month_day = `${year}${month}${day}`;
+        // Format month and day to ensure they have leading zeros
+        const formattedMonth = String(month).padStart(2, '0');
+        const formattedDay = String(day).padStart(2, '0');
 
-        const url = `/station_data/10min_station_data_${year_month_day}_with_hist_means.csv?t=${year}${month}${day}${hour}a`;
+        const url = `/data/yearly_mean_by_day/1961_1990/${formattedMonth}_${formattedDay}.csv`;
 
         const response = await fetch(url);
 
-        // in case of a 404 error, error out
         if (!response.ok) {
-            throw new Error(`Failed to fetch data from ${url}: ${response.status} ${response.statusText}. Are you in the wrong timezone? Our data is based on UTC.`);
+            throw new Error(`Failed to fetch historical data: ${response.status} ${response.statusText}`);
         }
 
         const text = await response.text();
-
         const lines = text.split('\n');
 
-        // Parse CSV data into array of station objects
+        // Parse CSV data into array of objects
         const data = lines.slice(1).map(line => {
             if (!line.trim()) return null; // Skip empty lines
 
-            // Custom parsing to handle commas within quoted fields
-            const cols = [];
-            let currentValue = '';
-            let inQuotes = false;
+            const [station_id, tasmin, tasmax, tas] = line.split(',').map(col => col.trim());
 
-            for (let i = 0; i < line.length; i++) {
-                const char = line[i];
-
-                if (char === '"') {
-                    inQuotes = !inQuotes;
-                } else if (char === ',' && !inQuotes) {
-                    cols.push(currentValue);
-                    currentValue = '';
-                } else {
-                    currentValue += char;
-                }
-            }
-            cols.push(currentValue); // Add the last column
-
-            if (cols.length < 13) return null; // Ensure we have all required columns
-
-            // Remove trailing commas and clean station name
-            const stationName = cols[1].replace(/,\s*$/, '').replace(/^"|"$/g, '');
-
-            // Parse date from mm.dd.yyyy HH:MM to dd.mm.yyyy HH:MM
-            let dateString = cols[2];
-
-            const replaceWithUndefined = (value) => {
-                if (value === -999) {
-                    return undefined;
-                } else {
-                    return value;
-                }
-            }
-
-            const temperature = replaceWithUndefined(parseFloat(cols[9]));
-            const hist_mean_1961_1990 = (parseFloat(cols[10]));
+            if (!station_id) return null;
 
             return {
-                station_id: cols[0].replace(/^0+/, ''), // Remove leading zeros
-                station_name: stationName,
-                data_date: dateString,
-                elevation: parseFloat(cols[3]),
-                station_lat: parseFloat(cols[4]), // Using city_lat for compatibility with CityMarker
-                station_lon: parseFloat(cols[5]), // Using city_lon for compatibility with CityMarker
-                temperature: temperature,
-                min_temperature: replaceWithUndefined(parseFloat(cols[8])),
-                max_temperature: replaceWithUndefined(parseFloat(cols[7])),
-                humidity: replaceWithUndefined(parseFloat(cols[6])),
-                hist_mean_1961_1990: hist_mean_1961_1990,
-                subtitle: `${cols[2] ? cols[2] + ' Uhr' : 'unbekannt'}`,
-                // Calculate temperature anomaly from 1961-1990 baseline
-                anomaly_1961_1990: temperature !== undefined ? temperature - hist_mean_1961_1990 : undefined,
+                station_id: station_id,
+                tasmin: parseFloat(tasmin),
+                tasmax: parseFloat(tasmax),
+                tas: parseFloat(tas)
             };
         }).filter(Boolean); // Remove null entries
 
-        return data;
+        // Convert data to dictionary
+        let result = {};
+        for (let item of data) {
+            result[item.station_id] = item;
+        }
+
+        return result;
     } catch (error) {
-        console.error(`Error loading weather stations data:`, error);
+        console.error(`Error loading historical data for day ${month}/${day}:`, error);
         throw error;
     }
 };
+
 /**
  * Service to fetch daily weather station data from CSV file
  * @param {string} station_id - station ID of a station to fetch data for
@@ -194,91 +151,63 @@ export const fetchEuropeTopoJSON = async () => {
     }
 };
 
-
 /**
- * Service to fetch weather stations data from a remote CSV file, specifically for rolling averages.
- * @param {string} station_id - station ID of a station to filter data by
- * @returns {Promise<Array>} Array of station data objects
+ * Service to fetch interpolated hourly historical temperature data for a specific day
+ * @param {string|number} month - Month in MM format (01-12)
+ * @param {string|number} day - Day in DD format (01-31)
+ * @returns {Promise<Array>} Array of hourly historical temperature data objects by station
  */
-export const fetchRollingAverageForStation = async (station_id) => {
+export const fetchInterpolatedHourlyData = async (month, day) => {
     try {
-        // Construct the URL for the rolling average data
-        const url = `/data/rolling_average/1951_2024/daily/${station_id}_1951-2024_avg_7d.csv`;
+        // Format month and day to ensure they have leading zeros
+        const formattedMonth = String(month).padStart(2, '0');
+        const formattedDay = String(day).padStart(2, '0');
+
+        const url = `/data/interpolated_hourly/1961_1990/interpolated_hourly_temperatures_1961_1990_${formattedMonth}_${formattedDay}.csv`;
 
         const response = await fetch(url);
 
-        // in case of a 404 error, error out
         if (!response.ok) {
-            throw new Error(`Failed to fetch rolling average data for ${station_id} from 1951 to 2024: ${response.status} ${response.statusText}. Are you in the wrong timezone? Our data is based on UTC.`);
-        }
-
-        const text = await response.text();
-
-        const lines = text.split('\n');
-
-        // Parse CSV data into array of station objects
-        let data = lines.slice(1).map(line => {
-            if (!line.trim()) return null; // Skip empty lines
-
-            const cols = line.split(',').map(col => col.trim());
-
-            // Extract date components
-            const dateParts = cols[0].split('-');
-            if (dateParts.length < 3) return null;
-
-            return {
-                date: cols[0],
-                tas: parseFloat(cols[1]),
-            };
-        }).filter(Boolean); // Remove null entries
-
-        if (data.length === 0) {
-            throw new Error(`No data found for ${station_id} from 1951 to 2024.`);
-        }
-
-        return data;
-    } catch (error) {
-        console.error(`Error loading rolling average data for ${station_id} from 1951 to 2024:`, error);
-        throw error;
-    }
-};
-
-/**
- * Service to fetch German cities from CSV file
- * @returns {Promise<Array>} Array of city data objects
- */
-export const fetchGermanCities = async () => {
-    try {
-        const url = "/german_cities_p5000.csv";
-        const response = await fetch(url);
-
-        if (!response.ok) {
-            throw new Error(`Failed to fetch city data: ${response.status} ${response.statusText}`);
+            throw new Error(`Failed to fetch interpolated hourly data: ${response.status} ${response.statusText}`);
         }
 
         const text = await response.text();
         const lines = text.split('\n');
 
-        // Skip header line and parse remaining lines
-        const cities = lines.slice(1).map(line => {
+        // Parse CSV header to get hour columns
+        const header = lines[0].split(',');
+
+        // Parse CSV data into array of objects
+        const data = lines.slice(1).map(line => {
             if (!line.trim()) return null; // Skip empty lines
 
-            const [city_name, lat, lon] = line.split(',');
-            if (!city_name || !lat || !lon) return null;
+            const values = line.split(',').map(val => val.trim());
+            if (!values[0]) return null; // Skip if no station_id
+
+            const stationId = values[0];
+            const hourlyData = {};
+
+            // Map each hour column to its value
+            for (let i = 1; i < header.length; i++) {
+                const hourKey = header[i];
+                hourlyData[hourKey] = parseFloat(values[i]);
+            }
 
             return {
-                city_name: city_name.trim(),
-                lat: parseFloat(lat),
-                lon: parseFloat(lon),
-                // This will be filled with nearest station data later
-                nearestStation: null,
-                distanceToStation: null
+                stationId: stationId,
+                hourlyTemps: hourlyData
             };
         }).filter(Boolean); // Remove null entries
 
-        return cities;
+        // Convert data to dictionary
+        let result = {};
+        for (let item of data) {
+            result[item.stationId] = item;
+        }
+
+        return result;
     } catch (error) {
-        console.error("Error loading German cities data:", error);
+        console.error(`Error loading interpolated hourly data for day ${month}/${day}:`, error);
         throw error;
     }
 };

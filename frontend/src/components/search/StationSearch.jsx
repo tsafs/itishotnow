@@ -4,25 +4,17 @@ import { useNavigate } from 'react-router-dom';
 import { FaSearch } from 'react-icons/fa';
 import { PREDEFINED_CITIES } from '../../constants/map';
 import { selectCity } from '../../store/slices/selectedCitySlice';
+import { selectCities, selectAreCitiesCorrelated } from '../../store/slices/cityDataSlice';
+import { selectLiveData } from '../../store/slices/liveDataSlice';
 import './StationSearch.css';
-
-/**
- * Component for searching cities and finding their closest weather stations
- */
-
-// Helper function to check if two cities are the same
-const isSameCity = (city1, city2) => {
-    if (!city1 || !city2) return false;
-    return city1.city_name === city2.city_name &&
-        city1.lat === city2.lat &&
-        city1.lon === city2.lon;
-};
 
 const StationSearch = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
-    const cities = useSelector(state => state.cities);
-    const selectedCity = useSelector(state => state.selectedCity);
+    const cities = useSelector(selectCities);
+    const areCitiesCorrelated = useSelector(selectAreCitiesCorrelated);
+    const liveData = useSelector(selectLiveData);
+    const selectedCityId = useSelector(state => state.selectedCity.cityId);
 
     const [searchTerm, setSearchTerm] = useState('');
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -33,8 +25,8 @@ const StationSearch = () => {
 
     // Handle city selection
     const handleCitySelect = (city) => {
-        const isPredefined = PREDEFINED_CITIES.includes(city.city_name);
-        dispatch(selectCity(city, isPredefined));
+        const isPredefined = PREDEFINED_CITIES.includes(city.name);
+        dispatch(selectCity(city.id, isPredefined));
         setSearchTerm('');
         setIsDropdownOpen(false);
         navigate('/'); // Navigate to home page when a city is selected
@@ -56,6 +48,8 @@ const StationSearch = () => {
 
     // Filter cities based on search term - no fuzzy search
     useEffect(() => {
+        if (!areCitiesCorrelated) return;
+
         if (!searchTerm.trim()) {
             setFilteredCities([]);
             return;
@@ -64,16 +58,16 @@ const StationSearch = () => {
         const searchTermLower = searchTerm.toLowerCase();
 
         // Only do exact matches (includes)
-        let filtered = cities.filter(city =>
-            city.city_name.toLowerCase().includes(searchTermLower)
+        let filtered = Object.values(cities).filter(city =>
+            city.name.toLowerCase().includes(searchTermLower)
         );
 
         // Sort results by name length (shorter names first)
-        filtered.sort((a, b) => a.city_name.length - b.city_name.length);
+        filtered.sort((a, b) => a.name.length - b.name.length);
 
         // Limit to 15 results
         setFilteredCities(filtered.slice(0, 15));
-    }, [searchTerm, cities]);
+    }, [searchTerm, cities, areCitiesCorrelated]);
 
     // Reset focused index when filtered cities change
     useEffect(() => {
@@ -97,28 +91,30 @@ const StationSearch = () => {
                     className="station-search-input"
                 />
 
-                {isDropdownOpen && searchTerm && (
+                {isDropdownOpen && searchTerm && liveData && areCitiesCorrelated && (
                     <div className="station-search-dropdown">
                         {filteredCities.length > 0 ? (
                             filteredCities.map((city, index) => {
-                                // Only show temperature if city has a nearest station with data
-                                const hasTemperature = city.nearestStation &&
-                                    city.nearestStation.temperature !== undefined;
+                                const data = liveData[city.stationId];
+                                if (!data) return <></>;
 
-                                const isSelected = isSameCity(selectedCity, city);
+                                // Only show temperature if city has a nearest station with data
+                                const hasTemperature = data.temperature !== undefined;
+
+                                const isSelected = city.id === selectedCityId
 
                                 return (
                                     <div
-                                        key={`${city.city_name}-${city.lat}-${city.lon}-${index}`}
+                                        key={city.id}
                                         onClick={() => handleCitySelect(city)}
                                         className={`station-search-item ${isSelected ?
                                             'station-search-item-selected' : ''} ${focusedIndex === index ? 'station-search-item-focused' : ''}`}
-                                        title={`${city.city_name}${hasTemperature ? `: ${city.nearestStation.temperature.toFixed(1)}°C` : ''}`}
+                                        title={`${city.name}${hasTemperature ? `: ${data.temperature.toFixed(1)}°C` : ''}`}
                                     >
-                                        <span>{city.city_name}</span>
+                                        <span>{city.name}</span>
                                         <span className="station-search-item-temperature">
                                             {hasTemperature ?
-                                                `${city.nearestStation.temperature.toFixed(1)}°C` : ''}
+                                                `${data.temperature.toFixed(1)}°C` : ''}
                                         </span>
                                     </div>
                                 );
