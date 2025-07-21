@@ -32,7 +32,6 @@ export const useSelectedItem = () => {
             if (!liveData || !liveData[station.id]) {
                 return null; // No live data available
             }
-            console.log('Using live data for today');
             data = liveData[station.id];
         } else {
             if (!historicalData) {
@@ -54,7 +53,6 @@ export const useSelectedItem = () => {
                 item.maxTemperature,
                 item.meanHumidity,
             );
-            console.log('Historical data found for date', data);
         }
 
         if (!areCitiesCorrelated

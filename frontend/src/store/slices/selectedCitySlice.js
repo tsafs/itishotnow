@@ -6,7 +6,7 @@ import { fetchDailyDataForStation } from './historicalDataForStationSlice';
 const selectedCitySlice = createSlice({
     name: 'selectedCity',
     initialState: {
-        cityId: null
+        cityId: null,
     },
     reducers: {
         setSelectedCity: (state, action) => {
@@ -17,6 +17,7 @@ const selectedCitySlice = createSlice({
 
 // Create a thunk that sets the selected city and adds it to remembered cities if needed
 export const selectCity = (cityId, isPredefinedCity = false) => (dispatch, getState) => {
+
     // Only store the cityId in the selected city slice
     dispatch(setSelectedCity(cityId));
 
@@ -26,13 +27,11 @@ export const selectCity = (cityId, isPredefinedCity = false) => (dispatch, getSt
     }
 
     // Preload historical data
-    setTimeout(() => {
-        const state = getState();
-        const city = selectCorrelatedCities(state)?.[cityId];
-        if (!city) return;
+    const state = getState();
+    const city = selectCorrelatedCities(state)?.[cityId];
+    if (!city) return;
 
-        dispatch(fetchDailyDataForStation({ stationId: city.stationId }));
-    }, 1000);
+    dispatch(fetchDailyDataForStation({ stationId: city.stationId }));
 };
 
 export const { setSelectedCity } = selectedCitySlice.actions;

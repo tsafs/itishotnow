@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { analyzeTemperatureAnomaly } from '../../utils/TemperatureUtils';
 import { useSelectedItem } from '../../store/hooks/selectedItemHook';
@@ -23,9 +23,21 @@ const StationDetails = () => {
     const [subtitle, setSubtitle] = useState('');
     const [anomalyDetails, setAnomalyDetails] = useState(null);
 
+    const selectedItemRef = useRef(null);
+
     // Get selected item
     useEffect(() => {
-        if (!selectedItem) return;
+        // If no item is selected or if there is no data for it, reset state
+        if (!selectedItem) {
+            setItem(null);
+            setAnomaly(null);
+            setSubtitle('');
+            setAnomalyDetails(null);
+            return;
+        };
+
+        // If the selected item hasn't changed, do nothing
+        if (JSON.stringify(selectedItemRef.current) === JSON.stringify(selectedItem)) return;
 
         // Simulate loading delay
         setItem(null);
@@ -34,6 +46,7 @@ const StationDetails = () => {
         setAnomalyDetails(null);
         setTimeout(() => {
             setItem(selectedItem);
+            selectedItemRef.current = selectedItem;
         }, CITY_SELECT_TIMEOUT);
     }, [selectedItem]);
 

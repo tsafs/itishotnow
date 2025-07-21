@@ -45,8 +45,10 @@ const HistoricalAnalysis = () => {
 
     const [geojson, setGeojson] = useState(null);
     const [historicalMeanMaxTemperature, setHistoricalMeanMaxTemperature] = useState(null);
+
     const staticPlotRef = useRef();
     const dynamicPlotRef = useRef();
+    const lastSelectedCityId = useRef();
 
     useEffect(() => {
         const loadGeoJSON = async () => {
@@ -171,7 +173,13 @@ const HistoricalAnalysis = () => {
         });
 
         dynamicPlot.addEventListener("input", () => {
+            // If no city is selected, do nothing
             if (!dynamicPlot.value) return;
+
+            // Prevent unnecessary dispatches if the hovered or selected city hasn't changed
+            if (dynamicPlot.value.cityId === lastSelectedCityId.current) return;
+            lastSelectedCityId.current = dynamicPlot.value.cityId;
+
             const isPredefined = PREDEFINED_CITIES.includes(dynamicPlot.value.cityName);
             dispatch(selectCity(dynamicPlot.value.cityId, isPredefined));
         });
