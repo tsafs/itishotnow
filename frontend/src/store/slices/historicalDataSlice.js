@@ -7,7 +7,6 @@ import { useMemo } from 'react';
 export const fetchHistoricalData = createAsyncThunk(
     'historicalData/fetchData',
     async ({ month, day }, { rejectWithValue }) => {
-        console.log(`Fetching historical data for ${month}/${day}`);
         try {
             const data = await fetchHistoricalDataForDay(month, day);
             return data;

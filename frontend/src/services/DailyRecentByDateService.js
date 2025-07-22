@@ -5,13 +5,16 @@ import { getNow } from "../utils/dateUtils";
  * @param {string} stationId - station ID of a station to fetch data for
  * @returns {Promise<{data: Object, dateRange: {from: string, to: string}}>} Historical data for station
  */
-export const fetchDailyWeatherStationData = async (stationId) => {
+export const fetchDailyRecentByDateData = async ({ year, month, day }) => {
     try {
+        month = String(month).padStart(2, '0'); // Ensure month is two digits
+        day = String(day).padStart(2, '0'); // Ensure day is two
+
         // Get today's date in YYYYMMDDHH format using Luxon
         const today = getNow();
         const cacheBuster = today.toFormat('yyyyLLddHH');
 
-        const url = `/data/daily_recent_by_station/${stationId}.csv?t=${cacheBuster}`;
+        const url = `/data/daily_recent_by_date/${year}-${month}-${day}.csv?t=${cacheBuster}`;
 
         const response = await fetch(url);
 
@@ -24,52 +27,41 @@ export const fetchDailyWeatherStationData = async (stationId) => {
 
         const lines = text.split('\n').filter(line => line.trim());
 
-        // Variables for storing date range
-        let earliestDate = null;
-        let latestDate = null;
-
         // Skip header line
         const dataLines = lines.slice(1);
 
         if (dataLines.length === 0) {
-            throw new Error(`No data found for station ${stationId}.`);
+            throw new Error(`No data found for date ${year}-${month}-${day}.`);
         }
-
-        // First line has earliest date (assuming file is chronologically ordered)
-        earliestDate = dataLines[0].split(',')[0].trim();
-
-        // Last line has latest date
-        latestDate = dataLines[dataLines.length - 1].split(',')[0].trim();
 
         // Find the specific date we're looking for
         const data = dataLines.map(line => {
             const cols = line.split(',').map(col => col.trim());
 
+            if (cols[1] !== `${year}-${month}-${day}`) {
+                throw new Error(`Data for date ${year}-${month}-${day} not found in the response.`);
+            }
+
             return {
-                date: cols[0],
-                meanTemperature: parseFloat(cols[1]) || undefined,
-                minTemperature: parseFloat(cols[2]) || undefined,
-                maxTemperature: parseFloat(cols[3]) || undefined,
-                meanHumidity: parseFloat(cols[4]) || undefined
+                stationId: cols[0],
+                date: cols[1],
+                maxTemperature: parseFloat(cols[2]) || undefined,
+                minTemperature: parseFloat(cols[3]) || undefined,
+                meanTemperature: parseFloat(cols[4]) || undefined,
+                meanHumidity: parseFloat(cols[5]) || undefined
             };
         });
 
         if (!data || !data.length) {
-            throw new Error(`No historical data found for station ${stationId}.`);
+            throw new Error(`No historical data found for date ${year}-${month}-${day}.`);
         }
 
         let result = {}
         for (let item of data) {
-            result[item.date] = item;
+            result[item.stationId] = item;
         }
 
-        return {
-            data: result,
-            dateRange: {
-                from: earliestDate,
-                to: latestDate
-            }
-        };
+        return result;
     } catch (error) {
         console.error(`Error loading daily weather stations data:`, error);
         throw error;

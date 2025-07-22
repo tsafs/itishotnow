@@ -1,7 +1,7 @@
 import { useSelector } from 'react-redux';
 import { useMemo } from 'react';
 import { useSelectedDate } from '../slices/selectedDateSlice';
-import { useHistoricalData } from '../slices/historicalDataSlice';
+import { useDailyRecentByDate } from '../slices/DailyRecentByDateSlice';
 import { getNow } from '../../utils/dateUtils';
 import StationData from '../../classes/StationData';
 import { DateTime } from 'luxon';
@@ -13,7 +13,7 @@ export const useCorrelatedData = () => {
     const liveData = useSelector(state => state.liveData.data);
     const selectedDate = useSelectedDate();
     const selectedDateLuxon = DateTime.fromISO(selectedDate);
-    const historicalData = useHistoricalData(selectedDateLuxon.month, selectedDateLuxon.day);
+    const dailyRecentByDate = useDailyRecentByDate({ year: selectedDateLuxon.year, month: selectedDateLuxon.month, day: selectedDateLuxon.day });
 
     return useMemo(() => {
         if (!areCitiesCorrelated || !cities || !stations || !selectedDate) {
@@ -25,7 +25,7 @@ export const useCorrelatedData = () => {
 
         if (isToday && !liveData) {
             return null; // No live data available
-        } else if (!isToday && !historicalData) {
+        } else if (!isToday && !dailyRecentByDate) {
             return null; // No historical data available
         }
 
@@ -43,17 +43,17 @@ export const useCorrelatedData = () => {
                 }
                 data = liveData[station.id];
             } else {
-                if (!historicalData[station.id]) {
+                const stationData = dailyRecentByDate?.[station.id];
+                if (!stationData) {
                     continue;
                 }
-                const historicalDataForStation = historicalData[station.id];
                 data = new StationData(
                     station.id,
                     selectedDateLuxon.toFormat('MMdd'),
-                    historicalDataForStation.tas,
-                    historicalDataForStation.tasmin,
-                    historicalDataForStation.tasmax,
-                    null,
+                    stationData.meanTemperature,
+                    stationData.minTemperature,
+                    stationData.maxTemperature,
+                    stationData.meanHumidity,
                 );
             }
 
@@ -64,5 +64,5 @@ export const useCorrelatedData = () => {
             };
         }
         return correlatedData;
-    }, [areCitiesCorrelated, cities, stations, liveData, historicalData, selectedDate]);
+    }, [areCitiesCorrelated, cities, stations, liveData, dailyRecentByDate, selectedDate]);
 };

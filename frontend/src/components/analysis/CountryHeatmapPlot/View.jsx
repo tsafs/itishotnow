@@ -83,10 +83,6 @@ const HistoricalAnalysis = () => {
             }
         });
 
-        // Debug: log mean anomaly
-        const meanAnomaly = data.reduce((sum, d) => sum + d.anomaly, 0) / data.length;
-        console.log("Mean anomaly:", meanAnomaly);
-
         const staticPlot = Plot.plot({
             projection: {
                 type: "mercator",

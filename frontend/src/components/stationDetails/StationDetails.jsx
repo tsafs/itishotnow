@@ -25,6 +25,8 @@ const StationDetails = () => {
 
     const selectedItemRef = useRef(null);
 
+    const isToday = DateTime.fromISO(selectedDate).hasSame(getNow(), 'day');
+
     // Get selected item
     useEffect(() => {
         // If no item is selected or if there is no data for it, reset state
@@ -143,7 +145,7 @@ const StationDetails = () => {
             <div className="station-metrics">
                 <div className="metric-double-cell">
                     <div className="metric-cell metric-cell-highlight">
-                        <span className="metric-label">Zuletzt</span>
+                        <span className="metric-label">{isToday ? "Zuletzt" : "Mittel"}</span>
                         {item && (
                             <span className="metric-value">
                                 {item.data.temperature !== undefined
