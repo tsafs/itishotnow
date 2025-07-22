@@ -18,6 +18,7 @@ const getDataForPlot = (correlatedData) => {
         cityName: city.name,
         cityLat: city.lat,
         cityLon: city.lon,
+        stationId: station.id,
         stationLat: station.lat,
         stationLon: station.lon,
         temperature: data.maxTemperature,
@@ -44,7 +45,6 @@ const HistoricalAnalysis = () => {
     const rememberedCityIds = useSelector(state => state.rememberedCities);
 
     const [geojson, setGeojson] = useState(null);
-    const [historicalMeanMaxTemperature, setHistoricalMeanMaxTemperature] = useState(null);
 
     const staticPlotRef = useRef();
     const dynamicPlotRef = useRef();
@@ -63,20 +63,9 @@ const HistoricalAnalysis = () => {
         loadGeoJSON();
     }, []);
 
-    // Determine minimum, maximum, and average maxTemperature from historical data over all stations
-    useEffect(() => {
-        if (!historicalData || historicalData.length === 0) return;
-
-        const maxTemperatures = Object.values(historicalData).map(data => data.tasmax);
-        if (maxTemperatures.length === 0) return;
-
-        setHistoricalMeanMaxTemperature(maxTemperatures.reduce((a, b) => a + b, 0) / maxTemperatures.length);
-    }, [historicalData]);
-
     // Render static plot (base map, contours) only when geojson or correlatedData changes
     useEffect(() => {
-        if (!correlatedData || !geojson) return;
-        if (historicalMeanMaxTemperature === null) return;
+        if (!correlatedData || !geojson || !historicalData) return;
 
         if (staticPlotRef.current) {
             staticPlotRef.current.innerHTML = '';
@@ -86,8 +75,17 @@ const HistoricalAnalysis = () => {
 
         // Calculate max temperature anomaly
         data.forEach(d => {
-            d.anomaly = d.temperature - historicalMeanMaxTemperature;
+            const maxTemperature = historicalData[d.stationId].tasmax;
+            if (d.temperature === undefined || maxTemperature === undefined) {
+                d.anomaly = undefined; // Handle missing data gracefully
+            } else {
+                d.anomaly = d.temperature - maxTemperature;
+            }
         });
+
+        // Debug: log mean anomaly
+        const meanAnomaly = data.reduce((sum, d) => sum + d.anomaly, 0) / data.length;
+        console.log("Mean anomaly:", meanAnomaly);
 
         const staticPlot = Plot.plot({
             projection: {
@@ -119,13 +117,12 @@ const HistoricalAnalysis = () => {
     }, [
         correlatedData,
         geojson,
-        historicalMeanMaxTemperature,
+        historicalData,
     ]);
 
     // Render dynamic overlays (city dots, labels, selection) on every relevant state change
     const renderDynamicOverlay = useCallback(() => {
         if (!correlatedData || !geojson || !selectedItem) return;
-        if (historicalMeanMaxTemperature === null) return;
 
         if (dynamicPlotRef.current) {
             dynamicPlotRef.current.innerHTML = '';
@@ -191,7 +188,6 @@ const HistoricalAnalysis = () => {
         selectedItem,
         rememberedCityIds,
         dispatch,
-        historicalMeanMaxTemperature,
     ]);
 
     useEffect(() => {

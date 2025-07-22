@@ -31,9 +31,9 @@ export const fetchHistoricalDataForDay = async (month, day) => {
 
             return {
                 station_id: station_id,
-                tasmin: parseFloat(tasmin),
-                tasmax: parseFloat(tasmax),
-                tas: parseFloat(tas)
+                tasmin: parseFloat(tasmin) || undefined,
+                tasmax: parseFloat(tasmax) || undefined,
+                tas: parseFloat(tas) || undefined
             };
         }).filter(Boolean); // Remove null entries
 

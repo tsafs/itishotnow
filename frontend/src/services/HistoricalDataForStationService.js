@@ -45,18 +45,12 @@ export const fetchDailyWeatherStationData = async (stationId) => {
         const data = dataLines.map(line => {
             const cols = line.split(',').map(col => col.trim());
 
-            const date = cols[0];
-            const temperature_mean = parseFloat(cols[1]);
-            const temperature_min = parseFloat(cols[2]);
-            const temperature_max = parseFloat(cols[3]);
-            const humidity_mean = parseFloat(cols[4]);
-
             return {
-                date: date,
-                meanTemperature: isNaN(temperature_mean) ? undefined : temperature_mean,
-                minTemperature: isNaN(temperature_min) ? undefined : temperature_min,
-                maxTemperature: isNaN(temperature_max) ? undefined : temperature_max,
-                meanHumidity: isNaN(humidity_mean) ? undefined : humidity_mean
+                date: cols[0],
+                meanTemperature: parseFloat(cols[1]) || undefined,
+                minTemperature: parseFloat(cols[2]) || undefined,
+                maxTemperature: parseFloat(cols[3]) || undefined,
+                meanHumidity: parseFloat(cols[4]) || undefined
             };
         });
 

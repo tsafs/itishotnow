@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaCalendarDay } from 'react-icons/fa';
 import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
-import { setSelectedDate } from '../../store/slices/selectedDateSlice'
+import { setDateAndFetchHistoricalData } from '../../store/slices/selectedDateSlice'
 import { getNow } from '../../utils/dateUtils';
 import { useHistoricalDailyDataDateRangeForStation } from '../../store/slices/historicalDataForStationSlice';
 import { useSelectedItem } from '../../store/hooks/selectedItemHook';
@@ -65,7 +65,7 @@ const DateSelection = () => {
 
     const handleDateSelection = useCallback((date) => {
         // date is a Luxon DateTime
-        dispatch(setSelectedDate(date.toFormat('yyyy-LL-dd')));
+        dispatch(setDateAndFetchHistoricalData(date.toFormat('yyyy-LL-dd')));
     }, [dispatch]);
 
     // Handle today selection
