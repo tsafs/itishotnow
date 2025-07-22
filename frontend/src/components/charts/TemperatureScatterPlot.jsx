@@ -235,7 +235,7 @@ const TemperatureScatterPlot = () => {
                     todayDataPoint && Plot.text([todayDataPoint], {
                         x: "year",
                         y: d => d.anomaly + 0.7, // Position slightly above the point
-                        text: () => isToday ? "Heute" : luxonDate.toLocaleString(DateTime.DATE_MED),
+                        text: () => isToday ? "Heute" : luxonDate.setLocale('de').toFormat("d. MMMM yyyy"),
                         className: "today-label",
                     }),
                     // Display trend information
@@ -254,7 +254,7 @@ const TemperatureScatterPlot = () => {
                         dy: -17,
                         frameAnchor: "top",
                         text: (d) => [
-                            DateTime.fromISO(d.date).toLocaleString(DateTime.DATE_MED),
+                            DateTime.fromISO(d.date).setLocale('de').toFormat("d. MMMM yyyy"),
                             `Durchschnittstemperatur: ${d.temperature.toFixed(1)}°C`,
                             `Abweichung: ${d.anomaly.toFixed(1)}°C`
                         ].join("   "),
