@@ -11,6 +11,9 @@ import { PREDEFINED_CITIES } from '../../../constants/map';
 import MapLegend from '../../d3map/MapLegend';
 import './View.css';
 import { useSelectedItem } from '../../../store/hooks/selectedItemHook';
+import { useSelectedDate } from '../../../store/slices/selectedDateSlice';
+import { DateTime } from 'luxon';
+import { getNow } from '../../../utils/dateUtils';
 
 const getDataForPlot = (correlatedData) => {
     return Object.values(correlatedData).map(({ city, station, data }) => ({
@@ -42,6 +45,7 @@ const HistoricalAnalysis = () => {
     const correlatedData = useCorrelatedData();
     const historicalData = useHistoricalData();
     const selectedItem = useSelectedItem();
+    const selectedDate = useSelectedDate();
     const rememberedCityIds = useSelector(state => state.rememberedCities);
 
     const [geojson, setGeojson] = useState(null);
@@ -49,6 +53,8 @@ const HistoricalAnalysis = () => {
     const staticPlotRef = useRef();
     const dynamicPlotRef = useRef();
     const lastSelectedCityId = useRef();
+
+    const isToday = DateTime.fromISO(selectedDate).hasSame(getNow(), 'day');
 
     useEffect(() => {
         const loadGeoJSON = async () => {
@@ -194,7 +200,7 @@ const HistoricalAnalysis = () => {
     const rightContent = (
         <div className="plot-container-left-align">
             <div className="plot-container">
-                <div className="plot-title">Heutige Temperaturabweichung zu&nbsp;1961&nbsp;bis&nbsp;1990&nbsp;(°C)</div>
+                <div className="plot-title">{isToday ? "Heutige Temperaturabweichung" : "Temperaturabweichung am " + DateTime.fromISO(selectedDate).setLocale('de').toFormat("d. MMMM yyyy")} zu&nbsp;1961&nbsp;bis&nbsp;1990&nbsp;(°C)</div>
                 <div className="plot">
                     <div ref={staticPlotRef}></div>
                     <div ref={dynamicPlotRef} className="dynamic-plot"></div>
