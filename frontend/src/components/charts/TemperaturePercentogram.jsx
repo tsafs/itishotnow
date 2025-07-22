@@ -4,43 +4,10 @@ import * as d3 from "d3";
 import { useSelector } from 'react-redux';
 import { fetchHyrasMappedWeatherStations, fetchRollingAverageForStation } from '../../services/DataService';
 import { getNow } from '../../utils/DateUtils';
+import { DateTime } from 'luxon';
+import { filterTemperatureDataByDateWindow } from '../../utils/rollingAverageUtils';
 import './TemperaturePercentogram.css';
 
-/**
- * Filter temperature data for a specific calendar day across years
- * @param {Array} data - The full dataset
- * @param {string} targetMonthDay - The target month-day in MM-DD format
- * @param {number} windowDays - Number of days to include before and after target date
- * @returns {Array} Filtered data for the target day and surrounding days
- */
-const filterTemperatureDataByDateWindow = (data, targetMonthDay, windowDays = 7) => {
-    // Calculate window dates
-    const [targetMonth, targetDay] = targetMonthDay.split('-').map(Number);
-    const windowDates = [];
-
-    // Create a reference date for this year
-    const currentYear = getNow().getFullYear();
-    const targetDate = new Date(currentYear, targetMonth - 1, targetDay);
-
-    // Add days before and after
-    for (let i = -windowDays; i <= windowDays; i++) {
-        const windowDate = new Date(targetDate);
-        windowDate.setDate(targetDate.getDate() + i);
-        const windowMonth = String(windowDate.getMonth() + 1).padStart(2, '0');
-        const windowDay = String(windowDate.getDate()).padStart(2, '0');
-        windowDates.push(`${windowMonth}-${windowDay}`);
-    }
-
-    // Filter data for target days
-    const filteredData = data.filter(entry => {
-        const dateParts = entry.date.split('-');
-        if (dateParts.length < 3) return false;
-        const entryMonthDay = `${dateParts[1]}-${dateParts[2]}`;
-        return windowDates.includes(entryMonthDay);
-    });
-
-    return filteredData;
-};
 
 /**
  * Calculate percentiles for the given data array
@@ -128,8 +95,8 @@ const TemperaturePercentogram = ({ fromYear = 1961, toYear = 1990 }) => {
 
         // Parse the date to get day and month
         const today = getNow();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = String(today.getDate()).padStart(2, '0');
+        const month = String(today.month).padStart(2, '0');
+        const day = String(today.day).padStart(2, '0');
         const todayMonthDay = `${month}-${day}`;
 
         try {
@@ -168,7 +135,7 @@ const TemperaturePercentogram = ({ fromYear = 1961, toYear = 1990 }) => {
             const tempPercentiles = percentiles(allTemperatures);
 
             // Format date for display
-            const formattedDate = new Date(`${today.getFullYear()}-${month}-${day}`).toLocaleDateString('de-DE', {
+            const formattedDate = DateTime.fromObject({ year: today.year, month, day }).toLocaleString({
                 day: 'numeric',
                 month: 'long'
             });

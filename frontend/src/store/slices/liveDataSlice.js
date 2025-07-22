@@ -9,9 +9,9 @@ export const fetchLiveData = createAsyncThunk(
         try {
             dispatch(setStations(null));
             const { stations, stationData } = await fetchLiveDataService();
-            
+
             const serializedStations = {};
-            for (const [id, station] of Object.entries(stations)) { 
+            for (const [id, station] of Object.entries(stations)) {
                 serializedStations[id] = station.toJSON();
             }
             dispatch(setStations(serializedStations));
@@ -76,7 +76,7 @@ export const selectLiveData = createSelector(
 export const selectLiveDataForStation = createSelector(
     [
         state => state.liveData.data,
-        (state, stationId) => stationId
+        (_, stationId) => stationId
     ],
     (data, stationId) => {
         return data?.[stationId] ? StationData.fromJSON(data[stationId]) : null;

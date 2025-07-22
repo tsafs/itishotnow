@@ -1,5 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { fetchHistoricalDataForDay } from '../../services/DataService';
+import { useSelector } from 'react-redux';
+import { useMemo } from 'react';
 
 // Create async thunk for fetching historical data
 export const fetchHistoricalData = createAsyncThunk(
@@ -61,5 +63,16 @@ export const selectHistoricalData = (state) => state.historicalData.data;
 export const selectHistoricalDataStatus = (state) => state.historicalData.status;
 export const selectHistoricalDataError = (state) => state.historicalData.error;
 export const selectHistoricalDataForStation = (state, stationId) => state.historicalData.data?.[stationId];
+
+export const useHistoricalData = (month, day) => {
+    const historicalData = useSelector(state => state.historicalData);
+    return useMemo(() => {
+        if (!historicalData.data) return null;
+        if (historicalData.currentDay.month !== month || historicalData.currentDay.day !== day) {
+            return null; // No data for the requested month and day
+        }
+        return historicalData.data;
+    }, [historicalData, month, day]);
+};
 
 export default historicalDataSlice.reducer;

@@ -1,29 +1,45 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { analyzeTemperatureAnomaly } from '../../utils/TemperatureUtils';
 import { useSelectedItem } from '../../store/hooks/selectedItemHook';
 import { CITY_SELECT_TIMEOUT } from '../../constants/page';
 import './StationDetails.css';
 import { useHistoricalData } from '../../store/hooks/historicalDataHook';
+import { useSelectedDate } from '../../store/slices/selectedDateSlice';
+import { getNow } from '../../utils/dateUtils';
+import { DateTime } from 'luxon'; // <-- Add Luxon import
 
 /**
  * Panel component to display city information with nearest weather station data
- * @param {Object} props
- * @param {Object} props.selectedStation - Selected city/station data object
  */
 const StationDetails = () => {
     const selectedCityId = useSelector(state => state.selectedCity.cityId);
     const historicalData = useHistoricalData();
     const selectedItem = useSelectedItem();
+    const selectedDate = useSelectedDate();
 
     const [item, setItem] = useState(null);
     const [anomaly, setAnomaly] = useState(null);
     const [subtitle, setSubtitle] = useState('');
     const [anomalyDetails, setAnomalyDetails] = useState(null);
 
+    const selectedItemRef = useRef(null);
+
+    const isToday = DateTime.fromISO(selectedDate).hasSame(getNow(), 'day');
+
     // Get selected item
     useEffect(() => {
-        if (!selectedItem) return;
+        // If no item is selected or if there is no data for it, reset state
+        if (!selectedItem) {
+            setItem(null);
+            setAnomaly(null);
+            setSubtitle('');
+            setAnomalyDetails(null);
+            return;
+        };
+
+        // If the selected item hasn't changed, do nothing
+        if (JSON.stringify(selectedItemRef.current) === JSON.stringify(selectedItem)) return;
 
         // Simulate loading delay
         setItem(null);
@@ -32,6 +48,7 @@ const StationDetails = () => {
         setAnomalyDetails(null);
         setTimeout(() => {
             setItem(selectedItem);
+            selectedItemRef.current = selectedItem;
         }, CITY_SELECT_TIMEOUT);
     }, [selectedItem]);
 
@@ -49,25 +66,56 @@ const StationDetails = () => {
     // Calculate subtitle text
     useEffect(() => {
         if (!item) return;
-
         // Format the distance to show as km
         const formattedDistance = `(${Math.round(item.city.distanceToStation)}km)`;
 
         let subtitleText = '';
         if (item.station.name) {
-            subtitleText = `Wetterstation: ${item.station.name} ${formattedDistance}`;
+            subtitleText = `Wetterstation: <span class="nowrap">${item.station.name} ${formattedDistance}</span>`;
         }
         if (item.data.date) {
-            subtitleText += ` ${item.data.date}\u00A0Uhr`;
+            // Use Luxon for all date parsing and formatting
+            const now = getNow();
+            let date;
+            let isToday = false;
+
+            // selectedDate is a string, parse with Luxon
+            const selectedDateLuxon = DateTime.fromISO(selectedDate);
+            isToday = selectedDateLuxon.hasSame(now, 'day');
+
+            if (isToday) {
+                // Convert "20.07.2025 18:20" -> "2025-07-20T18:20"
+                date = DateTime.fromFormat(item.data.date, 'dd.MM.yyyy HH:mm', { zone: 'Europe/Berlin' });
+            } else {
+                // Convert "20250720" -> "2025-07-20"
+                date = DateTime.fromFormat(item.data.date, 'yyyyMMdd', { zone: 'Europe/Berlin' });
+            }
+
+            if (date && date.isValid) {
+                if (isToday) {
+                    subtitleText += ` <span class="nowrap">${date.toLocaleString({
+                        ...DateTime.DATE_FULL,
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    })} Uhr</span>`;
+                } else {
+                    subtitleText += ` <span class="nowrap">${date.toLocaleString(DateTime.DATE_FULL)}</span>`;
+                }
+            }
         }
+
         setSubtitle(subtitleText);
-    }, [item]);
+    }, [item, selectedDate]);
 
     // Calculate comparison details using the utility function
     useEffect(() => {
         if (anomaly === null) return;
-        setAnomalyDetails(analyzeTemperatureAnomaly(anomaly));
-    }, [anomaly]);
+        // Use Luxon for date comparison
+        const now = getNow();
+        const selectedDateLuxon = DateTime.fromISO(selectedDate);
+        const isToday = selectedDateLuxon.hasSame(now, 'day');
+        setAnomalyDetails(analyzeTemperatureAnomaly(isToday, anomaly));
+    }, [anomaly, selectedDate]);
 
     // If no city is selected, show a placeholder
     if (!selectedCityId) {
@@ -86,9 +134,7 @@ const StationDetails = () => {
             {!item && (<h2 className="station-name-placeholder">Eine Stadt</h2>)}
 
             {subtitle && (
-                <div className="station-subtitle">
-                    {subtitle}
-                </div>
+                <div className="station-subtitle" dangerouslySetInnerHTML={{ __html: subtitle }} />
             )}
             {!subtitle && (
                 <div className="station-subtitle-placeholder">
@@ -99,7 +145,7 @@ const StationDetails = () => {
             <div className="station-metrics">
                 <div className="metric-double-cell">
                     <div className="metric-cell metric-cell-highlight">
-                        <span className="metric-label">Zuletzt</span>
+                        <span className="metric-label">{isToday ? "Zuletzt" : "Mittel"}</span>
                         {item && (
                             <span className="metric-value">
                                 {item.data.temperature !== undefined

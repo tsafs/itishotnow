@@ -18,6 +18,7 @@ import { getNow } from './utils/dateUtils';
 // Lazy load components
 const CountryHeatmapPlot = React.lazy(() => import('./components/analysis/CountryHeatmapPlot/View'));
 const HistoricalAnalysis = React.lazy(() => import('./components/analysis/HistoricalAnalysis'));
+// const TemperatureDistributionAnalysis = React.lazy(() => import('./components/analysis/TemperatureDistributionAnalysis'));
 const ImpressumPage = React.lazy(() => import('./pages/ImpressumPage'));
 const Closing = React.lazy(() => import('./components/closing/Closing'));
 
@@ -57,8 +58,8 @@ function AppContent() {
             try {
                 // Get today's date for historical data
                 const today = getNow();
-                const month = today.getMonth() + 1; // JavaScript months are 0-indexed
-                const day = today.getDate();
+                const month = today.month;
+                const day = today.day;
 
                 // Load weather stations and cities data
                 await Promise.all([

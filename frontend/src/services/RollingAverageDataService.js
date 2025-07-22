@@ -31,7 +31,7 @@ export const fetchRollingAverageForStation = async (station_id) => {
 
             return {
                 date: cols[0],
-                tas: parseFloat(cols[1]),
+                tas: parseFloat(cols[1]) || undefined,
             };
         }).filter(Boolean); // Remove null entries
 

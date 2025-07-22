@@ -112,44 +112,46 @@ function interpolateColor(color1, color2, ratio) {
  * @param {number} anomaly - Temperature anomaly value (difference from historical average)
  * @returns {Object} Object containing comparison message and detailed explanation
  */
-export const analyzeTemperatureAnomaly = (anomaly) => {
+export const analyzeTemperatureAnomaly = (isLiveData, anomaly) => {
     if (anomaly === undefined || anomaly === null) {
         return {
-            comparisonMessage: "Keine historischen Daten verfügbar.",
-            anomalyMessage: null
+            comparisonMessage: "Keine Ahnung.",
+            anomalyMessage: "Keine historischen Daten verfügbar.",
         };
     }
 
-    let comparisonMessage = '';
+    let comparisonMessage = null;
+    const verb_sein = isLiveData ? "ist" : "war";
 
     // Determine message based on direct temperature anomaly ranges
     if (anomaly <= -10) {
-        comparisonMessage = "Es ist eiskalt!";
+        comparisonMessage = `Es ${verb_sein} eiskalt!`;
     } else if (anomaly <= -8) {
-        comparisonMessage = "Es ist sehr kalt!";
+        comparisonMessage = `Es ${verb_sein} sehr kalt!`;
     } else if (anomaly <= -6) {
-        comparisonMessage = "Es ist kalt!";
+        comparisonMessage = `Es ${verb_sein} kalt!`;
     } else if (anomaly <= -4) {
-        comparisonMessage = "Es ist sehr kühl!";
+        comparisonMessage = `Es ${verb_sein} sehr kühl!`;
     } else if (anomaly <= -2) {
-        comparisonMessage = "Es ist kühl";
+        comparisonMessage = `Es ${verb_sein} kühl`;
     } else if (anomaly === 0) {
-        comparisonMessage = "Es ist exakt durchschnittlich";
+        comparisonMessage = `Es ${verb_sein} exakt durchschnittlich`;
     } else if (anomaly < 2) {
-        comparisonMessage = "Es ist ziemlich normal";
+        comparisonMessage = `Es ${verb_sein} ziemlich normal`;
     } else if (anomaly < 4) {
-        comparisonMessage = "Es ist warm";
+        comparisonMessage = `Es ${verb_sein} warm`;
     } else if (anomaly < 6) {
-        comparisonMessage = "Es ist sehr warm!";
+        comparisonMessage = `Es ${verb_sein} sehr warm!`;
     } else if (anomaly < 8) {
-        comparisonMessage = "Es ist heiß!";
+        comparisonMessage = `Es ${verb_sein} heiß!`;
     } else if (anomaly < 10) {
-        comparisonMessage = "Es ist sehr heiß!";
+        comparisonMessage = `Es ${verb_sein} sehr heiß!`;
     } else {
-        comparisonMessage = "Es ist brütend heiß!";
+        comparisonMessage = `Es ${verb_sein} brütend heiß!`;
     }
 
-    const anomalyMessage = `Die maximale Temperatur liegt ${Math.abs(anomaly).toFixed(1)}\u00A0°C ${anomaly > 0 ? 'über' : 'unter'} dem historischen\u00A0Mittelwert.`;
+    const verb_liegen = isLiveData ? "liegt" : "lag";
+    const anomalyMessage = `Die maximale Temperatur ${verb_liegen} ${Math.abs(anomaly).toFixed(1)}\u00A0°C ${anomaly > 0 ? 'über' : 'unter'} dem historischen\u00A0Mittelwert.`;
 
     return {
         comparisonMessage,

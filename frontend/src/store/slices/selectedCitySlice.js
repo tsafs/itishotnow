@@ -1,10 +1,12 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { addRememberedCity } from './rememberedCitiesSlice';
+import { selectCorrelatedCities } from './cityDataSlice';
+import { fetchDailyDataForStation } from './historicalDataForStationSlice';
 
 const selectedCitySlice = createSlice({
     name: 'selectedCity',
     initialState: {
-        cityId: null
+        cityId: null,
     },
     reducers: {
         setSelectedCity: (state, action) => {
@@ -14,7 +16,8 @@ const selectedCitySlice = createSlice({
 });
 
 // Create a thunk that sets the selected city and adds it to remembered cities if needed
-export const selectCity = (cityId, isPredefinedCity = false) => (dispatch) => {
+export const selectCity = (cityId, isPredefinedCity = false) => (dispatch, getState) => {
+
     // Only store the cityId in the selected city slice
     dispatch(setSelectedCity(cityId));
 
@@ -22,6 +25,13 @@ export const selectCity = (cityId, isPredefinedCity = false) => (dispatch) => {
     if (!isPredefinedCity) {
         dispatch(addRememberedCity(cityId));
     }
+
+    // Preload historical data
+    const state = getState();
+    const city = selectCorrelatedCities(state)?.[cityId];
+    if (!city) return;
+
+    dispatch(fetchDailyDataForStation({ stationId: city.stationId }));
 };
 
 export const { setSelectedCity } = selectedCitySlice.actions;

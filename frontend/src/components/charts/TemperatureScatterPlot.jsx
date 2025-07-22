@@ -9,12 +9,15 @@ import './TemperatureScatterPlot.css';
 import { selectRollingAverageData } from '../../store/slices/rollingAverageDataSlice';
 import { fetchRollingAverageData, selectRollingAverageDataStatus } from '../../store/slices/rollingAverageDataSlice';
 import { useSelectedItem } from '../../store/hooks/selectedItemHook';
+import { DateTime } from 'luxon';
+import { useSelectedDate } from '../../store/slices/selectedDateSlice';
 
 const TemperatureScatterPlot = () => {
     const dispatch = useDispatch();
 
     const containerRef = useRef();
     const selectedItem = useSelectedItem();
+    const selectedDate = useSelectedDate();
 
     const rollingAverageData = useSelector(selectRollingAverageData);
     const rollingAverageDataStatus = useSelector(selectRollingAverageDataStatus);
@@ -45,7 +48,7 @@ const TemperatureScatterPlot = () => {
 
     // Create the plot using Observable Plot
     useEffect(() => {
-        if (rollingAverageDataStatus !== "succeeded" || !selectedItem) return;
+        if (rollingAverageDataStatus !== "succeeded" || !selectedItem || !selectedDate) return;
 
         // Clear any existing plot
         if (containerRef.current) {
@@ -53,10 +56,11 @@ const TemperatureScatterPlot = () => {
         }
 
         // Parse the date to get day and month
-        const today = getNow();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = String(today.getDate()).padStart(2, '0');
+        const luxonDate = DateTime.fromISO(selectedDate);
+        const month = String(luxonDate.month).padStart(2, '0');
+        const day = String(luxonDate.day).padStart(2, '0');
         const todayMonthDay = `${month}-${day}`;
+        const isToday = luxonDate.hasSame(getNow(), 'day');
 
         try {
             // Filter data for our date window (±7 days)
@@ -121,10 +125,10 @@ const TemperatureScatterPlot = () => {
                 const averageTemperature = (selectedItem.data.minTemperature + selectedItem.data.maxTemperature) / 2;
                 const todayAnomaly = averageTemperature - averageTempForPrimaryDay;
                 todayDataPoint = {
-                    year: getNow().getFullYear(),
+                    year: luxonDate.year,
                     temperature: averageTemperature,
                     anomaly: todayAnomaly,
-                    date: `${getNow().getFullYear()}-${month}-${day}`,
+                    date: `${luxonDate.year}-${month}-${day}`,
                     isPrimaryDay: true,
                     isCurrent: true
                 };
@@ -156,7 +160,7 @@ const TemperatureScatterPlot = () => {
 
             // Create the plot
             const plot = Plot.plot({
-                title: html`<p class="title">Abweichung zum Referenzzeitraum von 1961 bis 1990 in ${selectedItem.station.name}</p>`,
+                title: html`<p class="title">Abweichung zum Referenzzeitraum von 1961 bis 1990 in ${selectedItem.city.name}</p>`,
                 y: {
                     label: "Temperaturabweichung (°C)",
                     grid: true,
@@ -231,7 +235,7 @@ const TemperatureScatterPlot = () => {
                     todayDataPoint && Plot.text([todayDataPoint], {
                         x: "year",
                         y: d => d.anomaly + 0.7, // Position slightly above the point
-                        text: () => "Heute",
+                        text: () => isToday ? "Heute" : luxonDate.setLocale('de').toFormat("d. MMMM yyyy"),
                         className: "today-label",
                     }),
                     // Display trend information
@@ -250,7 +254,7 @@ const TemperatureScatterPlot = () => {
                         dy: -17,
                         frameAnchor: "top",
                         text: (d) => [
-                            new Date(d.date).toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' }),
+                            DateTime.fromISO(d.date).setLocale('de').toFormat("d. MMMM yyyy"),
                             `Durchschnittstemperatur: ${d.temperature.toFixed(1)}°C`,
                             `Abweichung: ${d.anomaly.toFixed(1)}°C`
                         ].join("   "),
@@ -266,7 +270,7 @@ const TemperatureScatterPlot = () => {
             console.error("Error creating plot:", err);
             setError("Failed to create plot visualization");
         }
-    }, [rollingAverageData, rollingAverageDataStatus, selectedItem, fromYear, toYear]);
+    }, [rollingAverageData, rollingAverageDataStatus, selectedItem, fromYear, toYear, selectedDate]);
 
     return (
         <div className="temperature-scatter-container">

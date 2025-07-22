@@ -18,13 +18,10 @@ export const fetchLiveData = async () => {
     try {
         // Get today's date in YYYYMMDD format
         const today = getNow();
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
-        const day = String(today.getDate()).padStart(2, '0');
-        const hour = String(today.getHours()).padStart(2, '0'); // Get current hour (00-23)
-        let year_month_day = `${year}${month}${day}`;
+        const yearMonthDay = today.toFormat('yyyyLLdd');
+        const cacheBuster = today.toFormat('yyyyLLddHH');
 
-        const url = `/station_data/10min_station_data_${year_month_day}.csv?t=${year}${month}${day}${hour}`;
+        const url = `/station_data/10min_station_data_${yearMonthDay}.csv?t=${cacheBuster}`;
 
         const response = await fetch(url);
 

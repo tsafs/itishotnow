@@ -8,6 +8,8 @@ import historicalDataReducer from './slices/historicalDataSlice';
 import interpolatedHourlyDataReducer from './slices/interpolatedHourlyDataSlice';
 import liveDataReducer from './slices/liveDataSlice';
 import rollingAverageDataReducer from './slices/rollingAverageDataSlice';
+import historicalDailyDataReducer from './slices/historicalDataForStationSlice';
+import dailyRecentByDateReducer from './slices/DailyRecentByDateSlice';
 
 export const store = configureStore({
     reducer: {
@@ -20,5 +22,7 @@ export const store = configureStore({
         selectedDate: selectedDateReducer,
         rollingAverageData: rollingAverageDataReducer,
         stations: stationsReducer,
+        historicalDailyData: historicalDailyDataReducer,
+        dailyRecentByDate: dailyRecentByDateReducer,
     },
 });
