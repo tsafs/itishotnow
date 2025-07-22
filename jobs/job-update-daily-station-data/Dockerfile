@@ -6,6 +6,7 @@ WORKDIR /app
 COPY jobs/job-update-daily-station-data/src ./src/
 COPY analysis/stations/fetch_station_data.py ./src/
 COPY analysis/stations/extract_daily_station_data.py ./src/
+COPY analysis/stations/extract_daily_station_data_for_date.py ./src/
 COPY analysis/utilities/upload_to_s3.py ./src/
 
 # Copy the entrypoint script

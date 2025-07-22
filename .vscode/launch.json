@@ -37,6 +37,14 @@
             "args": "--data-dir ./data/daily_station_data/recent --output-dir ./data/daily_station_data/extracted --from-date 20250101 --invalid-value -999"
         },
         {
+            "name": "Extract daily station data - group by day",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/analysis/stations/extract_daily_station_data_for_date.py",
+            "console": "integratedTerminal",
+            "args": "--data-dir ./data/daily_station_data/recent --output-dir ./data/daily_station_data/extracted_group --date 2025-07-12 --invalid-value -999"
+        },
+        {
             "name": "Fetch HYRAS data",
             "type": "debugpy",
             "request": "launch",
