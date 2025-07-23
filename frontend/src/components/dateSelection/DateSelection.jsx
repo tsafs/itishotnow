@@ -65,12 +65,17 @@ const DateSelection = () => {
 
     const handleDateSelection = useCallback((date) => {
         // date is a Luxon DateTime
-        dispatch(setDateAndFetchHistoricalData(date.toFormat('yyyy-LL-dd')));
+        dispatch(setDateAndFetchHistoricalData(date.toISO()));
     }, [dispatch]);
 
     // Handle today selection
     const handleTodayClick = () => {
         const today = getNow();
+
+        if (today.hasSame(DateTime.fromISO(selectedDate), 'day')) {
+            return;
+        }
+
         handleDateSelection(today);
         if (window.location.pathname !== '/') {
             navigate('/');
@@ -94,6 +99,12 @@ const DateSelection = () => {
         }
         const selected = DateTime.fromJSDate(date).setZone('Europe/Berlin');
         const today = getNow();
+
+        if (selected.hasSame(DateTime.fromISO(selectedDate), 'day')) {
+            setIsCalendarOpen(false);
+            return;
+        }
+
         if (selected.hasSame(today, 'day')) {
             setIsCalendarOpen(false);
             handleTodayClick();

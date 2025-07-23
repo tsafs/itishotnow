@@ -6,8 +6,8 @@ import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
 import { findClosestWeatherStationsForCities } from './services/CityService';
 import { PREDEFINED_CITIES } from './constants/map';
-import { fetchHistoricalData } from './store/slices/historicalDataSlice';
-import { fetchHourlyData } from './store/slices/interpolatedHourlyDataSlice';
+import { fetchYearlyMeanByDay } from './store/slices/YearlyMeanByDaySlice';
+import { fetchReferenceYearlyHourlyInterpolatedByDay } from './store/slices/ReferenceYearlyHourlyInterpolatedByDaySlice';
 import { fetchLiveData, selectLiveDataStatus } from './store/slices/liveDataSlice';
 import { fetchCityData, selectCities, selectAreCitiesCorrelated, selectCityDataStatus, setCities } from './store/slices/cityDataSlice';
 import { selectCity } from './store/slices/selectedCitySlice';
@@ -65,8 +65,8 @@ function AppContent() {
                 await Promise.all([
                     dispatch(fetchLiveData()),
                     dispatch(fetchCityData()),
-                    dispatch(fetchHistoricalData({ month, day })),
-                    dispatch(fetchHourlyData({ month, day }))
+                    dispatch(fetchYearlyMeanByDay({ month, day })),
+                    dispatch(fetchReferenceYearlyHourlyInterpolatedByDay({ month, day }))
                 ]);
             } catch (error) {
                 console.error("Failed to load data:", error);

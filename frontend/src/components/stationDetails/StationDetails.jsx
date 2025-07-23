@@ -4,7 +4,8 @@ import { analyzeTemperatureAnomaly } from '../../utils/TemperatureUtils';
 import { useSelectedItem } from '../../store/hooks/selectedItemHook';
 import { CITY_SELECT_TIMEOUT } from '../../constants/page';
 import './StationDetails.css';
-import { useHistoricalData } from '../../store/hooks/historicalDataHook';
+import { useYearlyMeanByDayData } from '../../store/slices/YearlyMeanByDaySlice';
+import { useReferenceYearlyHourlyInterpolatedByDayData } from '../../store/slices/ReferenceYearlyHourlyInterpolatedByDaySlice';
 import { useSelectedDate } from '../../store/slices/selectedDateSlice';
 import { getNow } from '../../utils/dateUtils';
 import { DateTime } from 'luxon'; // <-- Add Luxon import
@@ -14,7 +15,8 @@ import { DateTime } from 'luxon'; // <-- Add Luxon import
  */
 const StationDetails = () => {
     const selectedCityId = useSelector(state => state.selectedCity.cityId);
-    const historicalData = useHistoricalData();
+    const yearlyMeanByDayData = useYearlyMeanByDayData();
+    const referenceYearlyHourlyInterpolatedByDayData = useReferenceYearlyHourlyInterpolatedByDayData();
     const selectedItem = useSelectedItem();
     const selectedDate = useSelectedDate();
 
@@ -54,14 +56,38 @@ const StationDetails = () => {
 
     // Calculate anomaly
     useEffect(() => {
-        if (!historicalData || historicalData.length === 0 || !item) return;
+        if (!item) return;
 
-        const maxTemperature = historicalData[item.station.id]?.tasmax;
-        if (maxTemperature === undefined || maxTemperature === null) return;
+        const luxonDate = DateTime.fromISO(selectedDate);
+        const isToday = luxonDate.hasSame(getNow(), 'day');
 
-        const maxAnomaly = Math.round((item.data.maxTemperature - maxTemperature) * 10) / 10;
-        setAnomaly(maxAnomaly);
-    }, [historicalData, item]);
+        if (isToday) {
+            if (!referenceYearlyHourlyInterpolatedByDayData) return;
+
+            const { data, month, day } = referenceYearlyHourlyInterpolatedByDayData;
+            if (!data || month !== luxonDate.month || day !== luxonDate.day) return;
+
+            const hourlyData = data[item.station.id];
+            if (!hourlyData) return;
+
+            const hour = DateTime.fromFormat(item.data.date, 'dd.MM.yyyy HH:mm', { zone: 'Europe/Berlin' }).hour;
+            const currentTemperature = item.data.temperature;
+            const referenceTemperature = hourlyData[`hour_${hour}`];
+
+            if (referenceTemperature === undefined || referenceTemperature === null) return;
+
+            const anomalyValue = Math.round((currentTemperature - referenceTemperature) * 10) / 10;
+            setAnomaly(anomalyValue);
+        } else {
+            if (!yearlyMeanByDayData || yearlyMeanByDayData.length === 0) return;
+
+            const maxTemperature = yearlyMeanByDayData[item.station.id]?.tasmax;
+            if (maxTemperature === undefined || maxTemperature === null) return;
+
+            const maxAnomaly = Math.round((item.data.maxTemperature - maxTemperature) * 10) / 10;
+            setAnomaly(maxAnomaly);
+        }
+    }, [yearlyMeanByDayData, item, selectedDate, referenceYearlyHourlyInterpolatedByDayData]);
 
     // Calculate subtitle text
     useEffect(() => {

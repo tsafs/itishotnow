@@ -4,8 +4,8 @@ import selectedCityReducer from './slices/selectedCitySlice';
 import stationsReducer from './slices/stationSlice';
 import rememberedCitiesReducer from './slices/rememberedCitiesSlice';
 import selectedDateReducer from './slices/selectedDateSlice';
-import historicalDataReducer from './slices/historicalDataSlice';
-import interpolatedHourlyDataReducer from './slices/interpolatedHourlyDataSlice';
+import yearlyMeanByDayReducer from './slices/YearlyMeanByDaySlice';
+import referenceYearlyHourlyInterpolatedByDayReducer from './slices/ReferenceYearlyHourlyInterpolatedByDaySlice';
 import liveDataReducer from './slices/liveDataSlice';
 import rollingAverageDataReducer from './slices/rollingAverageDataSlice';
 import historicalDailyDataReducer from './slices/historicalDataForStationSlice';
@@ -15,8 +15,8 @@ export const store = configureStore({
     reducer: {
         cityData: cityDataReducer,
         liveData: liveDataReducer,
-        historicalData: historicalDataReducer,
-        interpolatedHourlyData: interpolatedHourlyDataReducer,
+        yearlyMeanByDay: yearlyMeanByDayReducer,
+        referenceYearlyHourlyInterpolatedByDay: referenceYearlyHourlyInterpolatedByDayReducer,
         selectedCity: selectedCityReducer,
         rememberedCities: rememberedCitiesReducer,
         selectedDate: selectedDateReducer,
