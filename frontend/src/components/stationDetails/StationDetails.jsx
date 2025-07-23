@@ -14,7 +14,7 @@ import { DateTime } from 'luxon'; // <-- Add Luxon import
  */
 const StationDetails = () => {
     const selectedCityId = useSelector(state => state.selectedCity.cityId);
-    const historicalData = useYearlyMeanByDayData();
+    const yearlyMeanByDayData = useYearlyMeanByDayData();
     const selectedItem = useSelectedItem();
     const selectedDate = useSelectedDate();
 
@@ -54,14 +54,14 @@ const StationDetails = () => {
 
     // Calculate anomaly
     useEffect(() => {
-        if (!historicalData || historicalData.length === 0 || !item) return;
+        if (!yearlyMeanByDayData || yearlyMeanByDayData.length === 0 || !item) return;
 
-        const maxTemperature = historicalData[item.station.id]?.tasmax;
+        const maxTemperature = yearlyMeanByDayData[item.station.id]?.tasmax;
         if (maxTemperature === undefined || maxTemperature === null) return;
 
         const maxAnomaly = Math.round((item.data.maxTemperature - maxTemperature) * 10) / 10;
         setAnomaly(maxAnomaly);
-    }, [historicalData, item]);
+    }, [yearlyMeanByDayData, item]);
 
     // Calculate subtitle text
     useEffect(() => {

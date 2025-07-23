@@ -43,7 +43,7 @@ const getTextStyle = () => {
 const HistoricalAnalysis = () => {
     const dispatch = useDispatch();
     const correlatedData = useCorrelatedData();
-    const historicalData = useYearlyMeanByDayData();
+    const yearlyMeanByDayData = useYearlyMeanByDayData();
     const selectedItem = useSelectedItem();
     const selectedDate = useSelectedDate();
     const rememberedCityIds = useSelector(state => state.rememberedCities);
@@ -71,7 +71,7 @@ const HistoricalAnalysis = () => {
 
     // Render static plot (base map, contours) only when geojson or correlatedData changes
     useEffect(() => {
-        if (!correlatedData || !geojson || !historicalData) return;
+        if (!correlatedData || !geojson || !yearlyMeanByDayData) return;
 
         if (staticPlotRef.current) {
             staticPlotRef.current.innerHTML = '';
@@ -81,7 +81,7 @@ const HistoricalAnalysis = () => {
 
         // Calculate max temperature anomaly
         data.forEach(d => {
-            const maxTemperature = historicalData[d.stationId].tasmax;
+            const maxTemperature = yearlyMeanByDayData[d.stationId].tasmax;
             if (d.temperature === undefined || maxTemperature === undefined) {
                 d.anomaly = undefined; // Handle missing data gracefully
             } else {
@@ -119,7 +119,7 @@ const HistoricalAnalysis = () => {
     }, [
         correlatedData,
         geojson,
-        historicalData,
+        yearlyMeanByDayData,
     ]);
 
     // Render dynamic overlays (city dots, labels, selection) on every relevant state change
