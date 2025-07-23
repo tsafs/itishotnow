@@ -6,7 +6,7 @@ import { selectCity } from '../../../store/slices/selectedCitySlice';
 import { fetchGermanyGeoJSON } from '../../../services/GeoJSONService';
 import { useCorrelatedData } from '../../../store/hooks/correlatedDataHook';
 import StationDetails from '../../stationDetails/StationDetails';
-import { useHistoricalData } from '../../../store/hooks/historicalDataHook';
+import { useYearlyMeanByDayData } from '../../../store/slices/YearlyMeanByDaySlice';
 import { PREDEFINED_CITIES } from '../../../constants/map';
 import MapLegend from '../../d3map/MapLegend';
 import './View.css';
@@ -43,7 +43,7 @@ const getTextStyle = () => {
 const HistoricalAnalysis = () => {
     const dispatch = useDispatch();
     const correlatedData = useCorrelatedData();
-    const historicalData = useHistoricalData();
+    const historicalData = useYearlyMeanByDayData();
     const selectedItem = useSelectedItem();
     const selectedDate = useSelectedDate();
     const rememberedCityIds = useSelector(state => state.rememberedCities);

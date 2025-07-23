@@ -6,7 +6,7 @@ import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
 import { findClosestWeatherStationsForCities } from './services/CityService';
 import { PREDEFINED_CITIES } from './constants/map';
-import { fetchHistoricalData } from './store/slices/historicalDataSlice';
+import { fetchYearlyMeanByDay } from './store/slices/YearlyMeanByDaySlice';
 import { fetchHourlyData } from './store/slices/interpolatedHourlyDataSlice';
 import { fetchLiveData, selectLiveDataStatus } from './store/slices/liveDataSlice';
 import { fetchCityData, selectCities, selectAreCitiesCorrelated, selectCityDataStatus, setCities } from './store/slices/cityDataSlice';
@@ -65,7 +65,7 @@ function AppContent() {
                 await Promise.all([
                     dispatch(fetchLiveData()),
                     dispatch(fetchCityData()),
-                    dispatch(fetchHistoricalData({ month, day })),
+                    dispatch(fetchYearlyMeanByDay({ month, day })),
                     dispatch(fetchHourlyData({ month, day }))
                 ]);
             } catch (error) {

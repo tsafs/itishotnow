@@ -4,7 +4,7 @@ import { analyzeTemperatureAnomaly } from '../../utils/TemperatureUtils';
 import { useSelectedItem } from '../../store/hooks/selectedItemHook';
 import { CITY_SELECT_TIMEOUT } from '../../constants/page';
 import './StationDetails.css';
-import { useHistoricalData } from '../../store/hooks/historicalDataHook';
+import { useYearlyMeanByDayData } from '../../store/slices/YearlyMeanByDaySlice';
 import { useSelectedDate } from '../../store/slices/selectedDateSlice';
 import { getNow } from '../../utils/dateUtils';
 import { DateTime } from 'luxon'; // <-- Add Luxon import
@@ -14,7 +14,7 @@ import { DateTime } from 'luxon'; // <-- Add Luxon import
  */
 const StationDetails = () => {
     const selectedCityId = useSelector(state => state.selectedCity.cityId);
-    const historicalData = useHistoricalData();
+    const historicalData = useYearlyMeanByDayData();
     const selectedItem = useSelectedItem();
     const selectedDate = useSelectedDate();
 
