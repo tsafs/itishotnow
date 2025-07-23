@@ -150,8 +150,12 @@ export const analyzeTemperatureAnomaly = (isLiveData, anomaly) => {
         comparisonMessage = `Es ${verb_sein} brütend heiß!`;
     }
 
-    const verb_liegen = isLiveData ? "liegt" : "lag";
-    const anomalyMessage = `Die maximale Temperatur ${verb_liegen} ${Math.abs(anomaly).toFixed(1)}\u00A0°C ${anomaly > 0 ? 'über' : 'unter'} dem historischen\u00A0Mittelwert.`;
+    let anomalyMessage = null;
+    if (isLiveData) {
+        anomalyMessage = `Die zuletzt gemessene Temperatur lag ${Math.abs(anomaly).toFixed(1)}\u00A0°C ${anomaly > 0 ? 'über' : 'unter'} dem stündlichen historischen Mittelwert.`;
+    } else {
+        anomalyMessage = `Die maximal gemessene Temperatur lag ${Math.abs(anomaly).toFixed(1)}\u00A0°C ${anomaly > 0 ? 'über' : 'unter'} dem maximalen historischen Mittelwert.`;
+    }
 
     return {
         comparisonMessage,

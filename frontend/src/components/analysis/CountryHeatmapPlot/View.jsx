@@ -7,6 +7,7 @@ import { fetchGermanyGeoJSON } from '../../../services/GeoJSONService';
 import { useCorrelatedData } from '../../../store/hooks/correlatedDataHook';
 import StationDetails from '../../stationDetails/StationDetails';
 import { useYearlyMeanByDayData } from '../../../store/slices/YearlyMeanByDaySlice';
+import { useReferenceYearlyHourlyInterpolatedByDayData } from '../../../store/slices/ReferenceYearlyHourlyInterpolatedByDaySlice';
 import { PREDEFINED_CITIES } from '../../../constants/map';
 import MapLegend from '../../d3map/MapLegend';
 import './View.css';
@@ -15,7 +16,7 @@ import { useSelectedDate } from '../../../store/slices/selectedDateSlice';
 import { DateTime } from 'luxon';
 import { getNow } from '../../../utils/dateUtils';
 
-const getDataForPlot = (correlatedData) => {
+const getDataForPlot = (correlatedData, temperatureType) => {
     return Object.values(correlatedData).map(({ city, station, data }) => ({
         cityId: city.id,
         cityName: city.name,
@@ -24,7 +25,8 @@ const getDataForPlot = (correlatedData) => {
         stationId: station.id,
         stationLat: station.lat,
         stationLon: station.lon,
-        temperature: data.maxTemperature,
+        date: data.date,
+        temperature: data[temperatureType],
     }));
 };
 
@@ -43,9 +45,10 @@ const getTextStyle = () => {
 const HistoricalAnalysis = () => {
     const dispatch = useDispatch();
     const correlatedData = useCorrelatedData();
-    const yearlyMeanByDayData = useYearlyMeanByDayData();
     const selectedItem = useSelectedItem();
     const selectedDate = useSelectedDate();
+    const yearlyMeanByDayData = useYearlyMeanByDayData();
+    const referenceYearlyHourlyInterpolatedByDayData = useReferenceYearlyHourlyInterpolatedByDayData();
     const rememberedCityIds = useSelector(state => state.rememberedCities);
 
     const [geojson, setGeojson] = useState(null);
@@ -71,23 +74,38 @@ const HistoricalAnalysis = () => {
 
     // Render static plot (base map, contours) only when geojson or correlatedData changes
     useEffect(() => {
-        if (!correlatedData || !geojson || !yearlyMeanByDayData) return;
+        if (!correlatedData || !geojson) return;
 
-        if (staticPlotRef.current) {
-            staticPlotRef.current.innerHTML = '';
+        const luxonDate = DateTime.fromISO(selectedDate);
+        const isToday = luxonDate.hasSame(getNow(), 'day');
+        const data = getDataForPlot(correlatedData, isToday ? 'temperature' : 'maxTemperature');
+
+        if (isToday) {
+            if (!referenceYearlyHourlyInterpolatedByDayData) return;
+            const { data: hourlyData, month, day } = referenceYearlyHourlyInterpolatedByDayData;
+            if (!hourlyData || month !== luxonDate.month || day !== luxonDate.day) return;
+            // Calculate current hourly temperature anomaly based on interpolated hourly reference data
+            data.forEach(d => {
+                const stationData = hourlyData[d.stationId];
+                if (stationData) {
+                    const hour = DateTime.fromFormat(d.date, 'dd.MM.yyyy HH:mm', { zone: 'Europe/Berlin' }).hour;
+                    d.anomaly = d.temperature - stationData[`hour_${hour}`];
+                } else {
+                    d.anomaly = undefined; // Handle missing data gracefully
+                }
+            });
+        } else {
+            if (!yearlyMeanByDayData) return;
+            // Calculate max temperature anomaly based on yearly mean reference data
+            data.forEach(d => {
+                const maxTemperature = yearlyMeanByDayData[d.stationId].tasmax;
+                if (d.temperature === undefined || maxTemperature === undefined) {
+                    d.anomaly = undefined; // Handle missing data gracefully
+                } else {
+                    d.anomaly = d.temperature - maxTemperature;
+                }
+            });
         }
-
-        const data = getDataForPlot(correlatedData);
-
-        // Calculate max temperature anomaly
-        data.forEach(d => {
-            const maxTemperature = yearlyMeanByDayData[d.stationId].tasmax;
-            if (d.temperature === undefined || maxTemperature === undefined) {
-                d.anomaly = undefined; // Handle missing data gracefully
-            } else {
-                d.anomaly = d.temperature - maxTemperature;
-            }
-        });
 
         const staticPlot = Plot.plot({
             projection: {
@@ -115,11 +133,16 @@ const HistoricalAnalysis = () => {
             ]
         });
 
+        if (staticPlotRef.current) {
+            staticPlotRef.current.innerHTML = '';
+        }
         staticPlotRef.current.appendChild(staticPlot);
     }, [
         correlatedData,
         geojson,
         yearlyMeanByDayData,
+        referenceYearlyHourlyInterpolatedByDayData,
+        selectedDate,
     ]);
 
     // Render dynamic overlays (city dots, labels, selection) on every relevant state change

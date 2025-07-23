@@ -20,7 +20,7 @@ const { setSelectedDate } = selectedDateSlice.actions;
 // Thunk to set date and fetch historical data
 export const setDateAndFetchHistoricalData = (isoDateString) => (dispatch) => {
     dispatch(setSelectedDate(isoDateString));
-    const dt = DateTime.fromFormat(isoDateString, 'yyyy-LL-dd');
+    const dt = DateTime.fromISO(isoDateString);
     dispatch(fetchYearlyMeanByDay({ month: dt.month, day: dt.day }));
     if (!dt.hasSame(getNow(), 'day')) {
         // If the date is not today, fetch daily recent data
