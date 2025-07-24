@@ -25,6 +25,7 @@ const historicalDailyDataSlice = createSlice({
     name: 'historicalDailyData',
     initialState: {
         data: null,
+        dateRange: null,
         status: 'idle', // 'idle' | 'loading' | 'succeeded' | 'failed'
         error: null,
     },
@@ -41,9 +42,11 @@ const historicalDailyDataSlice = createSlice({
 
                 if (!state.data) {
                     state.data = {};
+                    state.dateRange = {};
                 }
 
-                state.data[stationId] = { data, dateRange };
+                state.data[stationId] = data;
+                state.dateRange[stationId] = dateRange;
             })
             .addCase(fetchDailyDataForStation.rejected, (state, action) => {
                 state.status = 'failed';
@@ -59,15 +62,13 @@ export const selectHistoricalDailyDataError = (state) => state.historicalDailyDa
 export const useHistoricalDailyDataForStation = (stationId) => {
     const data = useSelector(state => state.historicalDailyData.data);
     return useMemo(() => {
-        return data?.[stationId] ? data[stationId].data : null;
+        return data?.[stationId] ? data[stationId] : null;
     }, [data, stationId]);
 };
 
 export const useHistoricalDailyDataDateRangeForStation = (stationId) => {
-    const data = useSelector(state => state.historicalDailyData.data);
-    return useMemo(() => {
-        return data?.[stationId] ? data[stationId].dateRange : null;
-    }, [data, stationId]);
+    const dateRanges = useSelector(state => state.historicalDailyData.dateRange);
+    return dateRanges?.[stationId] ? dateRanges[stationId] : null;
 };
 
 export default historicalDailyDataSlice.reducer;

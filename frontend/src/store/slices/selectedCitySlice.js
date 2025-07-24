@@ -25,13 +25,6 @@ export const selectCity = (cityId, isPredefinedCity = false) => (dispatch, getSt
     if (!isPredefinedCity) {
         dispatch(addRememberedCity(cityId));
     }
-
-    // Preload historical data
-    const state = getState();
-    const city = selectCorrelatedCities(state)?.[cityId];
-    if (!city) return;
-
-    dispatch(fetchDailyDataForStation({ stationId: city.stationId }));
 };
 
 export const { setSelectedCity } = selectedCitySlice.actions;

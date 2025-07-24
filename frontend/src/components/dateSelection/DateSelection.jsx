@@ -6,7 +6,7 @@ import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
 import { setDateAndFetchHistoricalData } from '../../store/slices/selectedDateSlice'
 import { getNow } from '../../utils/dateUtils';
-import { useHistoricalDailyDataDateRangeForStation } from '../../store/slices/historicalDataForStationSlice';
+import { fetchDailyDataForStation, useHistoricalDailyDataDateRangeForStation } from '../../store/slices/historicalDataForStationSlice';
 import { useSelectedItem } from '../../store/hooks/selectedItemHook';
 import { useSelectedDate } from '../../store/slices/selectedDateSlice';
 import './DateSelection.css';
@@ -26,13 +26,13 @@ const DateSelection = () => {
     const navigate = useNavigate();
     const selectedDate = useSelectedDate();
     const selectedItem = useSelectedItem();
-    const historicalDateRange = useHistoricalDailyDataDateRangeForStation(selectedItem?.station.id);
+    const dateRange = useHistoricalDailyDataDateRangeForStation(selectedItem?.station.id);
 
     const [isYesterdaySelected, setIsYesterdaySelected] = useState(false);
     const [isTodaySelected, setIsTodaySelected] = useState(true);
     const [isCalendarOpen, setIsCalendarOpen] = useState(false);
     const [recentlyClosed, setRecentlyClosed] = useState(false);
-    const [isYesterdayRendered, setIsYesterdayRendered] = useState(false);
+    const [renderYesterdayButton, setRenderYesterdayButton] = useState(false);
 
     const [startMonth, setStartMonth] = useState(null);
     const [endMonth, setEndMonth] = useState(null);
@@ -42,7 +42,13 @@ const DateSelection = () => {
     const dateSelectRef = useRef(null);
 
     useEffect(() => {
-        if (!historicalDateRange) return;
+        const stationId = selectedItem?.station?.id;
+        if (!stationId) return;
+        dispatch(fetchDailyDataForStation({ stationId }));
+    }, [dispatch, selectedItem?.station?.id]);
+
+    useEffect(() => {
+        if (!dateRange) return;
 
         // Calculate yesterday's date using Luxon
         const yesterday = getNow().minus({ days: 1 });
@@ -52,16 +58,16 @@ const DateSelection = () => {
 
         // Check if yesterday is within the historical date range (using string comparison)
         const isWithinRange =
-            historicalDateRange.from <= yesterdayFormatted &&
-            historicalDateRange.to >= yesterdayFormatted;
+            dateRange.from <= yesterdayFormatted &&
+            dateRange.to >= yesterdayFormatted;
 
-        setStartMonth(convertYYYYMMDDToDate(historicalDateRange.from).toJSDate());
-        setEndMonth(convertYYYYMMDDToDate(historicalDateRange.to).toJSDate());
-        setDisabledBefore(convertYYYYMMDDToDate(historicalDateRange.from).toJSDate());
-        setDisabledAfter(convertYYYYMMDDToDate(historicalDateRange.to).toJSDate());
+        setStartMonth(convertYYYYMMDDToDate(dateRange.from).toJSDate());
+        setEndMonth(convertYYYYMMDDToDate(dateRange.to).toJSDate());
+        setDisabledBefore(convertYYYYMMDDToDate(dateRange.from).toJSDate());
+        setDisabledAfter(convertYYYYMMDDToDate(dateRange.to).toJSDate());
 
-        setIsYesterdayRendered(isWithinRange);
-    }, [historicalDateRange])
+        setRenderYesterdayButton(isWithinRange);
+    }, [dateRange])
 
     const handleDateSelection = useCallback((date) => {
         // date is a Luxon DateTime
@@ -167,7 +173,7 @@ const DateSelection = () => {
     return (
         <div className="date-select-container">
             <div className="date-selection-row">
-                {isYesterdayRendered && (
+                {renderYesterdayButton && (
                     <div
                         className={`date-toggle-button ${isYesterdaySelected ? 'active' : ''}`}
                         onClick={handleYesterdayClick}
