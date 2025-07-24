@@ -1,7 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { addRememberedCity } from './rememberedCitiesSlice';
-import { selectCorrelatedCities } from './cityDataSlice';
-import { fetchDailyDataForStation } from './historicalDataForStationSlice';
 
 const selectedCitySlice = createSlice({
     name: 'selectedCity',
