@@ -96,7 +96,7 @@ function AppContent() {
 
     // Set default city when cities are loaded
     useEffect(() => {
-        if (selectedCityId || areCitiesCorrelated) {
+        if (selectedCityId || !cities) {
             return;
         }
 
@@ -108,7 +108,7 @@ function AppContent() {
         if (city) {
             dispatch(selectCity(city.id, true));
         }
-    }, [cities, selectedCityId, areCitiesCorrelated, dispatch]);
+    }, [cities, selectedCityId, dispatch]);
 
     // Load DilyRecentByStation data when a city is selected
     useEffect(() => {
