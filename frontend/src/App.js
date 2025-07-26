@@ -11,6 +11,7 @@ import { fetchReferenceYearlyHourlyInterpolatedByDay } from './store/slices/Refe
 import { fetchLiveData, selectLiveDataStatus } from './store/slices/liveDataSlice';
 import { fetchCityData, selectCities, selectAreCitiesCorrelated, selectCityDataStatus, setCities } from './store/slices/cityDataSlice';
 import { selectCity } from './store/slices/selectedCitySlice';
+import { fetchDailyDataForStation } from './store/slices/historicalDataForStationSlice';
 
 import './App.css';
 import { getNow } from './utils/dateUtils';
@@ -108,6 +109,19 @@ function AppContent() {
             dispatch(selectCity(city.id, true));
         }
     }, [cities, selectedCityId, areCitiesCorrelated, dispatch]);
+
+    // Load DilyRecentByStation data when a city is selected
+    useEffect(() => {
+        if (!selectedCityId || !areCitiesCorrelated) return;
+
+        const city = cities[selectedCityId];
+        if (!city) return;
+
+        const station = stations[city.stationId];
+        if (!station) return;
+
+        dispatch(fetchDailyDataForStation({ stationId: station.id }));
+    }, [dispatch, selectedCityId, areCitiesCorrelated, cities, stations]);
 
     const MainPage = React.useMemo(() => {
         return () => (

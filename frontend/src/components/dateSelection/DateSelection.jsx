@@ -6,7 +6,7 @@ import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
 import { setDateAndFetchHistoricalData } from '../../store/slices/selectedDateSlice'
 import { getNow } from '../../utils/dateUtils';
-import { fetchDailyDataForStation, useHistoricalDailyDataDateRangeForStation } from '../../store/slices/historicalDataForStationSlice';
+import { useHistoricalDailyDataDateRangeForStation } from '../../store/slices/historicalDataForStationSlice';
 import { useSelectedItem } from '../../store/hooks/selectedItemHook';
 import { useSelectedDate } from '../../store/slices/selectedDateSlice';
 import './DateSelection.css';
@@ -40,12 +40,6 @@ const DateSelection = () => {
     const [disabledAfter, setDisabledAfter] = useState(null);
 
     const dateSelectRef = useRef(null);
-
-    useEffect(() => {
-        const stationId = selectedItem?.station?.id;
-        if (!stationId) return;
-        dispatch(fetchDailyDataForStation({ stationId }));
-    }, [dispatch, selectedItem?.station?.id]);
 
     useEffect(() => {
         if (!dateRange) return;
