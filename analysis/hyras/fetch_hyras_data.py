@@ -28,9 +28,9 @@ def download_netcdf_file(url, output_dir):
     else:
         print(f"Failed to download: {url}")
 
-def fetch_netcdf_files(dataset, start_year, end_year, resolution, output_dir):
+def fetch_netcdf_files(dataset, start_year, end_year, resolution, version, output_dir):
     """Fetch NetCDF files for the specified year range and resolution."""        
-    print(f"Fetching '{dataset}' NetCDF files from year {start_year} to {end_year} with resolution '{resolution}'")
+    print(f"Fetching '{dataset}' NetCDF files from year {start_year} to {end_year} with resolution '{resolution}' for version '{version}'.")
     
     base_url = f"{BASE_URL}/{dataset}/"
 
@@ -48,9 +48,10 @@ def fetch_netcdf_files(dataset, start_year, end_year, resolution, output_dir):
                     if len(file_parts) >= 4:
                         file_year = int(file_parts[3])
                         file_resolution = file_parts[2]
+                        file_version = file_parts[4]
                         
                         # Check if the file is within the requested year range and matches resolution (if specified)
-                        if start_year <= file_year <= end_year and (resolution is None or file_resolution == resolution):
+                        if start_year <= file_year <= end_year and (resolution is None or file_resolution == resolution) and (version is None or file_version == version):
                             file_url = f"{base_url}{href}"
                             download_netcdf_file(file_url, output_dir)
                 except (ValueError, IndexError) as e:
@@ -65,12 +66,13 @@ def main():
     parser.add_argument("--start-year", required=True, type=int, help="Start year for data download")
     parser.add_argument("--end-year", required=True, type=int, help="End year for data download")
     parser.add_argument("--resolution", required=True, type=str, help="Resolution of the data (e.g., '1' for 1km resolution)")
+    parser.add_argument("--version", required=True, type=str, help="Version of the data (e.g., 'v6-1')")
     parser.add_argument('--output-dir', required=True, type=str, help='Output directory for hyras NetCDF files')
     
     args = parser.parse_args()
     
     # Download files based on specified year range and resolution
-    fetch_netcdf_files(args.dataset, args.start_year, args.end_year, args.resolution, args.output_dir)
+    fetch_netcdf_files(args.dataset, args.start_year, args.end_year, args.resolution, args.version, args.output_dir)
 
 if __name__ == "__main__":
     main()
