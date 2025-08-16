@@ -114,7 +114,15 @@
             "request": "launch",
             "program": "${workspaceFolder}/analysis/stations/calculate_temperature_days.py",
             "console": "integratedTerminal",
-            "args": "--stations-file ./data/10min_station_data/10min_station_data.csv --data-dir ./data/hyras/station_data/1950-2024 --output-dir ./data/hyras/daysBelow0Tmin/historical --threshold 0 --mode below --temp-column tasmin"
+            "args": "--stations-file ./data/10min_station_data/10min_station_data.csv --data-dir ./data/hyras/station_data/1950-2024 --output-dir ./data/hyras/daysAbove25Tmax/historical --threshold 25 --mode above --temp-column tasmax"
+        },
+        {
+            "name": "Merge Temperature Threshold Results",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/analysis/stations/merge_temperature_days.py",
+            "console": "integratedTerminal",
+            "args": "--input-dirs ./data/hyras/daysBelowMinus10Tmin/historical ./data/hyras/daysBelow0Tmin/historical ./data/hyras/daysAbove25Tmax/historical ./data/hyras/daysAbove30Tmax/historical --output-dir ./data/hyras/daysAboveBelowMerged/historical --output-suffix Minus10_0_25_30_Historical"
         },
         {
             "name": "Extract Active Stations",

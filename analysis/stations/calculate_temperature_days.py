@@ -151,6 +151,7 @@ def generate_output_filename(station_id, threshold, mode, temp_column):
     - String filename
     """
     threshold_str = str(int(threshold)) if threshold == int(threshold) else str(threshold).replace('.', '_')
+    threshold_str = threshold_str.replace('-', 'Minus')  # Handle negative thresholds
     temp_column_str = temp_column.replace('tas', 'T')  # e.g., tasmax -> Tmax
 
     if mode == 'above':
