@@ -26,7 +26,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/analysis/stations/extract_10min_station_data.py",
             "console": "integratedTerminal",
-            "args": "--data-dir ./data/10min_station_data/now --output-file ./data/10min_station_data/unfiltered_10min_station_data.csv --reference-date 20250707 --invalid-value -999"
+            "args": "--data-dir ./data/10min_station_data/now --output-file ./data/10min_station_data/unfiltered_10min_station_data.csv --reference-date 20250816 --invalid-value -999"
         },
         {
             "name": "Extract daily station data",
@@ -50,7 +50,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/analysis/hyras/fetch_hyras_data.py",
             "console": "integratedTerminal",
-            "args": "--dataset air_temperature_min --start-year 1960 --end-year 1991 --resolution 1 --output-dir ./data/hyras/reference_periods"
+            "args": "--dataset air_temperature_mean --start-year 1950 --end-year 2024 --resolution 1 --version=v6-1 --output-dir ./data/hyras/reference_periods"
         },
         {
             "name": "Extract HYRAS Climate Metrics",
@@ -58,7 +58,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/analysis/hyras/extract_hyras_data.py",
             "console": "integratedTerminal",
-            "args": "--file ./data/hyras/reference_periods/tasmin_hyras_1_{1960-1991}_v6-1_de.nc --file ./data/hyras/reference_periods/tasmax_hyras_1_{1960-1991}_v6-1_de.nc --file ./data/hyras/reference_periods/tas_hyras_1_{1960-1991}_v6-1_de.nc --stations ./data/10min_station_data/10min_station_data_20250714_with_hist_means.csv --output-dir ./data/10min_station_data/hyras/1960-1991 --param tasmin --param tasmax --param tas"
+            "args": "--file ./data/hyras/reference_periods/tasmin_hyras_1_{1950-2024}_v6-1_de.nc --file ./data/hyras/reference_periods/tasmax_hyras_1_{1950-2024}_v6-1_de.nc --file ./data/hyras/reference_periods/tas_hyras_1_{1950-2024}_v6-1_de.nc --stations ./data/10min_station_data/unfiltered_10min_station_data.csv --output-dir ./data/hyras/station_data/1950-2024 --param tasmin --param tasmax --param tas"
         },
         {
             "name": "Transform HYRAS Climate Metrics Into Yearly Averages By Day",
@@ -66,7 +66,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/analysis/hyras/transform_hyras_data.py",
             "console": "integratedTerminal",
-            "args": "--input-dir ./data/hyras/selected_data_by_station/1960_1991 --output-dir ./data/hyras/yearly_mean_by_day/1961_1990 --from-year 1961 --to-year 1990"
+            "args": "--input-dir ./data/hyras/station_data/1950_2024 --output-dir ./data/hyras/yearly_mean_by_day/1961_1990 --from-year 1961 --to-year 1990"
         },
         {
             "name": "Filter 10min station data available in HYRAS grid",
@@ -74,7 +74,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/analysis/stations/filter_10min_station_data_by_hyras.py",
             "console": "integratedTerminal",
-            "args": "--station-data ./data/10min_station_data/unfiltered_10min_station_data.csv --reference-file ./data/10min_station_data/hyras/1951-2024/hyras_stations.csv --output-file ./data/10min_station_data/10min_station_data.csv"
+            "args": "--station-data ./data/10min_station_data/unfiltered_10min_station_data.csv --reference-file ./data/hyras/station_data/1950-2024/hyras_stations.csv --output-file ./data/10min_station_data/10min_station_data.csv"
         },
         {
             "name": "Calculate Rolling Averages",
@@ -82,7 +82,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/analysis/rolling_average/calculate_rolling_average.py",
             "console": "integratedTerminal",
-            "args": "--data-dir ./data/10min_station_data/hyras/1960-1991 --output-dir ./data/10min_station_data/rolling_average/1961_1990/daily --from-year 1961 --to-year 1990 --rolling-window 7"
+            "args": "--data-dir ./data/hyras/station_data/1950-2024 --output-dir ./data/hyras/rolling_average/1961_1990/daily --from-year 1961 --to-year 1990 --rolling-window 7"
         },
         {
             "name": "Calculate Rolling Averages Over Years",
@@ -90,7 +90,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/analysis/rolling_average/calculate_rolling_average.py",
             "console": "integratedTerminal",
-            "args": "--data-dir ./data/10min_station_data/hyras/1960-1991 --output-dir ./data/10min_station_data/rolling_average/1961_1990/yearly --from-year 1961 --to-year 1990 --rolling-window 7 --over-years"
+            "args": "--data-dir ./data/hyras/station_data/1950-2024 --output-dir ./data/hyras/rolling_average/1961_1990/yearly --from-year 1961 --to-year 1990 --rolling-window 7 --over-years"
         },
         {
             "name": "Interpolate Hourly Temperatures for HYRAS Stations",
@@ -98,7 +98,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/analysis/stations/interpolate_hourly_temperatures_for_stations.py",
             "console": "integratedTerminal",
-            "args": "--input-file ./data/10min_station_data/10min_station_data.csv --hyras-data ./data/10min_station_data/rolling_average/1961_1990/yearly --output-dir ./data/10min_station_data/interpolated_hourly/1961_1990 --output-prefix interpolated_hourly_temperatures_1961_1990"
+            "args": "--input-file ./data/10min_station_data/10min_station_data.csv --hyras-data ./data/hyras/rolling_average/1961_1990/yearly --output-dir ./data/hyras/interpolated_hourly/1961_1990 --output-prefix interpolated_hourly_temperatures_1961_1990"
         },
         {
             "name": "Visualize Interpolated Temperatures",
@@ -106,7 +106,15 @@
             "request": "launch",
             "program": "${workspaceFolder}/playground/visualize_temperatures.py",
             "console": "integratedTerminal",
-            "args": " --station-data ./data/10min_station_data/rolling_average/1961_1990/yearly/avg_7d_over_years_159_76_großenkneten_1961-1990.csv --hourly-data-dir ./data/10min_station_data/rolling_average/1961_1990/yearly/interpolated_hourly_temperatures/ --start-date 01-01 --end-date 01-10 --output output_plot.png"
+            "args": " --station-data ./data/hyras/rolling_average/1961_1990/yearly/avg_7d_over_years_159_76_großenkneten_1961-1990.csv --hourly-data-dir ./data/hyras/rolling_average/1961_1990/yearly/interpolated_hourly_temperatures/ --start-date 01-01 --end-date 01-10 --output output_plot.png"
+        },
+        {
+            "name": "Calculate Days Above/Below Specific Temperature",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/analysis/stations/calculate_temperature_days.py",
+            "console": "integratedTerminal",
+            "args": "--stations-file ./data/10min_station_data/10min_station_data.csv --data-dir ./data/hyras/station_data/1950-2024 --output-dir ./data/hyras/daysBelow0Tmin/historical --threshold 0 --mode below --temp-column tasmin"
         },
         {
             "name": "Extract Active Stations",
