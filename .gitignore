@@ -1,6 +1,7 @@
 # Custom to project
 playground/data
 data
+observable-testing
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
