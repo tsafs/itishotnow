@@ -12,6 +12,7 @@ import { fetchLiveData, selectLiveDataStatus } from './store/slices/liveDataSlic
 import { fetchCityData, selectCities, selectAreCitiesCorrelated, selectCityDataStatus, setCities } from './store/slices/cityDataSlice';
 import { selectCity } from './store/slices/selectedCitySlice';
 import { fetchDailyDataForStation } from './store/slices/historicalDataForStationSlice';
+import IceAndHotDaysHistorical from './components/analysis/IceAndHotDaysHistorical/View';
 
 import './App.css';
 import { getNow } from './utils/dateUtils';
@@ -131,6 +132,7 @@ function AppContent() {
                         <>
                             <CountryHeatmapPlot />
                             <HistoricalAnalysis />
+                            <IceAndHotDaysHistorical />
                         </>
                     }
                     {error && <div className="error-container">{error}</div>}
