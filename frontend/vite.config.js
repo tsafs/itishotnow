@@ -7,11 +7,12 @@ export default defineConfig({
     base: '/',
     server: {
         proxy: {
-            '/': {
-                target: 'https://esistwarm.jetzt',
-                changeOrigin: true,
-                secure: false,
-            }
+            '/': 'https://esistwarm.jetzt/'
+            // '/': {
+            //     target: 'https://esistwarm.jetzt',
+            //     changeOrigin: true,
+            //     secure: false,
+            // }
         }
     },
     plugins: [
