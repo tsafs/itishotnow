@@ -47,7 +47,7 @@ jobs:
 
       - name: Deploy with rclone
         working-directory: frontend
-        run: rclone sync build/ scaleway:${{ secrets.S3_BUCKET_NAME }} --fast-list --exclude "{data,station_data,hyras_data}/**"
+        run: rclone sync dist/ scaleway:${{ secrets.S3_BUCKET_NAME }} --fast-list --exclude "{data,station_data,hyras_data}/**"
           
       # - name: Invalidate CloudFront cache (if using CloudFront)
       #   if: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID != '' }}

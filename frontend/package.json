@@ -2,8 +2,6 @@
     "name": "frontend",
     "version": "0.1.0",
     "private": true,
-    "homepage": "https://esistwarm.jetzt/",
-    "proxy": "https://esistwarm.jetzt",
     "dependencies": {
         "@observablehq/plot": "^0.6.17",
         "@reduxjs/toolkit": "^2.8.2",
@@ -17,13 +15,16 @@
         "react-markdown": "^10.1.0",
         "react-redux": "^9.2.0",
         "react-router-dom": "^7.6.3",
-        "react-scripts": "5.0.1",
         "topojson-client": "^3.1.0",
-        "uuid": "11.1.0"
+        "uuid": "11.1.0",
+        "vite": "^7.1.2",
+        "vite-plugin-svgr": "^4.3.0",
+        "vite-tsconfig-paths": "^5.1.4"
     },
     "scripts": {
-        "start": "react-scripts start",
-        "build": "react-scripts build"
+        "start": "vite",
+        "build": "vite build",
+        "serve": "vite preview"
     },
     "eslintConfig": {
         "extends": [
@@ -41,5 +42,9 @@
             "last 1 firefox version",
             "last 1 safari version"
         ]
+    },
+    "devDependencies": {
+        "@vitejs/plugin-react": "^5.0.0",
+        "vite-plugin-node-polyfills": "^0.24.0"
     }
 }
