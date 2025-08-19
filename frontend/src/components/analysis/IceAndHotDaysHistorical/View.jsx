@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import ContentSplit from '../../layout/ContentSplit';
+import FlexibleSplit from '../../layout/FlexibleSplit';
 import './View.css';
 import { useSelectedItem } from '../../../store/hooks/selectedItemHook';
 import { useIceAndHotDaysForSelectedStation } from '../../../store/hooks/useIceAndHotDaysForSelectedStation';
 import createPlot from './Plot';
+import PlotScrollWrapper from './PlotScrollWrapper';
 
 const View = () => {
     const selectedItem = useSelectedItem();
@@ -41,17 +42,17 @@ const View = () => {
     }, [iceAndHotDays]);
 
     // Left side content with tabs for different content types
-    const rightContent = (
+    const firstContent = (
         <div className="plot-container-view">
             <div className="plot-title-view">Anzahl Eis- und Hitzetage in {selectedItem?.city.name} ({firstYear}-{lastYear})</div>
-            <div className="plot-view">
+            <PlotScrollWrapper width="1000">
                 <div ref={plotRef}></div>
-            </div>
+            </PlotScrollWrapper>
         </div>
     );
 
     // Right side content with the scatter plot
-    const leftContent = (
+    const secondContent = (
         <div className="description bg-black">
             Eistage sind Tage mit einer maximalen Temperatur unter 0°C. Heiße Tage sind Tage mit einer maximalen Temperatur über 30°C.
         </div >
@@ -59,12 +60,12 @@ const View = () => {
 
     return hasPlot ? (
         <div className="ice-and-hot-days-historical-view">
-            <ContentSplit
-                leftContent={leftContent}
-                rightContent={rightContent}
-                leftRatio={45}
-                rightRatio={55}
-                topDown={true}
+            <FlexibleSplit
+                firstContent={firstContent}
+                secondContent={secondContent}
+                firstRatio={45}
+                secondRatio={55}
+            // topDown={true}
             />
         </div>
     ) : null;

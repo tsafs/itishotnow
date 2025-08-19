@@ -130,8 +130,8 @@ function AppContent() {
                 <Suspense fallback={<div className="loading-container">Loading map data...</div>}>
                     {!error &&
                         <>
-                            <CountryHeatmapPlot />
-                            <HistoricalAnalysis />
+                            {/* <CountryHeatmapPlot />
+                            <HistoricalAnalysis /> */}
                             <IceAndHotDaysHistorical />
                         </>
                     }
