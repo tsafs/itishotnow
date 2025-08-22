@@ -2,21 +2,54 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { fetchDailyWeatherStationData } from '../../services/HistoricalDataForStationService.js';
 import { useMemo } from 'react';
 import { useAppSelector } from '../hooks/useAppSelector.js';
+import type { IDateRange } from '../../classes/DateRange.js';
 import type { RootState } from '../index.js';
+import type { IDailyRecentByStationDict } from '../../classes/DailyRecentByStation.js';
 
-export const fetchDailyDataForStation = createAsyncThunk(
+export interface DailyDataForStationState {
+    data: Record<string, IDailyRecentByStationDict> | null; // Keyed by stationId
+    dateRange: Record<string, IDateRange> | null; // Keyed by stationId
+    status: 'idle' | 'loading' | 'succeeded' | 'failed';
+    error: string | null;
+}
+
+const initialState: DailyDataForStationState = {
+    data: null,
+    dateRange: null,
+    status: 'idle',
+    error: null,
+};
+
+// Arguments for thunk
+export interface DailyDataForStationArgs {
+    stationId: string;
+}
+
+// Payload for fulfilled thunk
+export interface DailyDataForStationPayload {
+    stationId: string;
+    data: IDailyRecentByStationDict;
+    dateRange: IDateRange;
+}
+
+export const fetchDailyDataForStation = createAsyncThunk<
+    DailyDataForStationPayload, // Return type
+    DailyDataForStationArgs,    // Argument type
+    { state: RootState; rejectValue: string }
+>(
     'historicalDailyData/fetchData',
     async ({ stationId }, { rejectWithValue, getState }) => {
         const state = getState();
         const existingData = state.historicalDailyData?.data?.[stationId];
-        if (existingData) {
+        const existingDateRange = state.historicalDailyData?.dateRange?.[stationId];
+        if (existingData && existingDateRange) {
             // Return the existing data in the same format as fulfilled payload
-            return { stationId, ...existingData };
+            return { stationId, data: existingData, dateRange: existingDateRange };
         }
         try {
             const { data, dateRange } = await fetchDailyWeatherStationData(stationId);
             return { stationId, data, dateRange };
-        } catch (error) {
+        } catch (error: any) {
             return rejectWithValue(error.message);
         }
     }
@@ -24,12 +57,8 @@ export const fetchDailyDataForStation = createAsyncThunk(
 
 const historicalDailyDataSlice = createSlice({
     name: 'historicalDailyData',
-    initialState: {
-        data: null,
-        dateRange: null,
-        status: 'idle', // 'idle' | 'loading' | 'succeeded' | 'failed'
-        error: null,
-    },
+    initialState,
+    reducers: {},
     extraReducers: (builder) => {
         builder
             .addCase(fetchDailyDataForStation.pending, (state) => {
@@ -43,6 +72,8 @@ const historicalDailyDataSlice = createSlice({
 
                 if (!state.data) {
                     state.data = {};
+                }
+                if (!state.dateRange) {
                     state.dateRange = {};
                 }
 

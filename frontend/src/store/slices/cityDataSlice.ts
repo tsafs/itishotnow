@@ -3,7 +3,6 @@ import type { PayloadAction } from '@reduxjs/toolkit';
 import { fetchGermanCities } from '../../services/CityService.js';
 import City from '../../classes/City.js';
 
-// Types
 export interface CityDataState {
     data: Record<string, any>;
     areCitiesCorrelated: boolean;

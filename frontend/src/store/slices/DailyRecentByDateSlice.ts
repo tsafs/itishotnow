@@ -1,22 +1,57 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { fetchDailyRecentByDateData } from '../../services/DailyRecentByDateService.js';
+import type { PayloadAction } from '@reduxjs/toolkit';
+import { fetchDailyRecentByDateData } from '../../services/DailyRecentByDateService';
 import { useMemo } from 'react';
-import { useAppSelector } from '../hooks/useAppSelector.js';
-import type { RootState } from '../index.js';
+import { useAppSelector } from '../hooks/useAppSelector';
+import type { RootState } from '../index';
 
-export const fetchDailyRecentByDate = createAsyncThunk(
+// Type for 'YYYY-MM-DD' string
+export type DateKey = `${number}-${number}-${number}`;
+
+export interface DailyRecentByDateState {
+    data: Record<DateKey, any> | null; // Keyed by 'YYYY-MM-DD'
+    status: 'idle' | 'loading' | 'succeeded' | 'failed';
+    error: string | null;
+}
+
+const initialState: DailyRecentByDateState = {
+    data: null,
+    status: 'idle',
+    error: null,
+};
+
+// Arguments for thunk
+export interface DailyRecentByDateArgs {
+    year: number;
+    month: number;
+    day: number;
+}
+
+// Payload for fulfilled thunk
+export interface DailyRecentByDatePayload {
+    data: any;
+    year: number;
+    month: number;
+    day: number;
+}
+
+export const fetchDailyRecentByDate = createAsyncThunk<
+    DailyRecentByDatePayload, // Return type
+    DailyRecentByDateArgs,    // Argument type
+    { state: RootState; rejectValue: string }
+>(
     'dailyRecentByDate/fetchData',
     async ({ year, month, day }, { rejectWithValue, getState }) => {
         const state = getState();
         const existingData = state.dailyRecentByDate.data?.[`${year}-${month}-${day}`];
         if (existingData) {
             // Return the existing data in the same format as fulfilled payload
-            return { ...existingData };
+            return { data: existingData, year, month, day };
         }
         try {
             const data = await fetchDailyRecentByDateData({ year, month, day });
             return { data, year, month, day };
-        } catch (error) {
+        } catch (error: any) {
             return rejectWithValue(error.message);
         }
     }
@@ -24,18 +59,15 @@ export const fetchDailyRecentByDate = createAsyncThunk(
 
 const dailyRecentByDateSlice = createSlice({
     name: 'dailyRecentByDate',
-    initialState: {
-        data: null,
-        status: 'idle', // 'idle' | 'loading' | 'succeeded' | 'failed'
-        error: null,
-    },
+    initialState,
+    reducers: {},
     extraReducers: (builder) => {
         builder
             .addCase(fetchDailyRecentByDate.pending, (state) => {
                 state.status = 'loading';
                 state.data = null;
             })
-            .addCase(fetchDailyRecentByDate.fulfilled, (state, action) => {
+            .addCase(fetchDailyRecentByDate.fulfilled, (state, action: PayloadAction<DailyRecentByDatePayload>) => {
                 state.status = 'succeeded';
                 state.error = null;
                 const { data, year, month, day } = action.payload;
@@ -48,7 +80,7 @@ const dailyRecentByDateSlice = createSlice({
             })
             .addCase(fetchDailyRecentByDate.rejected, (state, action) => {
                 state.status = 'failed';
-                state.error = action.payload || 'Failed to fetch dailyRecentByDate data for station';
+                state.error = (action.payload as string) || 'Failed to fetch dailyRecentByDate data for station';
             });
     },
 });
@@ -57,8 +89,8 @@ export const selectDailyRecentByDateStatus = (state: RootState) => state.dailyRe
 export const selectDailyRecentByDateError = (state: RootState) => state.dailyRecentByDate.error;
 
 // Selector hooks
-export const useDailyRecentByDate = ({ year, month, day }) => {
-    const data = useAppSelector(state => state.dailyRecentByDate.data);
+export const useDailyRecentByDate = ({ year, month, day }: DailyRecentByDateArgs): any => {
+    const data = useAppSelector((state: RootState) => state.dailyRecentByDate.data);
     return useMemo(() => {
         return data?.[`${year}-${month}-${day}`] || null;
     }, [data, year, month, day]);
