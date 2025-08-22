@@ -1,7 +1,8 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { fetchDailyRecentByDateData } from '../../services/DailyRecentByDateService.js';
-import { useSelector } from 'react-redux';
 import { useMemo } from 'react';
+import { useAppSelector } from '../hooks/useAppSelector.js';
+import type { RootState } from '../index.js';
 
 export const fetchDailyRecentByDate = createAsyncThunk(
     'dailyRecentByDate/fetchData',
@@ -52,12 +53,12 @@ const dailyRecentByDateSlice = createSlice({
     },
 });
 
-export const selectDailyRecentByDateStatus = (state) => state.dailyRecentByDate.status;
-export const selectDailyRecentByDateError = (state) => state.dailyRecentByDate.error;
+export const selectDailyRecentByDateStatus = (state: RootState) => state.dailyRecentByDate.status;
+export const selectDailyRecentByDateError = (state: RootState) => state.dailyRecentByDate.error;
 
 // Selector hooks
 export const useDailyRecentByDate = ({ year, month, day }) => {
-    const data = useSelector(state => state.dailyRecentByDate.data);
+    const data = useAppSelector(state => state.dailyRecentByDate.data);
     return useMemo(() => {
         return data?.[`${year}-${month}-${day}`] || null;
     }, [data, year, month, day]);

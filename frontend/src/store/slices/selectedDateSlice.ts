@@ -1,9 +1,9 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { useSelector } from 'react-redux';
 import { getNow } from '../../utils/dateUtils.js';
 import { DateTime } from 'luxon';
 import { fetchYearlyMeanByDay } from './YearlyMeanByDaySlice.js';
 import { fetchDailyRecentByDate } from './DailyRecentByDateSlice.js';
+import { useAppSelector } from '../hooks/useAppSelector.js';
 
 const selectedDateSlice = createSlice({
     name: 'selectedDate',
@@ -29,7 +29,7 @@ export const setDateAndFetchHistoricalData = (isoDateString) => (dispatch) => {
 };
 
 export const useSelectedDate = () => {
-    return useSelector(state => state.selectedDate);
+    return useAppSelector(state => state.selectedDate);
 };
 
 export { setSelectedDate };

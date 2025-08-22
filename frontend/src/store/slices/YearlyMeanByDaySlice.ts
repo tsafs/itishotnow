@@ -1,7 +1,8 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { fetchYearlyMeanByDayData } from '../../services/YearlyMeanByDayService.ts';
-import { useSelector } from 'react-redux';
+import { fetchYearlyMeanByDayData } from '../../services/YearlyMeanByDayService';
 import { useMemo } from 'react';
+import { useAppSelector } from '../hooks/useAppSelector.js';
+import type { RootState } from '../index.js';
 
 // Create async thunk for fetching historical data
 export const fetchYearlyMeanByDay = createAsyncThunk(
@@ -46,15 +47,15 @@ const yearlyMeanByDaySlice = createSlice({
 });
 
 // Selectors
-export const selectYearlyMeanByDayData = (state) => state.yearlyMeanByDay.data;
-export const selectYearlyMeanByDayStatus = (state) => state.yearlyMeanByDay.status;
-export const selectYearlyMeanByDayError = (state) => state.yearlyMeanByDay.error;
-export const selectYearlyMeanByDayDataForStation = (state, stationId) => state.yearlyMeanByDay.data?.[stationId];
+export const selectYearlyMeanByDayData = (state: RootState) => state.yearlyMeanByDay.data;
+export const selectYearlyMeanByDayStatus = (state: RootState) => state.yearlyMeanByDay.status;
+export const selectYearlyMeanByDayError = (state: RootState) => state.yearlyMeanByDay.error;
+export const selectYearlyMeanByDayDataForStation = (state: RootState, stationId: string) => state.yearlyMeanByDay.data?.[stationId];
 
 // Hooks
 export const useYearlyMeanByDayData = () => {
-    const yearlyMeanByDay = useSelector(state => state.yearlyMeanByDay.data);
-    const status = useSelector(state => state.yearlyMeanByDay.status);
+    const yearlyMeanByDay = useAppSelector(state => state.yearlyMeanByDay.data);
+    const status = useAppSelector(state => state.yearlyMeanByDay.status);
 
     return useMemo(() => {
         if (status !== 'succeeded') {

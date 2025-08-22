@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { useSelector } from 'react-redux';
 import { analyzeTemperatureAnomaly } from '../../utils/TemperatureUtils.js';
 import { useSelectedItem } from '../../store/hooks/selectedItemHook.js';
 import { CITY_SELECT_TIMEOUT } from '../../constants/page.js';
@@ -9,12 +8,13 @@ import { useReferenceYearlyHourlyInterpolatedByDayData } from '../../store/slice
 import { useSelectedDate } from '../../store/slices/selectedDateSlice.js';
 import { getNow } from '../../utils/dateUtils.js';
 import { DateTime } from 'luxon'; // <-- Add Luxon import
+import { useAppSelector } from '../../store/hooks/useAppSelector.js';
 
 /**
  * Panel component to display city information with nearest weather station data
  */
 const StationDetails = () => {
-    const selectedCityId = useSelector(state => state.selectedCity.cityId);
+    const selectedCityId = useAppSelector(state => state.selectedCity.cityId);
     const yearlyMeanByDayData = useYearlyMeanByDayData();
     const referenceYearlyHourlyInterpolatedByDayData = useReferenceYearlyHourlyInterpolatedByDayData();
     const selectedItem = useSelectedItem();

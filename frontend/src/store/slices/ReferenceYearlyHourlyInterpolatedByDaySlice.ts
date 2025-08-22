@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { useSelector } from 'react-redux';
 import { useMemo } from 'react';
 import { fetchReferenceYearlyHourlyInterpolatedByDayData } from '../../services/ReferenceYearlyHourlyInterpolatedByDayService.js';
+import { useAppSelector } from '../hooks/useAppSelector.js';
 
 /**
  * Async thunk to fetch interpolated hourly data for a specific day
@@ -52,9 +52,9 @@ export const { clearHourlyData } = referenceYearlyHourlyInterpolatedByDaySlice.a
 
 // Hooks
 export const useReferenceYearlyHourlyInterpolatedByDayData = () => {
-    const referenceYearlyHourlyInterpolatedByDay = useSelector(state => state.referenceYearlyHourlyInterpolatedByDay.data);
-    const { month: currentMonth, day: currentDay } = useSelector(state => state.referenceYearlyHourlyInterpolatedByDay.currentDay);
-    const status = useSelector(state => state.referenceYearlyHourlyInterpolatedByDay.status);
+    const referenceYearlyHourlyInterpolatedByDay = useAppSelector(state => state.referenceYearlyHourlyInterpolatedByDay.data);
+    const { month: currentMonth, day: currentDay } = useAppSelector(state => state.referenceYearlyHourlyInterpolatedByDay.currentDay);
+    const status = useAppSelector(state => state.referenceYearlyHourlyInterpolatedByDay.status);
 
     return useMemo(() => {
         if (status !== 'succeeded') {

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import * as d3 from 'd3';
 import MapTooltip from './MapTooltip.js';
 import { MAP_ZOOM_LEVEL, MAP_CENTER, MAP_DIMENSIONS, PREDEFINED_CITIES } from '../../constants/map.js';
@@ -10,16 +10,17 @@ import { selectInterpolatedHourlyData } from '../../store/slices/interpolatedHou
 import { extractHourFromDateString } from '../../utils/dataUtils.js';
 import { selectLiveData } from '../../store/slices/liveDataSlice.js';
 import './StationMarkers.css';
+import { useAppSelector } from '../../store/hooks/useAppSelector.js';
 
 const StationMarkers = () => {
     const dispatch = useDispatch();
-    const rememberedCityIds = useSelector(state => state.rememberedCities);
-    const cities = useSelector(selectCities);
-    const areCitiesCorrelated = useSelector(selectAreCitiesCorrelated);
-    const selectedCityId = useSelector(state => state.selectedCity.cityId);
-    const hourlyData = useSelector(selectInterpolatedHourlyData);
-    const stations = useSelector(state => state.stations.stations);
-    const liveData = useSelector(selectLiveData);
+    const rememberedCityIds = useAppSelector(state => state.rememberedCities);
+    const cities = useAppSelector(selectCities);
+    const areCitiesCorrelated = useAppSelector(selectAreCitiesCorrelated);
+    const selectedCityId = useAppSelector(state => state.selectedCity.cityId);
+    const hourlyData = useAppSelector(selectInterpolatedHourlyData);
+    const stations = useAppSelector(state => state.stations.stations);
+    const liveData = useAppSelector(selectLiveData);
 
     const markersRef = useRef(null);
     const tooltipRef = useRef(null);

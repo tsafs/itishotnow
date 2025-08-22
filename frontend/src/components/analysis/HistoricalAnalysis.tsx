@@ -1,13 +1,13 @@
-import { useSelector } from 'react-redux';
 import ContentSplit from '../layout/ContentSplit.js';
 import TemperatureScatterPlot from '../charts/TemperatureScatterPlot.js';
 import './HistoricalAnalysis.css';
 import { useSelectedDate } from '../../store/slices/selectedDateSlice.js';
 import { DateTime } from 'luxon';
 import { getNow } from '../../utils/dateUtils.js';
+import { useAppSelector } from '../../store/hooks/useAppSelector.js';
 
 const HistoricalAnalysis = () => {
-    const selectedCity = useSelector(state => state.selectedCity);
+    const selectedCity = useAppSelector(state => state.selectedCity);
     const selectedDate = useSelectedDate();
     const isToday = DateTime.fromISO(selectedDate).hasSame(getNow(), 'day');
 

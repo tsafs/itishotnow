@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { FaSearch } from 'react-icons/fa';
 import { PREDEFINED_CITIES } from '../../constants/map.js';
@@ -7,14 +7,15 @@ import { selectCity } from '../../store/slices/selectedCitySlice.js';
 import { selectCities, selectAreCitiesCorrelated } from '../../store/slices/cityDataSlice.js';
 import { selectLiveData } from '../../store/slices/liveDataSlice.js';
 import './StationSearch.css';
+import { useAppSelector } from '../../store/hooks/useAppSelector.js';
 
 const StationSearch = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
-    const cities = useSelector(selectCities);
-    const areCitiesCorrelated = useSelector(selectAreCitiesCorrelated);
-    const liveData = useSelector(selectLiveData);
-    const selectedCityId = useSelector(state => state.selectedCity.cityId);
+    const cities = useAppSelector(selectCities);
+    const areCitiesCorrelated = useAppSelector(selectAreCitiesCorrelated);
+    const liveData = useAppSelector(selectLiveData);
+    const selectedCityId = useAppSelector(state => state.selectedCity.cityId);
 
     const [searchTerm, setSearchTerm] = useState('');
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);

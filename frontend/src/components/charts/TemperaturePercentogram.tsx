@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import * as Plot from "@observablehq/plot";
 import * as d3 from "d3";
-import { useSelector } from 'react-redux';
 import { fetchHyrasMappedWeatherStations, fetchRollingAverageForStation } from '../../services/DataService.js';
 import { getNow } from '../../utils/DateUtils';
 import { DateTime } from 'luxon';
 import { filterTemperatureDataByDateWindow } from '../../utils/rollingAverageUtils.js';
 import './TemperaturePercentogram.css';
+import { useAppSelector } from '../../store/hooks/useAppSelector.js';
 
 
 /**
@@ -21,7 +21,7 @@ function percentiles(numbers) {
 
 const TemperaturePercentogram = ({ fromYear = 1961, toYear = 1990 }) => {
     const containerRef = useRef();
-    const selectedCity = useSelector(state => state.selectedCity);
+    const selectedCity = useAppSelector(state => state.selectedCity);
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);

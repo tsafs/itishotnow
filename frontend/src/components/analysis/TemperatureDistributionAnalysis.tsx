@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { useSelector } from 'react-redux';
 import ContentSplit from '../layout/ContentSplit.js';
 import TemperaturePercentogram from '../charts/TemperaturePercentogram.js';
 import './TemperatureDistributionAnalysis.css';
+import { useAppSelector } from '../../store/hooks/useAppSelector.js';
 
 const TemperatureDistributionAnalysis = () => {
-    const selectedCity = useSelector(state => state.selectedCity);
+    const selectedCity = useAppSelector(state => state.selectedCity);
     const [timeRange, setTimeRange] = useState({ from: 1961, to: 1990 });
     const [activeTab, setActiveTab] = useState('description');
 

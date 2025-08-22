@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import * as Plot from "@observablehq/plot";
 import { html } from 'htl';
 import * as d3 from "d3";
-import { useSelector, useDispatch } from 'react-redux';
 import { getNow } from '../../utils/dateUtils.js';
 import { filterTemperatureDataByDateWindow } from '../../utils/rollingAverageUtils.js';
 import './TemperatureScatterPlot.css';
@@ -11,6 +10,8 @@ import { fetchRollingAverageData, selectRollingAverageDataStatus } from '../../s
 import { useSelectedItem } from '../../store/hooks/selectedItemHook.js';
 import { DateTime } from 'luxon';
 import { useSelectedDate } from '../../store/slices/selectedDateSlice.js';
+import { useAppSelector } from '../../store/hooks/useAppSelector.js';
+import { useDispatch } from 'react-redux';
 
 const TemperatureScatterPlot = () => {
     const dispatch = useDispatch();
@@ -19,8 +20,8 @@ const TemperatureScatterPlot = () => {
     const selectedItem = useSelectedItem();
     const selectedDate = useSelectedDate();
 
-    const rollingAverageData = useSelector(selectRollingAverageData);
-    const rollingAverageDataStatus = useSelector(selectRollingAverageDataStatus);
+    const rollingAverageData = useAppSelector(selectRollingAverageData);
+    const rollingAverageDataStatus = useAppSelector(selectRollingAverageDataStatus);
 
     const [error, setError] = useState(null);
 

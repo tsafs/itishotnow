@@ -4,7 +4,7 @@ import { fetchGermanCities } from '../../services/CityService.js';
 import City from '../../classes/City.js';
 
 // Types
-interface CityDataState {
+export interface CityDataState {
     data: Record<string, any>;
     areCitiesCorrelated: boolean;
     status: 'idle' | 'loading' | 'succeeded' | 'failed';

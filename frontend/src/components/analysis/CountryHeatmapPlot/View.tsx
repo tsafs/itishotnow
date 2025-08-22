@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import * as Plot from "@observablehq/plot";
 import ContentSplit from '../../layout/ContentSplit.js';
 import { selectCity } from '../../../store/slices/selectedCitySlice.js';
@@ -15,6 +15,7 @@ import { useSelectedItem } from '../../../store/hooks/selectedItemHook.js';
 import { useSelectedDate } from '../../../store/slices/selectedDateSlice.js';
 import { DateTime } from 'luxon';
 import { getNow } from '../../../utils/dateUtils.js';
+import { useAppSelector } from '../../../store/hooks/useAppSelector.js';
 
 const getDataForPlot = (correlatedData, temperatureType) => {
     return Object.values(correlatedData).map(({ city, station, data }) => ({
@@ -49,7 +50,7 @@ const HistoricalAnalysis = () => {
     const selectedDate = useSelectedDate();
     const yearlyMeanByDayData = useYearlyMeanByDayData();
     const referenceYearlyHourlyInterpolatedByDayData = useReferenceYearlyHourlyInterpolatedByDayData();
-    const rememberedCityIds = useSelector(state => state.rememberedCities);
+    const rememberedCityIds = useAppSelector(state => state.rememberedCities);
 
     const [geojson, setGeojson] = useState(null);
 

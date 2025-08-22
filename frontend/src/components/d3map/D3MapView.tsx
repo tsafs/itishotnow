@@ -6,13 +6,16 @@ import { selectCity } from '../../store/slices/selectedCitySlice.js';
 import './D3MapView.css';
 import { updateDataByDate } from '../../store/slices/weatherStationDataSlice.js';
 import { getNow } from '../../utils/dateUtils.js';
+import { useAppSelector } from '../../store/hooks/useAppSelector.js';
+import { useDispatch } from 'react-redux';
+import { useEffect } from 'react';
 
 const DEFAULT_CITY = "berlin"; // Default city to select
 
 const D3MapView = () => {
     const dispatch = useDispatch();
-    const cities = useSelector(state => state.cities);
-    const selectedCity = useSelector(state => state.selectedCity);
+    const cities = useAppSelector(state => state.cities);
+    const selectedCity = useAppSelector(state => state.selectedCity);
 
     // Set default city when cities are loaded
     useEffect(() => {

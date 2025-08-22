@@ -1,7 +1,8 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { fetchDailyWeatherStationData } from '../../services/HistoricalDataForStationService.js';
-import { useSelector } from 'react-redux';
 import { useMemo } from 'react';
+import { useAppSelector } from '../hooks/useAppSelector.js';
+import type { RootState } from '../index.js';
 
 export const fetchDailyDataForStation = createAsyncThunk(
     'historicalDailyData/fetchData',
@@ -55,19 +56,19 @@ const historicalDailyDataSlice = createSlice({
     },
 });
 
-export const selectHistoricalDailyDataStatus = (state) => state.historicalDailyData.status;
-export const selectHistoricalDailyDataError = (state) => state.historicalDailyData.error;
+export const selectHistoricalDailyDataStatus = (state: RootState) => state.historicalDailyData.status;
+export const selectHistoricalDailyDataError = (state: RootState) => state.historicalDailyData.error;
 
 // Selector hooks
-export const useHistoricalDailyDataForStation = (stationId) => {
-    const data = useSelector(state => state.historicalDailyData.data);
+export const useHistoricalDailyDataForStation = (stationId: string) => {
+    const data = useAppSelector(state => state.historicalDailyData.data);
     return useMemo(() => {
         return data?.[stationId] ? data[stationId] : null;
     }, [data, stationId]);
 };
 
-export const useHistoricalDailyDataDateRangeForStation = (stationId) => {
-    const dateRanges = useSelector(state => state.historicalDailyData.dateRange);
+export const useHistoricalDailyDataDateRangeForStation = (stationId: string) => {
+    const dateRanges = useAppSelector(state => state.historicalDailyData.dateRange);
     return dateRanges?.[stationId] ? dateRanges[stationId] : null;
 };
 

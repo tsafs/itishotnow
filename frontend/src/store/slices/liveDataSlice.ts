@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit'
 import { fetchLiveData as fetchLiveDataService } from '../../services/LiveDataService.js';
 import { setStations } from './stationSlice.js';
 import StationData from '../../classes/StationData.js';
+import type { RootState } from '../index';
 
 export const fetchLiveData = createAsyncThunk(
     'liveData/fetchData',
@@ -63,7 +64,7 @@ export const { clearLiveData } = liveDataSlice.actions;
 
 // Selectors
 export const selectLiveData = createSelector(
-    state => state.liveData.data,
+    (state: RootState) => state.liveData.data,
     (data) => {
         const result = {};
         for (const [stationId, stationData] of Object.entries(data || {})) {
@@ -75,7 +76,7 @@ export const selectLiveData = createSelector(
 
 export const selectLiveDataForStation = createSelector(
     [
-        state => state.liveData.data,
+        (state: RootState) => state.liveData.data,
         (_, stationId) => stationId
     ],
     (data, stationId) => {
@@ -83,7 +84,7 @@ export const selectLiveDataForStation = createSelector(
     }
 );
 
-export const selectLiveDataStatus = (state) => state.liveData.status;
-export const selectLiveDataError = (state) => state.liveData.error;
+export const selectLiveDataStatus = (state: RootState) => state.liveData.status;
+export const selectLiveDataError = (state: RootState) => state.liveData.error;
 
 export default liveDataSlice.reducer;
