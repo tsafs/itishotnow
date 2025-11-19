@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
-import City from '../classes/City.js';
+import type { ICity } from '../classes/City.js';
+import type { IStation } from '../classes/Station.js';
 
 /**
  * Service to fetch German cities from CSV file
@@ -18,21 +19,21 @@ export const fetchGermanCities = async () => {
         const lines = text.split('\n');
 
         // Skip header line and parse remaining lines
-        const cities = lines.slice(1).map(line => {
+        const cities: Array<ICity | null> = lines.slice(1).map(line => {
             if (!line.trim()) return null; // Skip empty lines
 
             const [name, lat, lon] = line.split(',');
             if (!name || !lat || !lon) return null;
 
-            return new City(
-                uuidv4(),
-                name.trim(),
-                parseFloat(lat),
-                parseFloat(lon)
-            );
+            return {
+                id: uuidv4(),
+                name: name.trim(),
+                lat: parseFloat(lat),
+                lon: parseFloat(lon)
+            } as ICity;
         }).filter(Boolean); // Remove null entries
 
-        return cities as Array<City>;
+        return cities as Array<ICity>;
     } catch (error) {
         console.error("Error loading German cities data:", error);
         throw error;
@@ -47,7 +48,7 @@ export const fetchGermanCities = async () => {
  * @param {number} lon2 - Longitude of the second point
  * @returns {number} Distance in kilometers
  */
-export const calculateDistance = (lat1, lon1, lat2, lon2) => {
+export const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
     const R = 6371; // Radius of the Earth in km
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
@@ -65,14 +66,24 @@ export const calculateDistance = (lat1, lon1, lat2, lon2) => {
  * @param {Object} stations - Dictionary of stationId -> station
  * @returns {Array} Cities with nearest station information
  */
-export const findClosestWeatherStationsForCities = (cities, stations) => {
-    const result = {};
+export const findClosestWeatherStationsForCities = (cities: Record<string, ICity>, stations: Record<string, IStation>) => {
+    if (Object.keys(stations).length === 0) {
+        console.warn("No stations available to find nearest for cities");
+        return cities; // Return original cities if no stations available
+    }
+
+    const result: Record<string, ICity> = {};
     Object.values(cities).forEach(city => {
-        let nearestStation = null;
-        let minDistance = Infinity;
+        // Default to first station
+        const firstStation = Object.values(stations)[0] as IStation;
+        let nearestStation: IStation = firstStation;
+        let minDistance = calculateDistance(
+            city.lat, city.lon,
+            firstStation.lat, firstStation.lon
+        );;
 
         // Find the nearest station for this city
-        Object.values(stations).forEach(station => {
+        Object.values(stations).forEach((station: IStation) => {
             // Some stations might have invalid coordinates
             if (isNaN(station.lat) || isNaN(station.lon)) {
                 return;
@@ -90,14 +101,14 @@ export const findClosestWeatherStationsForCities = (cities, stations) => {
         });
 
         // Create a copy of the city with nearest station info
-        result[city.id] = new City(
-            city.id,
-            city.name,
-            city.lat,
-            city.lon,
-            nearestStation.id,
-            minDistance
-        );
+        result[city.id] = {
+            id: city.id,
+            name: city.name,
+            lat: city.lat,
+            lon: city.lon,
+            stationId: nearestStation.id,
+            distanceToStation: minDistance
+        } as ICity;
     });
 
     return result;

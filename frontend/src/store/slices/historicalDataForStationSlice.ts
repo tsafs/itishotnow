@@ -4,18 +4,18 @@ import { useMemo } from 'react';
 import { useAppSelector } from '../hooks/useAppSelector.js';
 import type { IDateRange } from '../../classes/DateRange.js';
 import type { RootState } from '../index.js';
-import type { IDailyRecentByStationDict } from '../../classes/DailyRecentByStation.js';
+import type { IStationDataByDate } from '../../classes/DailyRecentByStation.js';
 
 export interface DailyDataForStationState {
-    data: Record<string, IDailyRecentByStationDict> | null; // Keyed by stationId
-    dateRange: Record<string, IDateRange> | null; // Keyed by stationId
+    data: Record<string, IStationDataByDate>; // Keyed by stationId
+    dateRange: Record<string, IDateRange>; // Keyed by stationId
     status: 'idle' | 'loading' | 'succeeded' | 'failed';
     error: string | null;
 }
 
 const initialState: DailyDataForStationState = {
-    data: null,
-    dateRange: null,
+    data: {},
+    dateRange: {},
     status: 'idle',
     error: null,
 };
@@ -28,7 +28,7 @@ export interface DailyDataForStationArgs {
 // Payload for fulfilled thunk
 export interface DailyDataForStationPayload {
     stationId: string;
-    data: IDailyRecentByStationDict;
+    data: IStationDataByDate;
     dateRange: IDateRange;
 }
 
@@ -63,7 +63,6 @@ const historicalDailyDataSlice = createSlice({
         builder
             .addCase(fetchDailyDataForStation.pending, (state) => {
                 state.status = 'loading';
-                state.data = null;
             })
             .addCase(fetchDailyDataForStation.fulfilled, (state, action) => {
                 state.status = 'succeeded';
@@ -94,13 +93,13 @@ export const selectHistoricalDailyDataError = (state: RootState) => state.histor
 export const useHistoricalDailyDataForStation = (stationId: string) => {
     const data = useAppSelector(state => state.historicalDailyData.data);
     return useMemo(() => {
-        return data?.[stationId] ? data[stationId] : null;
+        return data[stationId] ? data[stationId] : null;
     }, [data, stationId]);
 };
 
 export const useHistoricalDailyDataDateRangeForStation = (stationId: string) => {
     const dateRanges = useAppSelector(state => state.historicalDailyData.dateRange);
-    return dateRanges?.[stationId] ? dateRanges[stationId] : null;
+    return dateRanges[stationId] ? dateRanges[stationId] : null;
 };
 
 export default historicalDailyDataSlice.reducer;

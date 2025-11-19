@@ -1,17 +1,17 @@
 import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 import { fetchGermanCities } from '../../services/CityService.js';
-import City from '../../classes/City.js';
+import type { ICity } from '../../classes/City.js';
 
 export interface CityDataState {
-    data: Record<string, any>;
+    data: Record<string, ICity>;
     areCitiesCorrelated: boolean;
     status: 'idle' | 'loading' | 'succeeded' | 'failed';
     error: string | null;
 }
 
 export const fetchCityData = createAsyncThunk<
-    Record<string, any>,
+    Record<string, ICity>,
     void,
     { rejectValue: string }
 >(
@@ -21,7 +21,7 @@ export const fetchCityData = createAsyncThunk<
             const data = await fetchGermanCities();
             let result: Record<string, any> = {}
             for (const city of data) {
-                result[city.id] = city.toJSON();
+                result[city.id] = city;
             }
             return result;
         } catch (error: any) {
@@ -41,7 +41,7 @@ const cityDataSlice = createSlice({
     name: 'cityData',
     initialState,
     reducers: {
-        setCities: (state, action: PayloadAction<Record<string, any>>) => {
+        setCities: (state, action: PayloadAction<Record<string, ICity>>) => {
             state.data = action.payload;
             state.areCitiesCorrelated = true;
         }
@@ -52,7 +52,7 @@ const cityDataSlice = createSlice({
                 state.status = 'loading';
                 state.areCitiesCorrelated = false;
             })
-            .addCase(fetchCityData.fulfilled, (state, action: PayloadAction<Record<string, any>>) => {
+            .addCase(fetchCityData.fulfilled, (state, action: PayloadAction<Record<string, ICity>>) => {
                 state.status = 'succeeded';
                 state.data = action.payload;
                 state.error = null;
@@ -69,23 +69,13 @@ export const { setCities } = cityDataSlice.actions;
 // Selectors
 export const selectCities = createSelector(
     (state: { cityData: CityDataState }) => state.cityData.data,
-    (data) => {
-        const result: Record<string, City> = {};
-        for (const [cityId, cityData] of Object.entries(data || {})) {
-            result[cityId] = City.fromJSON(cityData);
-        }
-        return result;
-    }
+    data => data
 );
 export const selectCorrelatedCities = createSelector(
     (state: { cityData: CityDataState }) => state.cityData,
     (cityData) => {
         if (!cityData.areCitiesCorrelated) return null;
-        const result: Record<string, City> = {};
-        for (const [id, city] of Object.entries(cityData.data)) {
-            result[id] = City.fromJSON(city);
-        }
-        return result;
+        return cityData.data;
     }
 );
 export const selectCityDataStatus = (state: { cityData: CityDataState }) => state.cityData.status;

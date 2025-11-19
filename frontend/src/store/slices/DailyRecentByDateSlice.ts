@@ -4,18 +4,19 @@ import { fetchDailyRecentByDateData } from '../../services/DailyRecentByDateServ
 import { useMemo } from 'react';
 import { useAppSelector } from '../hooks/useAppSelector';
 import type { RootState } from '../index';
+import type { IStationDataByStationId } from '../../classes/DailyRecentByStation';
 
 // Type for 'YYYY-MM-DD' string
 export type DateKey = `${number}-${number}-${number}`;
 
 export interface DailyRecentByDateState {
-    data: Record<DateKey, any> | null; // Keyed by 'YYYY-MM-DD'
+    data: Record<string, IStationDataByStationId>; // Keyed by 'YYYY-MM-DD'
     status: 'idle' | 'loading' | 'succeeded' | 'failed';
     error: string | null;
 }
 
 const initialState: DailyRecentByDateState = {
-    data: null,
+    data: {},
     status: 'idle',
     error: null,
 };
@@ -29,7 +30,7 @@ export interface DailyRecentByDateArgs {
 
 // Payload for fulfilled thunk
 export interface DailyRecentByDatePayload {
-    data: any;
+    data: IStationDataByStationId;
     year: number;
     month: number;
     day: number;
@@ -43,7 +44,7 @@ export const fetchDailyRecentByDate = createAsyncThunk<
     'dailyRecentByDate/fetchData',
     async ({ year, month, day }, { rejectWithValue, getState }) => {
         const state = getState();
-        const existingData = state.dailyRecentByDate.data?.[`${year}-${month}-${day}`];
+        const existingData = state.dailyRecentByDate.data[`${year}-${month}-${day}`];
         if (existingData) {
             // Return the existing data in the same format as fulfilled payload
             return { data: existingData, year, month, day };
@@ -65,17 +66,11 @@ const dailyRecentByDateSlice = createSlice({
         builder
             .addCase(fetchDailyRecentByDate.pending, (state) => {
                 state.status = 'loading';
-                state.data = null;
             })
             .addCase(fetchDailyRecentByDate.fulfilled, (state, action: PayloadAction<DailyRecentByDatePayload>) => {
                 state.status = 'succeeded';
                 state.error = null;
                 const { data, year, month, day } = action.payload;
-
-                if (!state.data) {
-                    state.data = {};
-                }
-
                 state.data[`${year}-${month}-${day}`] = data;
             })
             .addCase(fetchDailyRecentByDate.rejected, (state, action) => {
@@ -92,7 +87,7 @@ export const selectDailyRecentByDateError = (state: RootState) => state.dailyRec
 export const useDailyRecentByDate = ({ year, month, day }: DailyRecentByDateArgs): any => {
     const data = useAppSelector((state: RootState) => state.dailyRecentByDate.data);
     return useMemo(() => {
-        return data?.[`${year}-${month}-${day}`] || null;
+        return data[`${year}-${month}-${day}`] || null;
     }, [data, year, month, day]);
 };
 

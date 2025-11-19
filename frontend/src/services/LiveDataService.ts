@@ -1,4 +1,4 @@
-import Station from "../classes/Station.js";
+import IStation from "../classes/Station.js";
 import StationData from "../classes/StationData.js";
 import { getNow } from "../utils/dateUtils.js";
 
@@ -60,7 +60,7 @@ export const fetchLiveData = async () => {
             const stationName = cols[1].replace(/,\s*$/, '').replace(/^"|"$/g, '');
 
             return {
-                station: new Station(
+                station: new IStation(
                     cols[0],
                     stationName,
                     parseFloat(cols[3]),
