@@ -5,6 +5,17 @@ import type { IStation } from '../classes/Station';
 
 /**
  * Service to fetch German cities from CSV file
+ * 
+ * Example CSV data:
+ * 
+ * city_name,lat,lon
+ * Zwönitz,50.63027,12.80999
+ * Zella-Mehlis,50.65642,10.66046
+ * Bad Wünnenberg,51.52002,8.69934
+ * Süßen,48.67934,9.75534
+ * Brake (Unterweser),53.33333,8.48333
+ * Wilhelmitor - Nord,52.2592,10.49848
+ * 
  * @returns {Promise<Array>} Array of city data objects
  */
 export const fetchGermanCities = async (): Promise<City[]> => {

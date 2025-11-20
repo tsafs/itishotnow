@@ -4,6 +4,8 @@ export type GermanyBoundaryGeoJSON = FeatureCollection<Geometry, GeoJsonProperti
 
 /**
  * Service to fetch Germany GeoJSON boundaries.
+ * 
+ * @return {Promise<GermanyBoundaryGeoJSON>} Germany GeoJSON boundaries
  */
 export const fetchGermanyGeoJSON = async (): Promise<GermanyBoundaryGeoJSON> => {
     try {

@@ -4,6 +4,16 @@ import DailyRecentByStation, { type IStationDataByDate } from "../classes/DailyR
 
 /**
  * Service to fetch daily weather station data from CSV file
+ * 
+ * Example CSV data:
+ * 
+ * date,temperature_mean,temperature_min,temperature_max,humidity_mean
+ * 20250101,5.1,0.1,9.1,64.00
+ * 20250102,4.2,0.0,9.0,78.00
+ * 20250103,1.3,-1.3,3.6,-999
+ * 20250104,-999,-4.5,0.5,84.00
+ * 20250105,-1.5,-5.3,3.6,89.00
+ *
  * @param {string} stationId - station ID of a station to fetch data for
  * @returns {Promise<{data: {[date: string]: DailyRecentByStation}, dateRange: DateRange}>} Historical data for station
  */

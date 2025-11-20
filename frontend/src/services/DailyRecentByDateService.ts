@@ -11,6 +11,19 @@ export interface DailyRecentByDateArgs {
  * Service to fetch daily recent data of all stations by date.
  * This service fetches data for a specific date in the format YYYY-MM-DD.
  * It returns data keyed by station ID.
+ * 
+ * Example CSV data:
+ * 
+ * station_id,date,max_temperature,min_temperature,mean_temperature,mean_humidity
+ * 44,2025-01-01,8.4,5.0,6.9,86.00
+ * 73,2025-01-01,0.4,-6.3,-2.9,
+ * 78,2025-01-01,8.2,4.8,6.7,83.00
+ * 91,2025-01-01,5.5,-0.5,2.9,79.00
+ * 96,2025-01-01,7.9,2.1,5.5,77.00
+ * 125,2025-01-01,,,4.6,44.00
+ * 131,2025-01-01,7.9,-1.9,4.1,67.00
+ * 
+ * 
  * @param {number} params.year - The year of the date.
  * @param {number} params.month - The month of the date (1-12).
  * @param {number} params.day - The day of the date (1-31).

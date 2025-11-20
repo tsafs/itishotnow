@@ -2,6 +2,8 @@ import type { Topology } from 'topojson-specification';
 
 /**
  * Service to fetch Europe's boundary TopoJSON data.
+ * 
+ * @return {Promise<Topology>} Europe TopoJSON data
  */
 export const fetchEuropeTopoJSON = async (): Promise<Topology> => {
     try {

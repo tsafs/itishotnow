@@ -2,6 +2,25 @@ import RollingAverageRecord, { type RollingAverageRecordList } from '../classes/
 
 /**
  * Fetch rolling average climate metrics for a specific station.
+ * 
+ * Example CSV data:
+ * 
+ * date,tas
+ * 1951-01-01,0.9
+ * 1951-01-02,1.24
+ * 1951-01-03,1.23
+ * 1951-01-04,1.71
+ * 1951-01-05,1.98
+ * 1951-01-06,2.12
+ * 1951-01-07,2.28
+ * 1951-01-08,2.35
+ * 1951-01-09,2.69
+ * 1951-01-10,3.04
+ * 1951-01-11,3.41
+ * 1951-01-12,3.7
+ * 
+ * @param {string} stationId - Station ID to fetch rolling average data for
+ * @returns {Promise<RollingAverageRecordList>} Rolling average data for the station
  */
 export const fetchRollingAverageForStation = async (stationId: string): Promise<RollingAverageRecordList> => {
 
