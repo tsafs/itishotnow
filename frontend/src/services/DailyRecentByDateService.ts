@@ -1,5 +1,5 @@
-import type { IStationData, IStationDataByStationId } from "../classes/DailyRecentByStation.js";
-import { getNow } from "../utils/dateUtils.js";
+import DailyRecentByStation, { type IStationDataByStationId } from "../classes/DailyRecentByStation";
+import { getNow } from "../utils/dateUtils";
 
 export interface DailyRecentByDateArgs {
     year: number;
@@ -17,7 +17,7 @@ export interface DailyRecentByDateArgs {
  * @returns {Promise<IStationDataByStationId>} - A promise that resolves to the data keyed by station ID.
  * @throws {Error} - Throws an error if the fetch fails or if no data is found for the specified date.
  */
-export const fetchDailyRecentByDateData = async (params: DailyRecentByDateArgs) => {
+export const fetchDailyRecentByDateData = async (params: DailyRecentByDateArgs): Promise<IStationDataByStationId> => {
     const { year, month, day } = params;
 
     try {
@@ -50,30 +50,38 @@ export const fetchDailyRecentByDateData = async (params: DailyRecentByDateArgs) 
 
         // Find the specific date we're looking for
         const data = dataLines.map(line => {
-            const [stationId, date, temperatureMax, temperatureMin, temperatureMean, humidityMean] = line.split(',').map(col => col.trim());
-            if (![stationId, date, temperatureMax, temperatureMin, temperatureMean, humidityMean].every(Boolean)) return null;
+            const [stationIdRaw, dateRaw, temperatureMaxRaw, temperatureMinRaw, temperatureMeanRaw, humidityMeanRaw] = line.split(',').map(col => col.trim());
 
-            if (date !== `${year}-${paddedMonth}-${paddedDay}`) {
+            if (!stationIdRaw || !dateRaw) {
+                return null;
+            }
+
+            if (dateRaw !== `${year}-${paddedMonth}-${paddedDay}`) {
                 throw new Error(`Data for date ${year}-${paddedMonth}-${paddedDay} not found in the response.`);
             }
 
-            return {
-                stationId,
-                date,
-                temperatureMax: parseFloat(temperatureMax as string),
-                temperatureMin: parseFloat(temperatureMin as string),
-                temperatureMean: parseFloat(temperatureMean as string),
-                humidityMean: parseFloat(humidityMean as string)
-            } as IStationData;
+            const meanTemperature = temperatureMeanRaw ? parseFloat(temperatureMeanRaw) : undefined;
+            const minTemperature = temperatureMinRaw ? parseFloat(temperatureMinRaw) : undefined;
+            const maxTemperature = temperatureMaxRaw ? parseFloat(temperatureMaxRaw) : undefined;
+            const meanHumidity = humidityMeanRaw ? parseFloat(humidityMeanRaw) : undefined;
+
+            return new DailyRecentByStation(
+                stationIdRaw,
+                dateRaw,
+                Number.isNaN(meanTemperature) ? undefined : meanTemperature,
+                Number.isNaN(minTemperature) ? undefined : minTemperature,
+                Number.isNaN(maxTemperature) ? undefined : maxTemperature,
+                Number.isNaN(meanHumidity) ? undefined : meanHumidity
+            );
         });
 
         if (!data || !data.length) {
             throw new Error(`No historical data found for date ${year}-${paddedMonth}-${paddedDay}.`);
         }
 
-        let result: IStationDataByStationId = {}
-        for (let item of data as Array<IStationData>) {
-            result[item.stationId] = item;
+        const result: IStationDataByStationId = {};
+        for (const item of data.filter((entry): entry is DailyRecentByStation => entry !== null)) {
+            result[item.stationId] = item.toJSON();
         }
 
         return result;

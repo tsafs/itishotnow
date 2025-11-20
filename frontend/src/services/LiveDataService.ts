@@ -1,20 +1,29 @@
-import IStation from "../classes/Station.js";
-import StationData from "../classes/StationData.js";
-import { getNow } from "../utils/dateUtils.js";
+import Station from "../classes/Station";
+import StationData from "../classes/StationData";
+import { getNow } from "../utils/dateUtils";
 
-const replaceWithUndefined = (value) => {
-    if (value === -999) {
+const replaceWithUndefined = (value: number | undefined): number | undefined => {
+    if (value === undefined || Number.isNaN(value) || value === -999) {
         return undefined;
-    } else {
-        return value;
     }
+    return value;
+};
+
+export interface LiveStationRecord {
+    station: Station;
+    data: StationData;
+}
+
+export interface LiveDataResponse {
+    stations: Record<string, Station>;
+    stationData: Record<string, StationData>;
 }
 
 /**
  * Service to fetch weather stations data from CSV file
  * @returns {Promise<Array>} Array of station data objects
  */
-export const fetchLiveData = async () => {
+export const fetchLiveData = async (): Promise<LiveDataResponse> => {
     try {
         // Get today's date in YYYYMMDD format
         const today = getNow();
@@ -34,11 +43,11 @@ export const fetchLiveData = async () => {
         const lines = text.split('\n');
 
         // Parse CSV data into array of station objects
-        const data = lines.slice(1).map(line => {
+        const parsed = lines.slice(1).map(line => {
             if (!line.trim()) return null; // Skip empty lines
 
             // Custom parsing to handle commas within quoted fields
-            const cols = [];
+            const cols: string[] = [];
             let currentValue = '';
             let inQuotes = false;
 
@@ -57,41 +66,55 @@ export const fetchLiveData = async () => {
             cols.push(currentValue); // Add the last column
 
             // Remove trailing commas and clean station name
-            const stationName = cols[1].replace(/,\s*$/, '').replace(/^"|"$/g, '');
+            const stationName = (cols[1] ?? '').replace(/,\s*$/, '').replace(/^"|"$/g, '');
+
+            const stationId = cols[0]?.trim();
+            const date = cols[2]?.trim();
+            const elevation = cols[3] ? parseFloat(cols[3]) : undefined;
+            const lat = cols[4] ? parseFloat(cols[4]) : undefined;
+            const lon = cols[5] ? parseFloat(cols[5]) : undefined;
+
+            if (!stationId || !date || elevation === undefined || lat === undefined || lon === undefined) {
+                return null;
+            }
+
+            const temperature = replaceWithUndefined(cols[9] ? parseFloat(cols[9]) : undefined);
+            const minTemperature = replaceWithUndefined(cols[8] ? parseFloat(cols[8]) : undefined);
+            const maxTemperature = replaceWithUndefined(cols[7] ? parseFloat(cols[7]) : undefined);
+            const humidity = replaceWithUndefined(cols[6] ? parseFloat(cols[6]) : undefined);
 
             return {
-                station: new IStation(
-                    cols[0],
+                station: new Station(
+                    stationId,
                     stationName,
-                    parseFloat(cols[3]),
-                    parseFloat(cols[4]),
-                    parseFloat(cols[5])
+                    elevation,
+                    lat,
+                    lon
                 ),
                 data: new StationData(
-                    cols[0],
-                    cols[2],
-                    replaceWithUndefined(parseFloat(cols[9])),
-                    replaceWithUndefined(parseFloat(cols[8])),
-                    replaceWithUndefined(parseFloat(cols[7])),
-                    replaceWithUndefined(parseFloat(cols[6]))
+                    stationId,
+                    date,
+                    temperature,
+                    minTemperature,
+                    maxTemperature,
+                    humidity
                 )
-            };
-        }).filter(Boolean); // Remove null entries
+            } satisfies LiveStationRecord;
+        });
+
+        const data: LiveStationRecord[] = parsed.filter((item): item is LiveStationRecord => item !== null);
 
         // Convert data to dictionary
-        let stations = {};
-        for (let item of data) {
+        const stations: Record<string, Station> = {};
+        const stationData: Record<string, StationData> = {};
+        for (const item of data) {
             stations[item.station.id] = item.station;
-        }
-
-        let stationData = {};
-        for (let item of data) {
             stationData[item.data.stationId] = item.data;
         }
 
         return { stations, stationData };
     } catch (error) {
-        console.error(`Error fetching live data: ${error.message}`);
+        console.error(`Error fetching live data: ${(error as Error).message}`);
         throw error;
     }
 };

@@ -1,9 +1,27 @@
+export interface DateRangeJSON {
+    from: string;
+    to: string;
+}
+
+export type IDateRange = DateRangeJSON;
+
 /**
- * Interface representing a date range.
- * 
- * Both 'from' and 'to' can be any date format (e.g., YYYY-MM-DD, YYYYMMDD, ISO string).
+ * Represents a date interval.
  */
-export interface IDateRange {
-    from: string,
-    to: string
+export default class DateRange implements DateRangeJSON {
+    public readonly from: string;
+    public readonly to: string;
+
+    constructor(from: string, to: string) {
+        this.from = from;
+        this.to = to;
+    }
+
+    toJSON(): DateRangeJSON {
+        return { from: this.from, to: this.to };
+    }
+
+    static fromJSON(obj: DateRangeJSON): DateRange {
+        return new DateRange(obj.from, obj.to);
+    }
 }

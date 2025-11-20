@@ -1,13 +1,18 @@
-import { getNow } from "../utils/dateUtils.js";
-import { DateRange } from "../classes/DateRange.js";
-import { DailyRecentByStation } from "../classes/DailyRecentByStation.js";
+import { getNow } from "../utils/dateUtils";
+import DateRange, { type IDateRange } from "../classes/DateRange";
+import DailyRecentByStation, { type IStationDataByDate } from "../classes/DailyRecentByStation";
 
 /**
  * Service to fetch daily weather station data from CSV file
  * @param {string} stationId - station ID of a station to fetch data for
  * @returns {Promise<{data: {[date: string]: DailyRecentByStation}, dateRange: DateRange}>} Historical data for station
  */
-export const fetchDailyWeatherStationData = async (stationId: string): Promise<{ data: { [date: string]: DailyRecentByStation }, dateRange: DateRange }> => {
+export interface DailyWeatherStationDataResponse {
+    data: IStationDataByDate;
+    dateRange: DateRange;
+}
+
+export const fetchDailyWeatherStationData = async (stationId: string): Promise<DailyWeatherStationDataResponse> => {
     try {
         // Get today's date in YYYYMMDDHH format using Luxon
         const today = getNow();
@@ -26,10 +31,6 @@ export const fetchDailyWeatherStationData = async (stationId: string): Promise<{
 
         const lines = text.split('\n').filter(line => line.trim());
 
-        // Variables for storing date range
-        let earliestDate = null;
-        let latestDate = null;
-
         // Skip header line
         const dataLines = lines.slice(1);
 
@@ -37,11 +38,11 @@ export const fetchDailyWeatherStationData = async (stationId: string): Promise<{
             throw new Error(`No data found for station ${stationId}.`);
         }
 
-        // First line has earliest date (assuming file is chronologically ordered)
-        earliestDate = dataLines[0]?.split(',')[0]?.trim();
+        const earliestCandidate = dataLines[0]?.split(',')[0]?.trim();
+        const latestCandidate = dataLines[dataLines.length - 1]?.split(',')[0]?.trim();
 
-        // Last line has latest date
-        latestDate = dataLines[dataLines.length - 1]?.split(',')[0]?.trim();
+        const earliestDate = earliestCandidate && earliestCandidate.length > 0 ? earliestCandidate : null;
+        const latestDate = latestCandidate && latestCandidate.length > 0 ? latestCandidate : null;
 
         if (!earliestDate || !latestDate) {
             throw new Error(`Invalid date range found for station ${stationId}: ${earliestDate} - ${latestDate}.`);
@@ -50,25 +51,35 @@ export const fetchDailyWeatherStationData = async (stationId: string): Promise<{
         // Find the specific date we're looking for
         const data = dataLines
             .map(line => {
-                const [date, temperature_mean, temperature_min, temperature_max, humidity_mean] = line.split(',').map(col => col.trim());
-                if (![date, temperature_mean, temperature_min, temperature_max, humidity_mean].every(Boolean)) return null;
+                const [dateRaw, temperatureMeanRaw, temperatureMinRaw, temperatureMaxRaw, humidityMeanRaw] = line.split(',').map(col => col.trim());
+                if (!dateRaw) return null;
+
+                const meanTemperature = temperatureMeanRaw ? parseFloat(temperatureMeanRaw) : undefined;
+                const minTemperature = temperatureMinRaw ? parseFloat(temperatureMinRaw) : undefined;
+                const maxTemperature = temperatureMaxRaw ? parseFloat(temperatureMaxRaw) : undefined;
+                const meanHumidity = humidityMeanRaw ? parseFloat(humidityMeanRaw) : undefined;
+
                 return new DailyRecentByStation(
                     stationId,
-                    date as string,
-                    parseFloat(temperature_mean as string),
-                    parseFloat(temperature_min as string),
-                    parseFloat(temperature_max as string),
-                    parseFloat(humidity_mean as string)
+                    dateRaw,
+                    Number.isNaN(meanTemperature) ? undefined : meanTemperature,
+                    Number.isNaN(minTemperature) ? undefined : minTemperature,
+                    Number.isNaN(maxTemperature) ? undefined : maxTemperature,
+                    Number.isNaN(meanHumidity) ? undefined : meanHumidity
                 );
             })
-            .filter(Boolean);
+            .filter((item): item is DailyRecentByStation => Boolean(item));
 
         if (!data.length) {
             throw new Error(`No historical data found for station ${stationId}.`);
         }
 
+        const result: IStationDataByDate = Object.fromEntries(
+            data.map(item => [item.date, item.toJSON()])
+        );
+
         return {
-            data: Object.fromEntries(data.map(item => [item?.date, item])),
+            data: result,
             dateRange: new DateRange(earliestDate, latestDate)
         };
     } catch (error) {

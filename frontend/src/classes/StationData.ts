@@ -1,17 +1,31 @@
+export interface StationDataJSON {
+    stationId: string;
+    date: string;
+    temperature?: number | undefined;
+    minTemperature?: number | undefined;
+    maxTemperature?: number | undefined;
+    humidity?: number | undefined;
+}
+
 /**
- * @class StationData
  * Represents climate data for a station.
  */
 export default class StationData {
-    /**
-     * @param {string} stationId
-     * @param {string} dataDate
-     * @param {number|undefined} temperature
-     * @param {number|undefined} minTemperature
-     * @param {number|undefined} maxTemperature
-     * @param {number|undefined} humidity
-     */
-    constructor(stationId, date, temperature, minTemperature, maxTemperature, humidity) {
+    public readonly stationId: string;
+    public readonly date: string;
+    public readonly temperature?: number | undefined;
+    public readonly minTemperature?: number | undefined;
+    public readonly maxTemperature?: number | undefined;
+    public readonly humidity?: number | undefined;
+
+    constructor(
+        stationId: string,
+        date: string,
+        temperature?: number,
+        minTemperature?: number,
+        maxTemperature?: number,
+        humidity?: number
+    ) {
         this.stationId = stationId;
         this.date = date;
         this.temperature = temperature;
@@ -20,7 +34,7 @@ export default class StationData {
         this.humidity = humidity;
     }
 
-    toJSON() {
+    toJSON(): StationDataJSON {
         return {
             stationId: this.stationId,
             date: this.date,
@@ -31,7 +45,7 @@ export default class StationData {
         };
     }
 
-    static fromJSON(obj) {
+    static fromJSON(obj: StationDataJSON): StationData {
         return new StationData(
             obj.stationId,
             obj.date,
