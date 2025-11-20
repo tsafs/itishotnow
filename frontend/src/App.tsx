@@ -1,10 +1,11 @@
 import React, { Suspense, useState, useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { Provider, useDispatch } from 'react-redux';
+import { Provider } from 'react-redux';
 import { store } from './store';
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
 import { findClosestWeatherStationsForCities } from './services/CityService';
+import type { ICity } from './classes/City';
 import { PREDEFINED_CITIES } from './constants/map';
 import { fetchYearlyMeanByDay } from './store/slices/YearlyMeanByDaySlice';
 import { fetchReferenceYearlyHourlyInterpolatedByDay } from './store/slices/ReferenceYearlyHourlyInterpolatedByDaySlice';
@@ -16,6 +17,7 @@ import { fetchDailyDataForStation } from './store/slices/historicalDataForStatio
 import './App.css';
 import { getNow } from './utils/dateUtils';
 import { useAppSelector } from './store/hooks/useAppSelector';
+import { useAppDispatch } from './store/hooks/useAppDispatch';
 
 // Lazy load components
 const CountryHeatmapPlot = React.lazy(() => import('./components/analysis/CountryHeatmapPlot/View'));
@@ -27,10 +29,10 @@ const Closing = React.lazy(() => import('./components/closing/Closing'));
 const DEFAULT_CITY = "berlin"; // Default city to select
 
 function AppContent() {
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
     const navigate = useNavigate();
 
-    const [error, setError] = useState(null);
+    const [error, setError] = useState<string | null>(null);
     const didFetchDataRef = useRef(false);
 
     const stations = useAppSelector(state => state.stations.stations);
@@ -80,7 +82,7 @@ function AppContent() {
     }, [dispatch]);
 
     useEffect(() => {
-        if (liveDataStatus !== "succeeded" || cityDataStatus !== "succeeded" || areCitiesCorrelated) {
+        if (liveDataStatus !== "succeeded" || cityDataStatus !== "succeeded" || areCitiesCorrelated || !stations) {
             return;
         }
         const correlatedCities = findClosestWeatherStationsForCities(
@@ -88,9 +90,9 @@ function AppContent() {
             stations,
         );
 
-        const serialized = {}
+        const serialized: Record<string, ICity> = {};
         for (const [id, city] of Object.entries(correlatedCities)) {
-            serialized[id] = city.toJSON();
+            serialized[id] = city;
         }
         dispatch(setCities(serialized));
     }, [dispatch, stations, liveDataStatus, cities, cityDataStatus, areCitiesCorrelated]);
@@ -118,7 +120,11 @@ function AppContent() {
         const city = cities[selectedCityId];
         if (!city) return;
 
-        const station = stations[city.stationId];
+        const stationId = city.stationId;
+        if (!stationId || !stations) {
+            return;
+        }
+        const station = stations[stationId];
         if (!station) return;
 
         dispatch(fetchDailyDataForStation({ stationId: station.id }));

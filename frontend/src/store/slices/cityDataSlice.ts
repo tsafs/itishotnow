@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit'
 import type { PayloadAction } from '@reduxjs/toolkit';
 import { fetchGermanCities } from '../../services/CityService.js';
 import type { ICity } from '../../classes/City.js';
+import type { RootState } from '../index.js';
 
 export interface CityDataState {
     data: Record<string, ICity>;
@@ -19,13 +20,14 @@ export const fetchCityData = createAsyncThunk<
     async (_, { rejectWithValue }) => {
         try {
             const data = await fetchGermanCities();
-            let result: Record<string, any> = {}
+            const result: Record<string, ICity> = {};
             for (const city of data) {
                 result[city.id] = city;
             }
             return result;
-        } catch (error: any) {
-            return rejectWithValue(error.message);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'Failed to fetch city data';
+            return rejectWithValue(message);
         }
     }
 );
@@ -59,7 +61,9 @@ const cityDataSlice = createSlice({
             })
             .addCase(fetchCityData.rejected, (state, action) => {
                 state.status = 'failed';
-                state.error = (action.payload as string) || 'Failed to fetch city data';
+                state.error = typeof action.payload === 'string'
+                    ? action.payload
+                    : action.error?.message ?? 'Failed to fetch city data';
             });
     },
 });
@@ -68,18 +72,18 @@ export const { setCities } = cityDataSlice.actions;
 
 // Selectors
 export const selectCities = createSelector(
-    (state: { cityData: CityDataState }) => state.cityData.data,
-    data => data
+    (state: RootState) => state.cityData.data,
+    (data): Record<string, ICity> => data
 );
 export const selectCorrelatedCities = createSelector(
-    (state: { cityData: CityDataState }) => state.cityData,
-    (cityData) => {
+    (state: RootState) => state.cityData,
+    (cityData): Record<string, ICity> | null => {
         if (!cityData.areCitiesCorrelated) return null;
         return cityData.data;
     }
 );
-export const selectCityDataStatus = (state: { cityData: CityDataState }) => state.cityData.status;
-export const selectCityDataError = (state: { cityData: CityDataState }) => state.cityData.error;
-export const selectAreCitiesCorrelated = (state: { cityData: CityDataState }) => state.cityData.areCitiesCorrelated;
+export const selectCityDataStatus = (state: RootState) => state.cityData.status;
+export const selectCityDataError = (state: RootState) => state.cityData.error;
+export const selectAreCitiesCorrelated = (state: RootState) => state.cityData.areCitiesCorrelated;
 
 export default cityDataSlice.reducer;

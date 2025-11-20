@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import type { PayloadAction } from '@reduxjs/toolkit';
 import { fetchDailyWeatherStationData } from '../../services/HistoricalDataForStationService.js';
 import { useMemo } from 'react';
 import { useAppSelector } from '../hooks/useAppSelector.js';
@@ -49,8 +50,9 @@ export const fetchDailyDataForStation = createAsyncThunk<
         try {
             const { data, dateRange } = await fetchDailyWeatherStationData(stationId);
             return { stationId, data, dateRange };
-        } catch (error: any) {
-            return rejectWithValue(error.message);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'Failed to fetch historical data for station';
+            return rejectWithValue(message);
         }
     }
 );
@@ -64,24 +66,19 @@ const historicalDailyDataSlice = createSlice({
             .addCase(fetchDailyDataForStation.pending, (state) => {
                 state.status = 'loading';
             })
-            .addCase(fetchDailyDataForStation.fulfilled, (state, action) => {
+            .addCase(fetchDailyDataForStation.fulfilled, (state, action: PayloadAction<DailyDataForStationPayload>) => {
                 state.status = 'succeeded';
                 state.error = null;
                 const { stationId, data, dateRange } = action.payload;
-
-                if (!state.data) {
-                    state.data = {};
-                }
-                if (!state.dateRange) {
-                    state.dateRange = {};
-                }
 
                 state.data[stationId] = data;
                 state.dateRange[stationId] = dateRange;
             })
             .addCase(fetchDailyDataForStation.rejected, (state, action) => {
                 state.status = 'failed';
-                state.error = action.payload || 'Failed to fetch historical data for station';
+                state.error = typeof action.payload === 'string'
+                    ? action.payload
+                    : action.error?.message ?? 'Failed to fetch historical data for station';
             });
     },
 });
@@ -90,16 +87,22 @@ export const selectHistoricalDailyDataStatus = (state: RootState) => state.histo
 export const selectHistoricalDailyDataError = (state: RootState) => state.historicalDailyData.error;
 
 // Selector hooks
-export const useHistoricalDailyDataForStation = (stationId: string) => {
+export const useHistoricalDailyDataForStation = (stationId: string | null | undefined): IStationDataByDate | null => {
     const data = useAppSelector(state => state.historicalDailyData.data);
     return useMemo(() => {
-        return data[stationId] ? data[stationId] : null;
+        if (!stationId) {
+            return null;
+        }
+        return data[stationId] ?? null;
     }, [data, stationId]);
 };
 
-export const useHistoricalDailyDataDateRangeForStation = (stationId: string) => {
+export const useHistoricalDailyDataDateRangeForStation = (stationId: string | null | undefined): IDateRange | null => {
     const dateRanges = useAppSelector(state => state.historicalDailyData.dateRange);
-    return dateRanges[stationId] ? dateRanges[stationId] : null;
+    if (!stationId) {
+        return null;
+    }
+    return dateRanges[stationId] ?? null;
 };
 
 export default historicalDailyDataSlice.reducer;

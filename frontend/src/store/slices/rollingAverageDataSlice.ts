@@ -1,25 +1,39 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { fetchRollingAverageForStation } from '../../services/RollingAverageDataService.js';
+import type { RootState } from '../index.js';
+import type { RollingAverageRecordList } from '../../classes/RollingAverageRecord.js';
 
-export const fetchRollingAverageData = createAsyncThunk(
+export interface RollingAverageDataState {
+    data: RollingAverageRecordList;
+    status: 'idle' | 'loading' | 'succeeded' | 'failed';
+    error: string | null;
+}
+
+const initialState: RollingAverageDataState = {
+    data: [],
+    status: 'idle',
+    error: null,
+};
+
+export const fetchRollingAverageData = createAsyncThunk<
+    RollingAverageRecordList,
+    { stationId: string },
+    { rejectValue: string }
+>(
     'rollingAverageData/fetchData',
     async ({ stationId }, { rejectWithValue }) => {
         try {
-            const data = await fetchRollingAverageForStation(stationId);
-            return data;
+            return await fetchRollingAverageForStation(stationId);
         } catch (error) {
-            return rejectWithValue(error.message);
+            const message = error instanceof Error ? error.message : 'Failed to fetch rolling average data';
+            return rejectWithValue(message);
         }
     }
 );
 
 const rollingAverageDataSlice = createSlice({
     name: 'rollingAverageData',
-    initialState: {
-        data: [],
-        status: 'idle', // 'idle' | 'loading' | 'succeeded' | 'failed'
-        error: null,
-    },
+    initialState,
     reducers: {
         clearRollingAverageData: (state) => {
             state.data = [];
@@ -39,7 +53,9 @@ const rollingAverageDataSlice = createSlice({
             })
             .addCase(fetchRollingAverageData.rejected, (state, action) => {
                 state.status = 'failed';
-                state.error = action.payload || 'Failed to fetch rolling average data';
+                state.error = typeof action.payload === 'string'
+                    ? action.payload
+                    : action.error?.message ?? 'Failed to fetch rolling average data';
             });
     },
 });
@@ -47,8 +63,8 @@ const rollingAverageDataSlice = createSlice({
 export const { clearRollingAverageData } = rollingAverageDataSlice.actions;
 
 // Selectors
-export const selectRollingAverageData = (state) => state.rollingAverageData.data;
-export const selectRollingAverageDataStatus = (state) => state.rollingAverageData.status;
-export const selectRollingAverageDataError = (state) => state.rollingAverageData.error;
+export const selectRollingAverageData = (state: RootState): RollingAverageRecordList => state.rollingAverageData.data;
+export const selectRollingAverageDataStatus = (state: RootState) => state.rollingAverageData.status;
+export const selectRollingAverageDataError = (state: RootState) => state.rollingAverageData.error;
 
 export default rollingAverageDataSlice.reducer;

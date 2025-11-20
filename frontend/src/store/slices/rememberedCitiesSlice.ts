@@ -1,10 +1,13 @@
 import { createSlice } from '@reduxjs/toolkit';
+import type { PayloadAction } from '@reduxjs/toolkit';
+
+type RememberedCitiesState = string[];
 
 const rememberedCitiesSlice = createSlice({
     name: 'rememberedCities',
-    initialState: [],
+    initialState: [] as RememberedCitiesState,
     reducers: {
-        addRememberedCity: (state, action) => {
+        addRememberedCity: (state, action: PayloadAction<string>) => {
             const cityIdToAdd = action.payload;
 
             // Check if city is already remembered
@@ -15,7 +18,7 @@ const rememberedCitiesSlice = createSlice({
             }
         },
         clearRememberedCities: () => {
-            return [];
+            return [] as RememberedCitiesState;
         },
     },
 });

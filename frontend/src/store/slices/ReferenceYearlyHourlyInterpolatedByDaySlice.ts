@@ -1,32 +1,56 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { useMemo } from 'react';
 import { fetchReferenceYearlyHourlyInterpolatedByDayData } from '../../services/ReferenceYearlyHourlyInterpolatedByDayService.js';
 import { useAppSelector } from '../hooks/useAppSelector.js';
+import type { ReferenceYearlyHourlyInterpolatedByDayByStationId } from '../../classes/ReferenceYearlyHourlyInterpolatedByDay.js';
+
+export interface ReferenceYearlyHourlyInterpolatedByDayState {
+    data: ReferenceYearlyHourlyInterpolatedByDayByStationId | null;
+    status: 'idle' | 'loading' | 'succeeded' | 'failed';
+    error: string | null;
+    currentDay: { month: number; day: number } | null;
+}
+
+export interface FetchReferenceYearlyHourlyInterpolatedByDayArgs {
+    month: number;
+    day: number;
+}
+
+const initialState: ReferenceYearlyHourlyInterpolatedByDayState = {
+    data: null,
+    status: 'idle',
+    error: null,
+    currentDay: null,
+};
 
 /**
  * Async thunk to fetch interpolated hourly data for a specific day
  */
-export const fetchReferenceYearlyHourlyInterpolatedByDay = createAsyncThunk(
+export const fetchReferenceYearlyHourlyInterpolatedByDay = createAsyncThunk<
+    ReferenceYearlyHourlyInterpolatedByDayByStationId,
+    FetchReferenceYearlyHourlyInterpolatedByDayArgs,
+    { rejectValue: string }
+>(
     'referenceYearlyHourlyInterpolatedByDay/fetch',
     async ({ month, day }, { rejectWithValue }) => {
         try {
-            const data = await fetchReferenceYearlyHourlyInterpolatedByDayData(month, day);
-            return data;
+            return await fetchReferenceYearlyHourlyInterpolatedByDayData(month, day);
         } catch (error) {
-            return rejectWithValue(error.message);
+            const message = error instanceof Error ? error.message : 'Failed to fetch interpolated hourly data';
+            return rejectWithValue(message);
         }
     }
 );
 
 const referenceYearlyHourlyInterpolatedByDaySlice = createSlice({
     name: 'referenceYearlyHourlyInterpolatedByDay',
-    initialState: {
-        data: null,
-        status: 'idle', // 'idle' | 'loading' | 'succeeded' | 'failed'
-        error: null,
-        currentDay: {
-            month: null,
-            day: null
+    initialState,
+    reducers: {
+        clearHourlyData: (state) => {
+            state.data = null;
+            state.status = 'idle';
+            state.error = null;
+            state.currentDay = null;
         },
     },
     extraReducers: (builder) => {
@@ -37,13 +61,12 @@ const referenceYearlyHourlyInterpolatedByDaySlice = createSlice({
             .addCase(fetchReferenceYearlyHourlyInterpolatedByDay.fulfilled, (state, action) => {
                 state.status = 'succeeded';
                 state.data = action.payload;
-                // Store the current day we have data for
                 state.currentDay = action.meta.arg;
                 state.error = null;
             })
             .addCase(fetchReferenceYearlyHourlyInterpolatedByDay.rejected, (state, action) => {
                 state.status = 'failed';
-                state.error = action.payload || 'Failed to fetch interpolated hourly data';
+                state.error = action.payload ?? 'Failed to fetch interpolated hourly data';
             });
     },
 });
@@ -53,18 +76,15 @@ export const { clearHourlyData } = referenceYearlyHourlyInterpolatedByDaySlice.a
 // Hooks
 export const useReferenceYearlyHourlyInterpolatedByDayData = () => {
     const referenceYearlyHourlyInterpolatedByDay = useAppSelector(state => state.referenceYearlyHourlyInterpolatedByDay.data);
-    const { month: currentMonth, day: currentDay } = useAppSelector(state => state.referenceYearlyHourlyInterpolatedByDay.currentDay);
+    const currentDay = useAppSelector(state => state.referenceYearlyHourlyInterpolatedByDay.currentDay);
     const status = useAppSelector(state => state.referenceYearlyHourlyInterpolatedByDay.status);
 
     return useMemo(() => {
-        if (status !== 'succeeded') {
+        if (status !== 'succeeded' || !referenceYearlyHourlyInterpolatedByDay || !currentDay) {
             return null;
         }
-        if (!referenceYearlyHourlyInterpolatedByDay || referenceYearlyHourlyInterpolatedByDay.length === 0) {
-            return null;
-        }
-        return { data: referenceYearlyHourlyInterpolatedByDay, month: currentMonth, day: currentDay };
-    }, [referenceYearlyHourlyInterpolatedByDay, currentDay, currentMonth, status]);
+        return { data: referenceYearlyHourlyInterpolatedByDay, month: currentDay.month, day: currentDay.day };
+    }, [referenceYearlyHourlyInterpolatedByDay, currentDay, status]);
 };
 
 export default referenceYearlyHourlyInterpolatedByDaySlice.reducer;

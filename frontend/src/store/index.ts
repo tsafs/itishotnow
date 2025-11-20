@@ -1,4 +1,5 @@
 import { configureStore } from '@reduxjs/toolkit';
+import type { Action, ThunkAction } from '@reduxjs/toolkit';
 import cityDataReducer from './slices/cityDataSlice.js';
 import selectedCityReducer from './slices/selectedCitySlice.js';
 import stationsReducer from './slices/stationSlice.js';
@@ -29,3 +30,4 @@ export const store = configureStore({
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
+export type AppThunk<ReturnType = void> = ThunkAction<ReturnType, RootState, unknown, Action<string>>;

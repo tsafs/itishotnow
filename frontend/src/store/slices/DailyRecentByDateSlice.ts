@@ -1,10 +1,10 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import { fetchDailyRecentByDateData } from '../../services/DailyRecentByDateService';
+import { fetchDailyRecentByDateData } from '../../services/DailyRecentByDateService.js';
 import { useMemo } from 'react';
-import { useAppSelector } from '../hooks/useAppSelector';
-import type { RootState } from '../index';
-import type { IStationDataByStationId } from '../../classes/DailyRecentByStation';
+import { useAppSelector } from '../hooks/useAppSelector.js';
+import type { RootState } from '../index.js';
+import type { IStationDataByStationId } from '../../classes/DailyRecentByStation.js';
 
 // Type for 'YYYY-MM-DD' string
 export type DateKey = `${number}-${number}-${number}`;
@@ -52,8 +52,9 @@ export const fetchDailyRecentByDate = createAsyncThunk<
         try {
             const data = await fetchDailyRecentByDateData({ year, month, day });
             return { data, year, month, day };
-        } catch (error: any) {
-            return rejectWithValue(error.message);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'Failed to fetch daily recent data';
+            return rejectWithValue(message);
         }
     }
 );
@@ -75,7 +76,9 @@ const dailyRecentByDateSlice = createSlice({
             })
             .addCase(fetchDailyRecentByDate.rejected, (state, action) => {
                 state.status = 'failed';
-                state.error = (action.payload as string) || 'Failed to fetch dailyRecentByDate data for station';
+                state.error = typeof action.payload === 'string'
+                    ? action.payload
+                    : action.error?.message ?? 'Failed to fetch dailyRecentByDate data for station';
             });
     },
 });
@@ -84,10 +87,10 @@ export const selectDailyRecentByDateStatus = (state: RootState) => state.dailyRe
 export const selectDailyRecentByDateError = (state: RootState) => state.dailyRecentByDate.error;
 
 // Selector hooks
-export const useDailyRecentByDate = ({ year, month, day }: DailyRecentByDateArgs): any => {
+export const useDailyRecentByDate = ({ year, month, day }: DailyRecentByDateArgs): IStationDataByStationId | null => {
     const data = useAppSelector((state: RootState) => state.dailyRecentByDate.data);
     return useMemo(() => {
-        return data[`${year}-${month}-${day}`] || null;
+        return data[`${year}-${month}-${day}`] ?? null;
     }, [data, year, month, day]);
 };
 

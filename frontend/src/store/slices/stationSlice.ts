@@ -1,28 +1,40 @@
 import { createSlice, createSelector } from '@reduxjs/toolkit';
+import type { PayloadAction } from '@reduxjs/toolkit';
+import type { RootState } from '../index.js';
+import type { StationJSON } from '../../classes/Station.js';
+
+export interface StationsState {
+    stations: Record<string, StationJSON> | null;
+}
+
+const initialState: StationsState = {
+    stations: null,
+};
 
 const stationsSlice = createSlice({
     name: 'stations',
-    initialState: {
-        stations: null,
-    },
+    initialState,
     reducers: {
         // Stores JSON serialized Station objects
-        setStations: (state, action) => {
-            if (action.payload === null) {
-                state.stations = null;
-                return;
-            }
+        setStations: (state, action: PayloadAction<Record<string, StationJSON> | null>) => {
             state.stations = action.payload;
         },
     },
 });
 
+export const selectStations = (state: RootState) => state.stations.stations;
+
 export const selectStationById = createSelector(
     [
-        state => state.stations.stations,
-        (state, id) => id
+        selectStations,
+        (_state: RootState, id: string | null | undefined) => id
     ],
-    (stations, id) => stations?.[id]
+    (stations, id): StationJSON | null => {
+        if (!stations || !id) {
+            return null;
+        }
+        return stations[id] ?? null;
+    }
 );
 
 export const { setStations } = stationsSlice.actions;
