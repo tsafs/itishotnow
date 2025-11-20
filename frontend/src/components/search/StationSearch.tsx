@@ -11,7 +11,11 @@ import { useAppDispatch } from '../../store/hooks/useAppDispatch.js';
 import type { ICity } from '../../classes/City.js';
 import type StationData from '../../classes/StationData.js';
 
-const StationSearch = () => {
+interface StationSearchProps {
+    showSearchIcon?: boolean;
+}
+
+const StationSearch = ({ showSearchIcon = true }: StationSearchProps) => {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const cities = useAppSelector(selectCities);
@@ -73,10 +77,14 @@ const StationSearch = () => {
         setFocusedIndex(-1);
     }, [filteredCities]);
 
+    const inputContainerClassName = showSearchIcon
+        ? 'station-search-input-container with-icon'
+        : 'station-search-input-container';
+
     return (
         <div ref={searchRef} className="station-search-container">
-            <div className="station-search-input-container with-icon">
-                <FaSearch className="station-search-icon" />
+            <div className={inputContainerClassName}>
+                {showSearchIcon && <FaSearch className="station-search-icon" />}
                 <input
                     ref={inputRef}
                     type="text"

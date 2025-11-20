@@ -53,7 +53,7 @@ const Header = () => {
                         <DateSelection />
                     </div>
                     <div className="header-search">
-                        <StationSearch showSearchIcon={true} />
+                        <StationSearch />
                     </div>
                 </div>
             </div>

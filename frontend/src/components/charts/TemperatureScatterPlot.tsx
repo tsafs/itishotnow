@@ -13,19 +13,29 @@ import { useSelectedItem } from '../../store/hooks/selectedItemHook.js';
 import { DateTime } from 'luxon';
 import { useSelectedDate } from '../../store/slices/selectedDateSlice.js';
 import { useAppSelector } from '../../store/hooks/useAppSelector.js';
-import { useDispatch } from 'react-redux';
+import { useAppDispatch } from '../../store/hooks/useAppDispatch.js';
+
+interface BasePlotEntry {
+    year: number;
+    temperature: number;
+    date: string;
+    isPrimaryDay: boolean;
+    isCurrent?: boolean;
+}
+
+type PlotEntry = BasePlotEntry & { anomaly: number };
 
 const TemperatureScatterPlot = () => {
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
 
-    const containerRef = useRef();
+    const containerRef = useRef<HTMLDivElement | null>(null);
     const selectedItem = useSelectedItem();
     const selectedDate = useSelectedDate();
 
     const rollingAverageData = useAppSelector(selectRollingAverageData);
     const rollingAverageDataStatus = useAppSelector(selectRollingAverageDataStatus);
 
-    const [error, setError] = useState(null);
+    const [error, setError] = useState<string | null>(null);
 
     const fromYear = 1951;
     const toYear = 2024;
@@ -53,6 +63,8 @@ const TemperatureScatterPlot = () => {
     useEffect(() => {
         if (rollingAverageDataStatus !== "succeeded" || !selectedItem || !selectedDate) return;
 
+        setError(null);
+
         // Clear any existing plot
         if (containerRef.current) {
             containerRef.current.innerHTML = '';
@@ -75,26 +87,30 @@ const TemperatureScatterPlot = () => {
                 return;
             }
 
-            // Format data for the plot
-            const formattedPrimaryData = primaryDayData.map(entry => {
-                const year = parseInt(entry.date.split('-')[0]);
-                return {
-                    year,
-                    temperature: entry.tas,
-                    date: entry.date,
-                    isPrimaryDay: true
-                };
-            });
+            const mapEntry = (entry: typeof primaryDayData[number]): BasePlotEntry | null => {
+                const [yearString] = entry.date.split('-');
+                const year = Number(yearString);
+                const temperature = typeof entry.tas === 'number' ? entry.tas : null;
 
-            const formattedSurroundingData = surroundingDaysData.map(entry => {
-                const year = parseInt(entry.date.split('-')[0]);
+                if (!Number.isFinite(year) || temperature === null) {
+                    return null;
+                }
+
                 return {
                     year,
-                    temperature: entry.tas,
+                    temperature,
                     date: entry.date,
-                    isPrimaryDay: false
-                };
-            });
+                    isPrimaryDay: entry.isPrimaryDay,
+                } satisfies BasePlotEntry;
+            };
+
+            const formattedPrimaryData = primaryDayData
+                .map(mapEntry)
+                .filter((entry): entry is BasePlotEntry => entry !== null);
+
+            const formattedSurroundingData = surroundingDaysData
+                .map(mapEntry)
+                .filter((entry): entry is BasePlotEntry => entry !== null);
 
             // Calculate average temperature only for the baseline period (1961-1990)
             const baselinePrimaryDayData = formattedPrimaryData.filter(
@@ -103,29 +119,40 @@ const TemperatureScatterPlot = () => {
 
             const averageTempForPrimaryDay = d3.mean(baselinePrimaryDayData, d => d.temperature);
 
+            if (averageTempForPrimaryDay == null) {
+                setError('Insufficient baseline data to compute anomalies');
+                return;
+            }
+
+            if (Number.isNaN(averageTempForPrimaryDay)) {
+                setError('Baseline data produced invalid average value');
+                return;
+            }
+
             // Calculate anomalies for primary day
-            const primaryDayWithAnomalies = formattedPrimaryData.map(entry => ({
+            const primaryDayWithAnomalies: PlotEntry[] = formattedPrimaryData.map(entry => ({
                 ...entry,
                 anomaly: entry.temperature - averageTempForPrimaryDay
             }));
 
             // Calculate anomalies for surrounding days (relative to primary day average)
-            const surroundingDaysWithAnomalies = formattedSurroundingData.map(entry => ({
+            const surroundingDaysWithAnomalies: PlotEntry[] = formattedSurroundingData.map(entry => ({
                 ...entry,
                 anomaly: entry.temperature - averageTempForPrimaryDay
             }));
 
             // Combine datasets
-            const allDataWithAnomalies = [
+            const allDataWithAnomalies: PlotEntry[] = [
                 ...primaryDayWithAnomalies,
                 ...surroundingDaysWithAnomalies
             ];
 
             // Add today's data point if available
-            let todayDataPoint = null;
-            if (selectedItem.data.minTemperature && selectedItem.data.maxTemperature) {
+            let todayDataPoint: PlotEntry | null = null;
+            const { minTemperature, maxTemperature } = selectedItem.data;
+            if (typeof minTemperature === 'number' && typeof maxTemperature === 'number') {
                 // Workaround until the true mean is calculated on the backend job:
-                const averageTemperature = (selectedItem.data.minTemperature + selectedItem.data.maxTemperature) / 2;
+                const averageTemperature = (minTemperature + maxTemperature) / 2;
                 const todayAnomaly = averageTemperature - averageTempForPrimaryDay;
                 todayDataPoint = {
                     year: luxonDate.year,
@@ -142,24 +169,29 @@ const TemperatureScatterPlot = () => {
 
             // Calculate trend per decade
             const primaryDayData2 = allDataWithAnomalies.filter(d => d.isPrimaryDay);
-            const years = primaryDayData2.map(d => d.year);
-            const anomalies = primaryDayData2.map(d => d.anomaly);
 
-            // Simple linear regression calculation
-            const n = years.length;
-            const sumX = d3.sum(years);
-            const sumY = d3.sum(anomalies);
-            const sumXY = d3.sum(years.map((year, i) => year * anomalies[i]));
-            const sumXX = d3.sum(years.map(year => year * year));
+            let trendPerDecade = 0;
+            if (primaryDayData2.length >= 2) {
+                const n = primaryDayData2.length;
+                const sumX = d3.sum(primaryDayData2.map(({ year }) => year));
+                const sumY = d3.sum(primaryDayData2.map(({ anomaly }) => anomaly));
+                const sumXY = d3.sum(primaryDayData2.map(({ year, anomaly }) => year * anomaly));
+                const sumXX = d3.sum(primaryDayData2.map(({ year }) => year * year));
+                const denominator = n * sumXX - sumX * sumX;
 
-            const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
-            const trendPerDecade = slope * 10; // Convert per year to per decade
+                if (denominator !== 0) {
+                    const slope = (n * sumXY - sumX * sumY) / denominator;
+                    trendPerDecade = slope * 10; // Convert per year to per decade
+                }
+            }
 
             // Format trend with German number format (comma as decimal separator)
             const formattedTrend = trendPerDecade.toFixed(1).replace('.', ',');
 
             const anomaliesForDetails = allDataWithAnomalies.filter(d => d.isPrimaryDay);
-            anomaliesForDetails.push(todayDataPoint);
+            if (todayDataPoint) {
+                anomaliesForDetails.push(todayDataPoint);
+            }
 
             // Create the plot
             const plot = Plot.plot({
@@ -256,7 +288,7 @@ const TemperatureScatterPlot = () => {
                         py: "anomaly",
                         dy: -17,
                         frameAnchor: "top",
-                        text: (d) => [
+                        text: (d: PlotEntry) => [
                             DateTime.fromISO(d.date).setLocale('de').toFormat("d. MMMM yyyy"),
                             `Durchschnittstemperatur: ${d.temperature.toFixed(1)}°C`,
                             `Abweichung: ${d.anomaly.toFixed(1)}°C`
@@ -266,7 +298,7 @@ const TemperatureScatterPlot = () => {
                 ]
             });
 
-            containerRef.current.appendChild(plot);
+            containerRef.current?.appendChild(plot);
 
             return () => plot.remove();
         } catch (err) {

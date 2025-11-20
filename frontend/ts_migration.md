@@ -1,16 +1,6 @@
 You are an assistant continuing a staged migration of a React + JavaScript + Redux codebase into a TypeScript codebase. Context: data services and domain classes/models have already been partly migrated, some are missing. Use incremental, reversible changes and keep CI green.
 
-Summary of completed work
-- Partly migrated data services: rewritten with async/await, added TypeScript types for inputs/outputs, centralized API client.
-- Partly migrated domain classes/models: converted to typed classes/interfaces and updated usages where necessary.
-
-Recent progress (Nov 20, 2025)
-- Worked on step 0:
-   - Restored missing typed domain models (`RollingAverageRecord`, `YearlyMeanByDay`, `ReferenceYearlyHourlyInterpolatedByDay`) and re-synced their JSON helpers.
-   - Tightened key data services (`RollingAverageDataService`, `YearlyMeanByDayService`, `ReferenceYearlyHourlyInterpolatedByDayService`, `CityService`, `DataService`, `GeoJSONService`) to emit typed results and guard CSV parsing edge cases.
-   - Preserved the legacy single-argument signature for `fetchRollingAverageForStation`, aligning downstream usage without introducing overload debt.
-
-Next steps (ordered, with brief actions & acceptance criteria)
+Steps (ordered, with brief actions & acceptance criteria)
 0) Migrate the remainders of data services and domain classes/models/interfaces.
    - These are located in the frontend/src/services and frontend/src/classes directories.
    - Adhere to the code style and paradigms already employed in migrated data services and classes/interfaces.
@@ -52,6 +42,6 @@ Constraints and guidance
 - Before starting a new step, open a small PR. I will ask you to commence working on a new step in a new session.
 
 Immediate next task to assign to an agent
-- Start with step 1: Migrate Redux slices
+- See npx tsc output and choose what steps, fixes or adjustments to work on next.
 
 Return progress updates as: changed files, tests added/updated, CI status, and any runtime errors observed.
