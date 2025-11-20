@@ -1,3 +1,5 @@
+/** This file is not yet being used. Do not consider it for any code changes. */
+
 import { useEffect, useRef, useState } from 'react';
 import * as Plot from "@observablehq/plot";
 import { html } from 'htl';
