@@ -1,11 +1,16 @@
 
+import ReferenceYearlyHourlyInterpolatedByDay, {
+    type ReferenceHourKey,
+    type ReferenceYearlyHourlyInterpolatedByDayByStationId,
+} from '../classes/ReferenceYearlyHourlyInterpolatedByDay';
+
 /**
  * Service to fetch interpolated hourly historical temperature data for a specific day
- * @param {string|number} month - Month in MM format (01-12)
- * @param {string|number} day - Day in DD format (01-31)
- * @returns {Promise<Array>} Array of hourly historical temperature data objects by station
  */
-export const fetchReferenceYearlyHourlyInterpolatedByDayData = async (month, day) => {
+export const fetchReferenceYearlyHourlyInterpolatedByDayData = async (
+    month: number,
+    day: number,
+): Promise<ReferenceYearlyHourlyInterpolatedByDayByStationId> => {
     try {
         // Format month and day to ensure they have leading zeros
         const formattedMonth = String(month).padStart(2, '0');
@@ -20,37 +25,54 @@ export const fetchReferenceYearlyHourlyInterpolatedByDayData = async (month, day
         }
 
         const text = await response.text();
-        const lines = text.split('\n');
+        const lines = text.split('\n').filter(line => line.trim().length > 0);
 
-        // Parse CSV header to get hour columns
-        const header = lines[0].split(',');
+        if (lines.length === 0) {
+            throw new Error(`No interpolated hourly data found for day ${formattedMonth}/${formattedDay}.`);
+        }
 
-        // Parse CSV data into array of objects
-        const data = lines.slice(1).map(line => {
-            if (!line.trim()) return null; // Skip empty lines
+        const header = (lines[0] ?? '').split(',').map(column => column.trim());
+        if (header.length === 0) {
+            throw new Error(`Missing header for interpolated hourly data of ${formattedMonth}/${formattedDay}.`);
+        }
 
-            const values = line.split(',').map(val => val.trim());
-            if (!values[0]) return null; // Skip if no station_id
+        const result: ReferenceYearlyHourlyInterpolatedByDayByStationId = {};
 
+        for (const line of lines.slice(1)) {
+            const values = line.split(',').map(value => value.trim());
             const stationId = values[0];
-            const hourlyData = {};
 
-            // Map each hour column to its value
-            for (let i = 1; i < header.length; i++) {
-                const hourKey = header[i];
-                hourlyData[hourKey] = parseFloat(values[i]);
+            if (!stationId) {
+                continue;
             }
 
-            return {
-                stationId: stationId,
-                ...hourlyData
-            };
-        }).filter(Boolean); // Remove null entries
+            const record = new ReferenceYearlyHourlyInterpolatedByDay(stationId);
 
-        // Convert data to dictionary
-        let result = {};
-        for (let item of data) {
-            result[item.stationId] = item;
+            for (let columnIndex = 1; columnIndex < header.length; columnIndex += 1) {
+                const columnName = header[columnIndex];
+                const hourKey = parseHourKey(columnName);
+
+                if (!hourKey) {
+                    continue;
+                }
+
+                if (columnIndex >= values.length) {
+                    continue;
+                }
+
+                const value = parseOptionalFloat(values[columnIndex]);
+                if (value === undefined) {
+                    continue;
+                }
+
+                record.setHourValue(hourKey, value);
+            }
+
+            result[stationId] = record.toJSON();
+        }
+
+        if (Object.keys(result).length === 0) {
+            throw new Error(`No hourly data rows parsed for day ${formattedMonth}/${formattedDay}.`);
         }
 
         return result;
@@ -58,4 +80,31 @@ export const fetchReferenceYearlyHourlyInterpolatedByDayData = async (month, day
         console.error(`Error loading interpolated hourly data for day ${month}/${day}:`, error);
         throw error;
     }
+};
+
+const parseHourKey = (value: string | undefined): ReferenceHourKey | null => {
+    if (!value) {
+        return null;
+    }
+
+    const match = /^hour_(\d{1,2})$/.exec(value);
+    if (!match) {
+        return null;
+    }
+
+    const hour = Number.parseInt(match[1] ?? '', 10);
+    if (Number.isNaN(hour) || hour < 0 || hour > 23) {
+        return null;
+    }
+
+    return value as ReferenceHourKey;
+};
+
+const parseOptionalFloat = (value: string | undefined): number | undefined => {
+    if (!value) {
+        return undefined;
+    }
+
+    const parsed = Number.parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : undefined;
 };

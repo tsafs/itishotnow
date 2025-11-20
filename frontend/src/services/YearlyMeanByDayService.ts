@@ -1,10 +1,9 @@
+import YearlyMeanByDay, { type YearlyMeanByDayByStationId } from '../classes/YearlyMeanByDay';
+
 /**
  * Service to fetch historical average data for a specific day (month and day)
- * @param {string|number} month - Month in MM format (01-12)
- * @param {string|number} day - Day in DD format (01-31)
- * @returns {Promise<Array>} Array of historical data objects by station
  */
-export const fetchYearlyMeanByDayData = async (month, day) => {
+export const fetchYearlyMeanByDayData = async (month: number, day: number): Promise<YearlyMeanByDayByStationId> => {
     try {
         // Format month and day to ensure they have leading zeros
         const formattedMonth = String(month).padStart(2, '0');
@@ -19,28 +18,32 @@ export const fetchYearlyMeanByDayData = async (month, day) => {
         }
 
         const text = await response.text();
-        const lines = text.split('\n');
+        const lines = text.split('\n').filter(line => line.trim().length > 0);
 
-        // Parse CSV data into array of objects
-        const data = lines.slice(1).map(line => {
-            if (!line.trim()) return null; // Skip empty lines
+        if (lines.length === 0) {
+            throw new Error(`No yearly mean data found for ${formattedMonth}-${formattedDay}.`);
+        }
 
-            const [station_id, tasmin, tasmax, tas] = line.split(',').map(col => col.trim());
+        const result: YearlyMeanByDayByStationId = {};
 
-            if (!station_id) return null;
+        for (const line of lines.slice(1)) {
+            const [stationIdRaw, tasminRaw, tasmaxRaw, tasRaw] = line.split(',').map(column => column.trim());
+            if (!stationIdRaw) {
+                continue;
+            }
 
-            return {
-                station_id: station_id,
-                tasmin: parseFloat(tasmin) || undefined,
-                tasmax: parseFloat(tasmax) || undefined,
-                tas: parseFloat(tas) || undefined
-            };
-        }).filter(Boolean); // Remove null entries
+            const record = new YearlyMeanByDay(
+                stationIdRaw,
+                parseOptionalFloat(tasminRaw),
+                parseOptionalFloat(tasmaxRaw),
+                parseOptionalFloat(tasRaw),
+            );
 
-        // Convert data to dictionary
-        let result = {};
-        for (let item of data) {
-            result[item.station_id] = item;
+            result[record.stationId] = record.toJSON();
+        }
+
+        if (Object.keys(result).length === 0) {
+            throw new Error(`No yearly mean data rows parsed for ${formattedMonth}-${formattedDay}.`);
         }
 
         return result;
@@ -48,4 +51,13 @@ export const fetchYearlyMeanByDayData = async (month, day) => {
         console.error(`Error loading historical data for day ${month}/${day}:`, error);
         throw error;
     }
+};
+
+const parseOptionalFloat = (value: string | undefined): number | undefined => {
+    if (!value) {
+        return undefined;
+    }
+
+    const parsed = Number.parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : undefined;
 };

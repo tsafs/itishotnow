@@ -1,12 +1,13 @@
 import { v4 as uuidv4 } from 'uuid';
-import type { ICity } from '../classes/City.js';
-import type { IStation } from '../classes/Station.js';
+import City from '../classes/City';
+import type { CityDictionary, CityJSON, ICity } from '../classes/City';
+import type { IStation } from '../classes/Station';
 
 /**
  * Service to fetch German cities from CSV file
  * @returns {Promise<Array>} Array of city data objects
  */
-export const fetchGermanCities = async () => {
+export const fetchGermanCities = async (): Promise<City[]> => {
     try {
         const url = "/german_cities_p5000.csv";
         const response = await fetch(url);
@@ -18,22 +19,24 @@ export const fetchGermanCities = async () => {
         const text = await response.text();
         const lines = text.split('\n');
 
-        // Skip header line and parse remaining lines
-        const cities: Array<ICity | null> = lines.slice(1).map(line => {
-            if (!line.trim()) return null; // Skip empty lines
+        const cities: City[] = [];
+        for (const line of lines.slice(1)) {
+            if (!line.trim()) continue;
 
-            const [name, lat, lon] = line.split(',');
-            if (!name || !lat || !lon) return null;
+            const [nameRaw, latRaw, lonRaw] = line.split(',');
+            if (!nameRaw || !latRaw || !lonRaw) continue;
 
-            return {
-                id: uuidv4(),
-                name: name.trim(),
-                lat: parseFloat(lat),
-                lon: parseFloat(lon)
-            } as ICity;
-        }).filter(Boolean); // Remove null entries
+            const lat = Number.parseFloat(latRaw);
+            const lon = Number.parseFloat(lonRaw);
 
-        return cities as Array<ICity>;
+            if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+                continue;
+            }
+
+            cities.push(new City(uuidv4(), nameRaw.trim(), lat, lon));
+        }
+
+        return cities;
     } catch (error) {
         console.error("Error loading German cities data:", error);
         throw error;
@@ -48,7 +51,7 @@ export const fetchGermanCities = async () => {
  * @param {number} lon2 - Longitude of the second point
  * @returns {number} Distance in kilometers
  */
-export const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+export const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
     const R = 6371; // Radius of the Earth in km
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
@@ -62,54 +65,66 @@ export const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2
 
 /**
  * Finds the nearest weather station for each city
- * @param {Array} cities - Array of city objects
+ * @param {Array} cities - Dictionary of city objects keyed by id
  * @param {Object} stations - Dictionary of stationId -> station
  * @returns {Array} Cities with nearest station information
  */
-export const findClosestWeatherStationsForCities = (cities: Record<string, ICity>, stations: Record<string, IStation>) => {
-    if (Object.keys(stations).length === 0) {
+export const findClosestWeatherStationsForCities = (
+    cities: Record<string, ICity | City>,
+    stations: Record<string, IStation>,
+): CityDictionary => {
+    const stationList = Object.values(stations).filter((station): station is IStation =>
+        Number.isFinite(station.lat) && Number.isFinite(station.lon)
+    );
+
+    if (stationList.length === 0) {
         console.warn("No stations available to find nearest for cities");
-        return cities; // Return original cities if no stations available
+        return Object.fromEntries(
+            Object.values(cities).map(city => {
+                const instance = city instanceof City ? city : toCityInstance(city);
+                return [instance.id, instance];
+            })
+        );
     }
 
-    const result: Record<string, ICity> = {};
-    Object.values(cities).forEach(city => {
-        // Default to first station
-        const firstStation = Object.values(stations)[0] as IStation;
-        let nearestStation: IStation = firstStation;
-        let minDistance = calculateDistance(
-            city.lat, city.lon,
-            firstStation.lat, firstStation.lon
-        );;
+    const result: CityDictionary = {};
 
-        // Find the nearest station for this city
-        Object.values(stations).forEach((station: IStation) => {
-            // Some stations might have invalid coordinates
-            if (isNaN(station.lat) || isNaN(station.lon)) {
-                return;
-            }
+    for (const cityLike of Object.values(cities)) {
+        const city = cityLike instanceof City ? cityLike : toCityInstance(cityLike);
 
-            const distance = calculateDistance(
-                city.lat, city.lon,
-                station.lat, station.lon
-            );
+        let nearestStation: IStation | null = null;
+        let minDistance = Number.POSITIVE_INFINITY;
 
+        for (const station of stationList) {
+            const distance = calculateDistance(city.lat, city.lon, station.lat, station.lon);
             if (distance < minDistance) {
                 minDistance = distance;
                 nearestStation = station;
             }
-        });
+        }
 
-        // Create a copy of the city with nearest station info
-        result[city.id] = {
-            id: city.id,
-            name: city.name,
-            lat: city.lat,
-            lon: city.lon,
-            stationId: nearestStation.id,
-            distanceToStation: minDistance
-        } as ICity;
-    });
+        if (!nearestStation) {
+            result[city.id] = city;
+            continue;
+        }
+
+        result[city.id] = city.withNearestStation(nearestStation.id, minDistance);
+    }
 
     return result;
+};
+
+const toCityInstance = (city: ICity | CityJSON): City => {
+    if (city instanceof City) {
+        return city;
+    }
+
+    return new City(
+        city.id,
+        city.name,
+        city.lat,
+        city.lon,
+        city.stationId ?? null,
+        city.distanceToStation ?? null,
+    );
 };
