@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { FaCalendarDay } from 'react-icons/fa';
 import { DayPicker } from 'react-day-picker';
@@ -11,35 +10,36 @@ import { useSelectedItem } from '../../store/hooks/selectedItemHook.js';
 import { useSelectedDate } from '../../store/slices/selectedDateSlice.js';
 import './DateSelection.css';
 import { DateTime } from 'luxon'; // Added Luxon
+import { useAppDispatch } from '../../store/hooks/useAppDispatch.js';
 
 /**
  * Component for selecting "Yesterday", "Today", or an arbitrary date of a preconfigured selection of years.
  */
 
-const convertYYYYMMDDToDate = (dateString) => {
+const convertYYYYMMDDToDate = (dateString: string): DateTime => {
     // Returns a Luxon DateTime object
     return DateTime.fromFormat(dateString, 'yyyyLLdd');
 }
 
 const DateSelection = () => {
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const selectedDate = useSelectedDate();
     const selectedItem = useSelectedItem();
     const dateRange = useHistoricalDailyDataDateRangeForStation(selectedItem?.station.id);
 
-    const [isYesterdaySelected, setIsYesterdaySelected] = useState(false);
-    const [isTodaySelected, setIsTodaySelected] = useState(true);
-    const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-    const [recentlyClosed, setRecentlyClosed] = useState(false);
-    const [renderYesterdayButton, setRenderYesterdayButton] = useState(false);
+    const [isYesterdaySelected, setIsYesterdaySelected] = useState<boolean>(false);
+    const [isTodaySelected, setIsTodaySelected] = useState<boolean>(true);
+    const [isCalendarOpen, setIsCalendarOpen] = useState<boolean>(false);
+    const [recentlyClosed, setRecentlyClosed] = useState<boolean>(false);
+    const [renderYesterdayButton, setRenderYesterdayButton] = useState<boolean>(false);
 
-    const [startMonth, setStartMonth] = useState(null);
-    const [endMonth, setEndMonth] = useState(null);
-    const [disabledBefore, setDisabledBefore] = useState(null);
-    const [disabledAfter, setDisabledAfter] = useState(null);
+    const [startMonth, setStartMonth] = useState<Date | null>(null);
+    const [endMonth, setEndMonth] = useState<Date | null>(null);
+    const [disabledBefore, setDisabledBefore] = useState<Date | null>(null);
+    const [disabledAfter, setDisabledAfter] = useState<Date | null>(null);
 
-    const dateSelectRef = useRef(null);
+    const dateSelectRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
         if (!dateRange) return;
@@ -63,9 +63,9 @@ const DateSelection = () => {
         setRenderYesterdayButton(isWithinRange);
     }, [dateRange])
 
-    const handleDateSelection = useCallback((date) => {
+    const handleDateSelection = useCallback((date: DateTime) => {
         // date is a Luxon DateTime
-        dispatch(setDateAndFetchHistoricalData(date.toISO()));
+        dispatch(setDateAndFetchHistoricalData(date.toISO()!));
     }, [dispatch]);
 
     // Handle today selection
@@ -91,7 +91,7 @@ const DateSelection = () => {
         }
     };
 
-    const handleDateSelect = (date) => {
+    const handleDateSelect = (date: Date | undefined) => {
         // date is a JS Date from DayPicker, convert to Luxon
         if (!date) {
             setIsCalendarOpen(false);
@@ -148,11 +148,11 @@ const DateSelection = () => {
 
     // Handle clicks outside of the calendar to close it
     useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (dateSelectRef.current && !dateSelectRef.current.contains(event.target)) {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dateSelectRef.current && event.target instanceof Node && !dateSelectRef.current.contains(event.target)) {
                 setIsCalendarOpen(false);
                 setRecentlyClosed(true);
-                setTimeout(() => {
+                window.setTimeout(() => {
                     setRecentlyClosed(false);
                 }, 500);
             }

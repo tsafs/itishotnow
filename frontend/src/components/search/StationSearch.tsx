@@ -1,5 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
-import { useDispatch } from 'react-redux';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaSearch } from 'react-icons/fa';
 import { PREDEFINED_CITIES } from '../../constants/map.js';
@@ -8,35 +7,38 @@ import { selectCities, selectAreCitiesCorrelated } from '../../store/slices/city
 import { selectLiveData } from '../../store/slices/liveDataSlice.js';
 import './StationSearch.css';
 import { useAppSelector } from '../../store/hooks/useAppSelector.js';
+import { useAppDispatch } from '../../store/hooks/useAppDispatch.js';
+import type { ICity } from '../../classes/City.js';
+import type StationData from '../../classes/StationData.js';
 
 const StationSearch = () => {
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const cities = useAppSelector(selectCities);
     const areCitiesCorrelated = useAppSelector(selectAreCitiesCorrelated);
     const liveData = useAppSelector(selectLiveData);
     const selectedCityId = useAppSelector(state => state.selectedCity.cityId);
 
-    const [searchTerm, setSearchTerm] = useState('');
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const [filteredCities, setFilteredCities] = useState([]);
-    const [focusedIndex, setFocusedIndex] = useState(-1);
-    const searchRef = useRef(null);
-    const inputRef = useRef(null);
+    const [searchTerm, setSearchTerm] = useState<string>('');
+    const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
+    const [filteredCities, setFilteredCities] = useState<ICity[]>([]);
+    const [focusedIndex, setFocusedIndex] = useState<number>(-1);
+    const searchRef = useRef<HTMLDivElement | null>(null);
+    const inputRef = useRef<HTMLInputElement | null>(null);
 
     // Handle city selection
-    const handleCitySelect = (city) => {
+    const handleCitySelect = useCallback((city: ICity) => {
         const isPredefined = PREDEFINED_CITIES.includes(city.name);
         dispatch(selectCity(city.id, isPredefined));
         setSearchTerm('');
         setIsDropdownOpen(false);
         navigate('/'); // Navigate to home page when a city is selected
-    };
+    }, [dispatch, navigate]);
 
     // Handle clicks outside of the dropdown to close it
     useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (searchRef.current && !searchRef.current.contains(event.target)) {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (searchRef.current && event.target instanceof Node && !searchRef.current.contains(event.target)) {
                 setIsDropdownOpen(false);
             }
         };
@@ -58,16 +60,12 @@ const StationSearch = () => {
 
         const searchTermLower = searchTerm.toLowerCase();
 
-        // Only do exact matches (includes)
-        let filtered = Object.values(cities).filter(city =>
-            city.name.toLowerCase().includes(searchTermLower)
-        );
+        const filtered = Object.values(cities)
+            .filter((city) => city.name.toLowerCase().includes(searchTermLower))
+            .sort((a, b) => a.name.length - b.name.length)
+            .slice(0, 15);
 
-        // Sort results by name length (shorter names first)
-        filtered.sort((a, b) => a.name.length - b.name.length);
-
-        // Limit to 15 results
-        setFilteredCities(filtered.slice(0, 15));
+        setFilteredCities(filtered);
     }, [searchTerm, cities, areCitiesCorrelated]);
 
     // Reset focused index when filtered cities change
@@ -96,13 +94,13 @@ const StationSearch = () => {
                     <div className="station-search-dropdown">
                         {filteredCities.length > 0 ? (
                             filteredCities.map((city, index) => {
-                                const data = liveData[city.stationId];
-                                if (!data) return <></>;
+                                const data: StationData | undefined = liveData[city.stationId!];
+                                if (!data) return null;
 
                                 // Only show temperature if city has a nearest station with data
                                 const hasTemperature = data.temperature !== undefined;
 
-                                const isSelected = city.id === selectedCityId
+                                const isSelected = city.id === selectedCityId;
 
                                 return (
                                     <div

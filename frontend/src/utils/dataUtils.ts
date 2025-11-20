@@ -1,16 +1,13 @@
-
 /**
- * Extract hour from a date string in format "dd.mm.yyyy HH:MM" or similar
- * @param {string} dateString - The date string to extract hour from
- * @returns {number|null} The hour (0-23) or null if not found
+ * Extract the hour component from a date string containing an "HH:MM" segment.
  */
-export const extractHourFromDateString = (dateString) => {
+export const extractHourFromDateString = (dateString: string | null | undefined): number | null => {
     if (!dateString) return null;
 
-    // Try to match HH:MM pattern in the date string
     const hourMatch = dateString.match(/\s(\d{2}):/);
-    if (hourMatch) {
-        return parseInt(hourMatch[1], 10);
+    if (!hourMatch) {
+        return null;
     }
-    return null;
+    const hour = Number.parseInt(hourMatch[1] ?? '', 10);
+    return Number.isNaN(hour) ? null : hour;
 };

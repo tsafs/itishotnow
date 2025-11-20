@@ -24,6 +24,7 @@
     },
     "scripts": {
         "start": "vite",
+        "start:now": "VITE_APP_NOW=2025-01-01T12:00:00Z vite",
         "build": "vite build",
         "serve": "vite preview"
     },

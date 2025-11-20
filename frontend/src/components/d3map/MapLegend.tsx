@@ -1,7 +1,13 @@
 import { getAnomalyColor } from '../../utils/TemperatureUtils.js';
+import type { ColorSchemeName } from '../../utils/TemperatureUtils.js';
 import './MapLegend.css';
 
-const MapLegend = ({ title, colorScheme }) => {
+interface MapLegendProps {
+    title?: string;
+    colorScheme?: ColorSchemeName;
+}
+
+const MapLegend = ({ title, colorScheme = 'BlueWhiteRed' }: MapLegendProps) => {
     // Create an array from -10 to +10 with steps of 2
     const anomalyValues = Array.from({ length: 11 }, (_, i) => (i * 2) - 10);
 

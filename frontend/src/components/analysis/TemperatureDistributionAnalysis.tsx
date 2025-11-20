@@ -1,17 +1,18 @@
 import { useState } from 'react';
 import ContentSplit from '../layout/ContentSplit.js';
-import TemperaturePercentogram from '../charts/TemperaturePercentogram.js';
 import './TemperatureDistributionAnalysis.css';
-import { useAppSelector } from '../../store/hooks/useAppSelector.js';
+import { useSelectedItem } from '../../store/hooks/selectedItemHook.js';
 
 const TemperatureDistributionAnalysis = () => {
-    const selectedCity = useAppSelector(state => state.selectedCity);
-    const [timeRange, setTimeRange] = useState({ from: 1961, to: 1990 });
-    const [activeTab, setActiveTab] = useState('description');
+    const selectedItem = useSelectedItem();
+    const [timeRange, setTimeRange] = useState<{ from: number; to: number }>({ from: 1961, to: 1990 });
+    const [activeTab, setActiveTab] = useState<'description' | 'methodology'>('description');
 
-    const handleTimeRangeChange = (range) => {
+    const handleTimeRangeChange = (range: { from: number; to: number }) => {
         setTimeRange(range);
     };
+
+    const stationLabel = selectedItem?.station.name ?? 'der aktuell gewählten Stadt';
 
     // Left side content with tabs for different content types
     const leftContent = (
@@ -36,7 +37,7 @@ const TemperatureDistributionAnalysis = () => {
             <div className="tab-content">
                 {activeTab === 'description' && (
                     <div className="description-content">
-                        <p>See how today's temperature in {selectedCity?.station_name} compares to the historical distribution from the reference period.</p>
+                        <p>See how today's temperature in {stationLabel} compares to the historical distribution from the reference period.</p>
                         <p>The percentogram visualization shows the distribution of temperatures on this calendar day across all years in the selected period.</p>
                         <p>Each bar represents an equal percentage of the data, rather than an equal temperature range, making it easier to see where today's temperature falls in the historical record.</p>
 
@@ -80,7 +81,7 @@ const TemperatureDistributionAnalysis = () => {
 
     // Right side content with the percentogram visualization
     const rightContent = (
-        <TemperaturePercentogram />
+        <div className="analysis-placeholder">Die Visualisierung wird gerade überarbeitet.</div>
     );
 
     return (

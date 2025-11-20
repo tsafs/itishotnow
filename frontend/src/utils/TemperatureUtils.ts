@@ -1,17 +1,24 @@
 /**
- * Calculates the temperature anomaly between current temperature and historical reference
- * @param {number} currentTemp - The current temperature
- * @param {number} historicalTemp - The historical reference temperature
- * @returns {number|null} The difference (anomaly) or null if inputs are invalid
+ * Calculates the temperature anomaly between current temperature and a historical reference.
  */
-export const calculateAnomaly = (currentTemp, historicalTemp) => {
-    if (currentTemp === undefined || historicalTemp === undefined) {
+export const calculateAnomaly = (
+    currentTemp: number | null | undefined,
+    historicalTemp: number | null | undefined,
+): number | null => {
+    if (currentTemp === undefined || historicalTemp === undefined || currentTemp === null || historicalTemp === null) {
         return null;
     }
     return currentTemp - historicalTemp;
 };
 
-const blueWhiteRedScheme = [
+export type ColorSchemeName = 'BlueWhiteRed' | 'Turbo';
+
+interface ColorStop {
+    threshold: number;
+    color: string;
+}
+
+const blueWhiteRedScheme: ColorStop[] = [
     { threshold: -10, color: "#13437D" },
     { threshold: -8, color: "#07579C" },
     { threshold: -6, color: "#3A7D9D" },
@@ -25,7 +32,7 @@ const blueWhiteRedScheme = [
     { threshold: 10, color: "#5F0000" }
 ];
 
-const turboScheme = [
+const turboScheme: ColorStop[] = [
     { threshold: -10, color: "#23171B" },
     { threshold: -8, color: "#4B48C3" },
     { threshold: -6, color: "#238FF8" },
@@ -39,39 +46,43 @@ const turboScheme = [
     { threshold: 10, color: "#900C00" }
 ];
 
-/**
- * Generates a color based on temperature anomaly
- * @param {number} anomaly - Temperature difference from historical average
- * @returns {string} - HEX color code from blue (cold) to white (neutral) to red (hot) to purple (very hot)
- */
-export const getAnomalyColor = (anomaly, colorScheme) => {
-    let scheme;
-    if (!colorScheme || colorScheme === "BlueWhiteRed") {
+/** Generates a color for the provided temperature anomaly. */
+export const getAnomalyColor = (
+    anomaly: number | null | undefined,
+    colorScheme?: ColorSchemeName,
+): string => {
+    let scheme: ColorStop[];
+    if (!colorScheme || colorScheme === 'BlueWhiteRed') {
         scheme = blueWhiteRedScheme;
-    } else if (colorScheme === "Turbo") {
+    } else if (colorScheme === 'Turbo') {
         scheme = turboScheme;
     } else {
         throw new Error(`Unknown color scheme: ${colorScheme}`);
     }
 
-    if (anomaly === null || anomaly === undefined) {
-        return "#aaaaaa"; // Default grey color for missing data
+    if (anomaly === null || anomaly === undefined || Number.isNaN(anomaly) || !Number.isFinite(anomaly)) {
+        return '#aaaaaa';
     }
 
-    // Find the right color segment for the anomaly
-    for (let i = 0; i < scheme.length - 1; i++) {
-        if (anomaly >= scheme[i].threshold && anomaly <= scheme[i + 1].threshold) {
-            // Linear interpolation between the two color stops
-            const ratio = (anomaly - scheme[i].threshold) /
-                (scheme[i + 1].threshold - scheme[i].threshold);
+    for (let i = 0; i < scheme.length - 1; i += 1) {
+        const current = scheme[i];
+        const next = scheme[i + 1];
 
-            return interpolateColor(scheme[i].color, scheme[i + 1].color, ratio);
+        if (!current || !next) {
+            continue;
+        }
+        if (anomaly >= current.threshold && anomaly <= next.threshold) {
+            const ratio = (anomaly - current.threshold) / (next.threshold - current.threshold);
+            return interpolateColor(current.color, next.color, ratio);
         }
     }
 
-    // Handle extremes
-    if (anomaly < scheme[0].threshold) return scheme[0].color;
-    return scheme[scheme.length - 1].color;
+    const firstStop = scheme[0];
+    if (firstStop && anomaly < firstStop.threshold) {
+        return firstStop.color;
+    }
+    const lastStop = scheme[scheme.length - 1];
+    return lastStop ? lastStop.color : '#aaaaaa';
 };
 
 /**
@@ -81,84 +92,90 @@ export const getAnomalyColor = (anomaly, colorScheme) => {
  * @param {number} ratio - Value between 0 and 1
  * @returns {string} - Interpolated hex color
  */
-function interpolateColor(color1, color2, ratio) {
-    // Convert hex to rgb
-    const hex2rgb = hex => {
+function interpolateColor(color1: string, color2: string, ratio: number): string {
+    const hex2rgb = (hex: string): [number, number, number] => {
         const r = parseInt(hex.slice(1, 3), 16);
         const g = parseInt(hex.slice(3, 5), 16);
         const b = parseInt(hex.slice(5, 7), 16);
         return [r, g, b];
     };
 
-    // Convert rgb to hex
-    const rgb2hex = rgb => {
-        return "#" + rgb.map(v => {
-            const hex = Math.round(v).toString(16);
-            return hex.length === 1 ? "0" + hex : hex;
-        }).join("");
+    const rgb2hex = (rgb: [number, number, number]): string => {
+        return `#${rgb
+            .map((v) => {
+                const hex = Math.round(v).toString(16);
+                return hex.length === 1 ? `0${hex}` : hex;
+            })
+            .join('')}`;
     };
 
     const rgb1 = hex2rgb(color1);
     const rgb2 = hex2rgb(color2);
-
-    // Interpolate
-    const rgb = rgb1.map((v, i) => v + (rgb2[i] - v) * ratio);
+    const clampedRatio = Math.min(Math.max(ratio, 0), 1);
+    const rgb: [number, number, number] = [
+        rgb1[0] + (rgb2[0] - rgb1[0]) * clampedRatio,
+        rgb1[1] + (rgb2[1] - rgb1[1]) * clampedRatio,
+        rgb1[2] + (rgb2[2] - rgb1[2]) * clampedRatio,
+    ];
 
     return rgb2hex(rgb);
 }
 
-/**
- * Analyzes temperature anomaly and returns formatted comparison information
- * @param {number} anomaly - Temperature anomaly value (difference from historical average)
- * @returns {Object} Object containing comparison message and detailed explanation
- */
-export const analyzeTemperatureAnomaly = (isLiveData, anomaly) => {
+export interface TemperatureAnomalyDetails {
+    comparisonMessage: string;
+    anomalyMessage: string;
+}
+
+/** Returns localized strings describing a temperature anomaly. */
+export const analyzeTemperatureAnomaly = (
+    isLiveData: boolean,
+    anomaly: number | null | undefined,
+): TemperatureAnomalyDetails => {
     if (anomaly === undefined || anomaly === null) {
         return {
-            comparisonMessage: "Keine Ahnung.",
-            anomalyMessage: "Keine historischen Daten verfügbar.",
+            comparisonMessage: 'Keine Ahnung.',
+            anomalyMessage: 'Keine historischen Daten verfügbar.',
         };
     }
 
-    let comparisonMessage = null;
-    const verb_sein = isLiveData ? "ist" : "war";
+    const verbSein = isLiveData ? 'ist' : 'war';
+    let comparisonMessage: string;
 
-    // Determine message based on direct temperature anomaly ranges
     if (anomaly <= -10) {
-        comparisonMessage = `Es ${verb_sein} eiskalt!`;
+        comparisonMessage = `Es ${verbSein} eiskalt!`;
     } else if (anomaly <= -8) {
-        comparisonMessage = `Es ${verb_sein} sehr kalt!`;
+        comparisonMessage = `Es ${verbSein} sehr kalt!`;
     } else if (anomaly <= -6) {
-        comparisonMessage = `Es ${verb_sein} kalt!`;
+        comparisonMessage = `Es ${verbSein} kalt!`;
     } else if (anomaly <= -4) {
-        comparisonMessage = `Es ${verb_sein} sehr kühl!`;
+        comparisonMessage = `Es ${verbSein} sehr kühl!`;
     } else if (anomaly <= -2) {
-        comparisonMessage = `Es ${verb_sein} kühl`;
+        comparisonMessage = `Es ${verbSein} kühl`;
     } else if (anomaly === 0) {
-        comparisonMessage = `Es ${verb_sein} exakt durchschnittlich`;
+        comparisonMessage = `Es ${verbSein} exakt durchschnittlich`;
     } else if (anomaly < 2) {
-        comparisonMessage = `Es ${verb_sein} ziemlich normal`;
+        comparisonMessage = `Es ${verbSein} ziemlich normal`;
     } else if (anomaly < 4) {
-        comparisonMessage = `Es ${verb_sein} warm`;
+        comparisonMessage = `Es ${verbSein} warm`;
     } else if (anomaly < 6) {
-        comparisonMessage = `Es ${verb_sein} sehr warm!`;
+        comparisonMessage = `Es ${verbSein} sehr warm!`;
     } else if (anomaly < 8) {
-        comparisonMessage = `Es ${verb_sein} heiß!`;
+        comparisonMessage = `Es ${verbSein} heiß!`;
     } else if (anomaly < 10) {
-        comparisonMessage = `Es ${verb_sein} sehr heiß!`;
+        comparisonMessage = `Es ${verbSein} sehr heiß!`;
     } else {
-        comparisonMessage = `Es ${verb_sein} brütend heiß!`;
+        comparisonMessage = `Es ${verbSein} brütend heiß!`;
     }
 
-    let anomalyMessage = null;
-    if (isLiveData) {
-        anomalyMessage = `Die zuletzt gemessene Temperatur lag ${Math.abs(anomaly).toFixed(1)}\u00A0°C ${anomaly > 0 ? 'über' : 'unter'} dem stündlichen historischen Mittelwert.`;
-    } else {
-        anomalyMessage = `Die maximal gemessene Temperatur lag ${Math.abs(anomaly).toFixed(1)}\u00A0°C ${anomaly > 0 ? 'über' : 'unter'} dem maximalen historischen Mittelwert.`;
-    }
+    const anomalyMagnitude = Math.abs(anomaly).toFixed(1);
+    const direction = anomaly > 0 ? 'über' : 'unter';
+
+    const anomalyMessage = isLiveData
+        ? `Die zuletzt gemessene Temperatur lag ${anomalyMagnitude}\u00A0°C ${direction} dem stündlichen historischen Mittelwert.`
+        : `Die maximal gemessene Temperatur lag ${anomalyMagnitude}\u00A0°C ${direction} dem maximalen historischen Mittelwert.`;
 
     return {
         comparisonMessage,
-        anomalyMessage
+        anomalyMessage,
     };
 };

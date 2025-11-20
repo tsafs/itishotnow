@@ -4,12 +4,13 @@ import './HistoricalAnalysis.css';
 import { useSelectedDate } from '../../store/slices/selectedDateSlice.js';
 import { DateTime } from 'luxon';
 import { getNow } from '../../utils/dateUtils.js';
-import { useAppSelector } from '../../store/hooks/useAppSelector.js';
+import { useSelectedItem } from '../../store/hooks/selectedItemHook.js';
 
 const HistoricalAnalysis = () => {
-    const selectedCity = useAppSelector(state => state.selectedCity);
+    const selectedItem = useSelectedItem();
     const selectedDate = useSelectedDate();
     const isToday = DateTime.fromISO(selectedDate).hasSame(getNow(), 'day');
+    const selectedCityName = selectedItem?.city.name ?? 'dieser Stadt';
 
     // Format date as "7. Oktober 2025"
     const formattedDate = DateTime.fromISO(selectedDate).setLocale('de').toFormat("d. MMMM yyyy");
@@ -18,7 +19,7 @@ const HistoricalAnalysis = () => {
     const rightContent = (
         <div className="analysis-info">
             <p>
-                Diese Grafik zeigt, wie warm der <strong>{isToday ? "heutige Tag" : formattedDate}</strong> im Vergleich zu früheren Jahren ist. Sie umfasst Daten seit <strong>1951</strong> für die ausgewählte Wetterstation.
+                Diese Grafik zeigt, wie warm der <strong>{isToday ? "heutige Tag" : formattedDate}</strong> im Vergleich zu früheren Jahren ist. Sie umfasst Daten seit <strong>1951</strong> für die Wetterstation in {selectedCityName}.
             </p>
             <p>
                 Jeder <strong>farbige Punkt</strong> steht für ein Jahr. Der Wert zeigt die durchschnittliche Tagestemperatur am {isToday ? "heutigen Kalendertag" : formattedDate}. Um zufällige Wetterschwankungen auszugleichen, wird ein Durchschnitt aus den umliegenden Tagen gebildet (7 Tage davor und 7 Tage danach).
@@ -43,7 +44,7 @@ const HistoricalAnalysis = () => {
 
     return (
         <>
-            {selectedCity && (
+            {selectedItem && (
                 <div className="historical-analysis">
                     <ContentSplit
                         leftContent={leftContent}

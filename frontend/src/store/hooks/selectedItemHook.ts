@@ -3,68 +3,91 @@ import { useSelectedDate } from '../slices/selectedDateSlice.js';
 import { useHistoricalDailyDataForStation } from '../slices/historicalDataForStationSlice.js';
 import { getNow } from '../../utils/dateUtils.js';
 import StationData from '../../classes/StationData.js';
+import type { StationDataJSON } from '../../classes/StationData.js';
 import { DateTime } from 'luxon';
 import { useAppSelector } from './useAppSelector.js';
+import type { ICity } from '../../classes/City.js';
+import type { StationJSON } from '../../classes/Station.js';
 
-export const useSelectedItem = () => {
-    const areCitiesCorrelated = useAppSelector(state => state.cityData.areCitiesCorrelated);
-    const selectedCityId = useAppSelector(state => state.selectedCity.cityId);
-    const cities = useAppSelector(state => state.cityData.data);
-    const stations = useAppSelector(state => state.stations.stations);
-    const liveData = useAppSelector(state => state.liveData.data);
-    const selectedStationId = stations?.[cities?.[selectedCityId]?.stationId]?.id;
-    const historicalData = useHistoricalDailyDataForStation(selectedStationId);
+export interface SelectedItem {
+    city: ICity;
+    station: StationJSON;
+    data: StationData;
+}
+
+const fromLiveData = (json: StationDataJSON | undefined): StationData | null => {
+    if (!json) {
+        return null;
+    }
+    return StationData.fromJSON(json);
+};
+
+export const useSelectedItem = (): SelectedItem | null => {
+    const areCitiesCorrelated = useAppSelector((state) => state.cityData.areCitiesCorrelated);
+    const selectedCityId = useAppSelector((state) => state.selectedCity.cityId);
+    const cities = useAppSelector((state) => state.cityData.data);
+    const stations = useAppSelector((state) => state.stations.stations);
+    const liveData = useAppSelector((state) => state.liveData.data);
+
+    const selectedCityStationId = selectedCityId ? cities?.[selectedCityId]?.stationId ?? null : null;
+    const historicalData = useHistoricalDailyDataForStation(selectedCityStationId);
     const selectedDate = useSelectedDate();
 
     return useMemo(() => {
         if (!areCitiesCorrelated || !selectedCityId || !cities || !stations) {
             return null;
         }
+
         const city = cities[selectedCityId];
+        if (!city || !city.stationId) {
+            return null;
+        }
+
         const station = stations[city.stationId];
-        // Use Luxon for date parsing and comparison
+        if (!station) {
+            return null;
+        }
+
         const selectedDateLuxon = DateTime.fromISO(selectedDate);
-
-        let data = null;
-
         const isToday = getNow().hasSame(selectedDateLuxon, 'day');
+
+        let data: StationData | null = null;
+
         if (isToday) {
-            if (!liveData || !liveData[station.id]) {
-                return null; // No live data available
+            data = fromLiveData(liveData?.[station.id]);
+            if (!data) {
+                return null;
             }
-            data = liveData[station.id];
         } else {
             if (!historicalData) {
-                return null; // No historical data available
+                return null;
             }
-            // Search for date in historicalData{} keys in reverse order
+
             const selectedDateYYYYMMDD = selectedDateLuxon.toFormat('yyyyLLdd');
-            const historicalDataKeys = Object.entries(historicalData).reverse();
-            const item = historicalDataKeys.find(([_, value]) => {
-                if (value.date === selectedDateYYYYMMDD) return true;
-                return false;
-            })?.[1];
-            if (!item) return null;
+            const matchingEntry = historicalData[selectedDateYYYYMMDD];
+
+            if (!matchingEntry) {
+                return null;
+            }
+
             data = new StationData(
                 station.id,
-                item.date,
-                item.meanTemperature,
-                item.minTemperature,
-                item.maxTemperature,
-                item.meanHumidity,
+                matchingEntry.date,
+                matchingEntry.meanTemperature,
+                matchingEntry.minTemperature,
+                matchingEntry.maxTemperature,
+                matchingEntry.meanHumidity,
             );
         }
 
-        if (!areCitiesCorrelated
-            || !selectedCityId
-            || !city
-            || !station
-            || !data) return null;
+        if (!data) {
+            return null;
+        }
 
         return {
             city,
             station,
             data,
-        };
+        } satisfies SelectedItem;
     }, [areCitiesCorrelated, selectedCityId, cities, stations, liveData, historicalData, selectedDate]);
 };
