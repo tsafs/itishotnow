@@ -112,11 +112,13 @@ export const useHistoricalDailyDataForStation = (stationId: string | null | unde
 
 export const useHistoricalDailyDataDateRangeForStation = (stationId: string | null | undefined): IDateRange | null => {
     const dateRanges = useAppSelector(state => state.historicalDailyData.dateRange);
-    if (!stationId) {
-        return null;
-    }
-    const dateRangeJson = dateRanges[stationId];
-    return dateRangeJson ? DateRange.fromJSON(dateRangeJson) : null;
+    return useMemo(() => {
+        if (!stationId) {
+            return null;
+        }
+        const dateRangeJson = dateRanges[stationId];
+        return dateRangeJson ? DateRange.fromJSON(dateRangeJson) : null;
+    }, [dateRanges, stationId]);
 };
 
 export default historicalDailyDataSlice.reducer;
