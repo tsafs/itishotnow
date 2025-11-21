@@ -1,95 +1,65 @@
-import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
-import type { PayloadAction } from '@reduxjs/toolkit';
-import { fetchGermanCities } from '../../services/CityService.js';
+import { createSelector } from '@reduxjs/toolkit';
+import { fetchGermanCities, findClosestWeatherStationsForCities } from '../../services/CityService.js';
 import City, { type CityJSON } from '../../classes/City.js';
+import Station, { type StationJSON } from '../../classes/Station.js';
 import type { RootState } from '../index.js';
+import { createDataSlice } from '../factories/createDataSlice.js';
 
 /**
- * City data state
- * Extended from base data state to include correlation flag
+ * Fetch arguments - requires stations to correlate cities
  */
-export interface CityDataState {
-    data: Record<string, CityJSON>;
-    areCitiesCorrelated: boolean;
-    status: 'idle' | 'loading' | 'succeeded' | 'failed';
-    error: string | undefined;
+export interface FetchCityDataArgs {
+    stations: Record<string, StationJSON>;
 }
 
 /**
- * Fetch city data async thunk
+ * Fetch function that correlates cities with stations
  */
-export const fetchCityData = createAsyncThunk<
-    Record<string, CityJSON>,
-    void,
-    { rejectValue: string }
->(
-    'cityData/fetch',
-    async (_, { rejectWithValue }) => {
-        try {
-            const data = await fetchGermanCities();
-            const result: Record<string, CityJSON> = {};
-            for (const city of data) {
-                result[city.id] = city.toJSON();
-            }
-            return result;
-        } catch (error) {
-            const message = error instanceof Error ? error.message : 'Failed to fetch city data';
-            return rejectWithValue(message);
-        }
-    }
-);
+const fetchCityDataFn = async ({ stations: stationsJSON }: FetchCityDataArgs): Promise<Record<string, CityJSON>> => {
+    const cities = await fetchGermanCities();
+    const citiesDict = Object.fromEntries(cities.map(c => [c.id, c]));
 
-/**
- * Initial state
- */
-const initialState: CityDataState = {
-    data: {},
-    areCitiesCorrelated: false,
-    status: 'idle',
-    error: undefined,
+    // Convert StationJSON to Station instances for correlation
+    const stations = Object.fromEntries(
+        Object.entries(stationsJSON).map(([id, json]) => [id, Station.fromJSON(json)])
+    );
+
+    // Correlate cities with stations immediately
+    const correlatedCities = findClosestWeatherStationsForCities(citiesDict, stations);
+
+    // Return as JSON
+    return Object.fromEntries(
+        Object.entries(correlatedCities).map(([id, city]) => [id, city.toJSON()])
+    );
 };
 
 /**
- * City data slice with custom correlation logic
+ * Create cityData slice using factory
+ * Cities are always correlated with stations by construction
  */
-const cityDataSlice = createSlice({
+const { slice, actions, selectors } = createDataSlice<
+    Record<string, CityJSON>,
+    FetchCityDataArgs,
+    'simple'
+>({
     name: 'cityData',
-    initialState,
-    reducers: {
-        setCities: (state, action: PayloadAction<Record<string, CityJSON>>) => {
-            state.data = action.payload;
-            state.areCitiesCorrelated = true;
-        },
-    },
-    extraReducers: (builder) => {
-        builder
-            .addCase(fetchCityData.pending, (state) => {
-                state.status = 'loading';
-                state.areCitiesCorrelated = false;
-            })
-            .addCase(fetchCityData.fulfilled, (state, action) => {
-                state.status = 'succeeded';
-                state.data = action.payload;
-                state.error = undefined;
-            })
-            .addCase(fetchCityData.rejected, (state, action) => {
-                state.status = 'failed';
-                state.error = action.payload ?? 'Failed to fetch city data';
-            });
-    },
+    fetchFn: fetchCityDataFn,
+    stateShape: 'simple',
+    cache: { strategy: 'all' }, // Cache all cities once loaded
 });
 
 // Export actions
-export const { setCities } = cityDataSlice.actions;
+export const fetchCityData = actions.fetch;
 
-// Selectors
-export const selectCityDataStatus = (state: RootState) => state.cityData.status;
-export const selectCityDataError = (state: RootState) => state.cityData.error;
-export const selectAreCitiesCorrelated = (state: RootState) => state.cityData.areCitiesCorrelated;
+// Export status selectors
+export const selectCityDataStatus = selectors.selectStatus;
+export const selectCityDataError = selectors.selectError;
 
+// Custom selector to convert CityJSON to City instances
 export const selectCities = createSelector(
-    (state: RootState) => state.cityData.data,
+    [(state: RootState) => selectors.selectData(state) as Record<string, CityJSON> | undefined],
     (data): Record<string, City> => {
+        if (!data) return {};
         const result: Record<string, City> = {};
         for (const [id, json] of Object.entries(data)) {
             result[id] = City.fromJSON(json);
@@ -98,16 +68,4 @@ export const selectCities = createSelector(
     }
 );
 
-export const selectCorrelatedCities = createSelector(
-    (state: RootState) => state.cityData,
-    (cityData): Record<string, City> | null => {
-        if (!cityData.areCitiesCorrelated) return null;
-        const result: Record<string, City> = {};
-        for (const [id, json] of Object.entries(cityData.data)) {
-            result[id] = City.fromJSON(json);
-        }
-        return result;
-    }
-);
-
-export default cityDataSlice.reducer;
+export default slice.reducer;

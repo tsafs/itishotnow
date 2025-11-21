@@ -1,124 +1,66 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import type { PayloadAction } from '@reduxjs/toolkit';
 import { fetchDailyWeatherStationData } from '../../services/HistoricalDataForStationService.js';
 import { useMemo } from 'react';
 import { useAppSelector } from '../hooks/useAppSelector.js';
-import type { IDateRange, DateRangeJSON } from '../../classes/DateRange.js';
-import type { RootState } from '../index.js';
 import type { IStationDataByDate } from '../../classes/DailyRecentByStation.js';
 import DailyRecentByStation from '../../classes/DailyRecentByStation.js';
-import DateRange from '../../classes/DateRange.js';
+import type { RootState } from '../index.js';
+import { createDataSlice } from '../factories/createDataSlice.js';
 
-export interface DailyDataForStationState {
-    data: Record<string, IStationDataByDate>; // Keyed by stationId
-    dateRange: Record<string, DateRangeJSON>; // Keyed by stationId, stored as JSON
-    status: 'idle' | 'loading' | 'succeeded' | 'failed';
-    error: string | null;
-}
-
-const initialState: DailyDataForStationState = {
-    data: {},
-    dateRange: {},
-    status: 'idle',
-    error: null,
-};
-
-// Arguments for thunk
+/**
+ * Fetch arguments for historical data
+ */
 export interface DailyDataForStationArgs {
     stationId: string;
 }
 
-// Payload for fulfilled thunk
-export interface DailyDataForStationPayload {
-    stationId: string;
-    data: IStationDataByDate;
-    dateRange: IDateRange;
-}
-
-export const fetchDailyDataForStation = createAsyncThunk<
-    DailyDataForStationPayload, // Return type
-    DailyDataForStationArgs,    // Argument type
-    { state: RootState; rejectValue: string }
->(
-    'historicalDailyData/fetchData',
-    async ({ stationId }, { rejectWithValue, getState }) => {
-        const state = getState();
-        const existingData = state.historicalDailyData?.data?.[stationId];
-        const existingDateRange = state.historicalDailyData?.dateRange?.[stationId];
-        if (existingData && existingDateRange) {
-            // Return the existing data in the same format as fulfilled payload
-            return { stationId, data: existingData, dateRange: existingDateRange };
-        }
-        try {
-            const { data, dateRange } = await fetchDailyWeatherStationData(stationId);
-            // Convert objects to JSON for storage
-            const jsonData: IStationDataByDate = Object.fromEntries(
-                Object.entries(data).map(([date, obj]) => [date, obj.toJSON()])
-            );
-            const jsonDateRange: DateRangeJSON = dateRange.toJSON();
-            return { stationId, data: jsonData, dateRange: jsonDateRange };
-        } catch (error) {
-            const message = error instanceof Error ? error.message : 'Failed to fetch historical data for station';
-            return rejectWithValue(message);
-        }
-    }
-);
-
-const historicalDailyDataSlice = createSlice({
+/**
+ * Create historicalDailyData slice using factory with keyed state
+ * Stores daily weather data per station
+ */
+const { slice, actions, selectors } = createDataSlice<
+    IStationDataByDate,
+    DailyDataForStationArgs,
+    'keyed',
+    never,
+    string
+>({
     name: 'historicalDailyData',
-    initialState,
-    reducers: {},
-    extraReducers: (builder) => {
-        builder
-            .addCase(fetchDailyDataForStation.pending, (state) => {
-                state.status = 'loading';
-            })
-            .addCase(fetchDailyDataForStation.fulfilled, (state, action: PayloadAction<DailyDataForStationPayload>) => {
-                state.status = 'succeeded';
-                state.error = null;
-                const { stationId, data, dateRange } = action.payload;
-
-                state.data[stationId] = data;
-                state.dateRange[stationId] = dateRange;
-            })
-            .addCase(fetchDailyDataForStation.rejected, (state, action) => {
-                state.status = 'failed';
-                state.error = typeof action.payload === 'string'
-                    ? action.payload
-                    : action.error?.message ?? 'Failed to fetch historical data for station';
-            });
+    fetchFn: async ({ stationId }) => {
+        const { data } = await fetchDailyWeatherStationData(stationId);
+        // Convert to JSON for storage
+        return Object.fromEntries(
+            Object.entries(data).map(([date, obj]) => [date, obj.toJSON()])
+        );
     },
+    stateShape: 'keyed',
+    cache: {
+        strategy: 'by-key',
+        keyExtractor: ({ stationId }) => stationId,
+        ttl: 3600000 // 1 hour
+    }
 });
 
-export const selectHistoricalDailyDataStatus = (state: RootState) => state.historicalDailyData.status;
-export const selectHistoricalDailyDataError = (state: RootState) => state.historicalDailyData.error;
+// Export actions
+export const fetchDailyDataForStation = actions.fetch;
 
-// Selector hooks
+// Export selectors
+export const selectHistoricalDailyDataStatus = selectors.selectStatus;
+export const selectHistoricalDailyDataError = selectors.selectError;
+
+// Hook to get historical data for a station (returns DailyRecentByStation instances)
 export const useHistoricalDailyDataForStation = (stationId: string | null | undefined): Record<string, DailyRecentByStation> | null => {
-    const data = useAppSelector(state => state.historicalDailyData.data);
+    const data = useAppSelector(selectors.selectData) as Record<string, IStationDataByDate> | undefined;
+
     return useMemo(() => {
-        if (!stationId) {
-            return null;
-        }
+        if (!stationId || !data) return null;
+
         const stationData = data[stationId];
-        if (!stationData) {
-            return null;
-        }
+        if (!stationData) return null;
+
         return Object.fromEntries(
             Object.entries(stationData).map(([date, json]) => [date, DailyRecentByStation.fromJSON(json)])
         );
     }, [data, stationId]);
 };
 
-export const useHistoricalDailyDataDateRangeForStation = (stationId: string | null | undefined): IDateRange | null => {
-    const dateRanges = useAppSelector(state => state.historicalDailyData.dateRange);
-    return useMemo(() => {
-        if (!stationId) {
-            return null;
-        }
-        const dateRangeJson = dateRanges[stationId];
-        return dateRangeJson ? DateRange.fromJSON(dateRangeJson) : null;
-    }, [dateRanges, stationId]);
-};
-
-export default historicalDailyDataSlice.reducer;
+export default slice.reducer;

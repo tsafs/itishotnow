@@ -3,15 +3,15 @@ import { useSelectedDate } from '../slices/selectedDateSlice.js';
 import { useDailyRecentByDate } from '../slices/DailyRecentByDateSlice.js';
 import { getNow } from '../../utils/dateUtils.js';
 import StationData from '../../classes/StationData.js';
+import City from '../../classes/City.js';
+import Station from '../../classes/Station.js';
 import type { StationDataJSON } from '../../classes/StationData.js';
 import { DateTime } from 'luxon';
 import { useAppSelector } from './useAppSelector.js';
-import type { ICity } from '../../classes/City.js';
-import type { StationJSON } from '../../classes/Station.js';
 
 export interface CorrelatedStationDataEntry {
-    city: ICity;
-    station: StationJSON;
+    city: City;
+    station: Station;
     data: StationData;
 }
 
@@ -20,10 +20,11 @@ export type CorrelatedStationDataMap = Record<string, CorrelatedStationDataEntry
 const toStationData = (json: StationDataJSON): StationData => StationData.fromJSON(json);
 
 export const useCorrelatedData = (): CorrelatedStationDataMap | null => {
-    const areCitiesCorrelated = useAppSelector((state) => state.cityData.areCitiesCorrelated);
+    const cityDataStatus = useAppSelector((state) => state.cityData.status);
     const cities = useAppSelector((state) => state.cityData.data);
-    const stations = useAppSelector((state) => state.stations.stations);
-    const liveData = useAppSelector((state) => state.liveData.data);
+    const liveDataResponse = useAppSelector((state) => state.liveData.data);
+    const stations = liveDataResponse?.stations;
+    const liveData = liveDataResponse?.stationData;
     const selectedDate = useSelectedDate();
     const selectedDateLuxon = DateTime.fromISO(selectedDate);
     const dailyRecentByDate = useDailyRecentByDate({
@@ -33,7 +34,7 @@ export const useCorrelatedData = (): CorrelatedStationDataMap | null => {
     });
 
     return useMemo(() => {
-        if (!areCitiesCorrelated || !cities || !stations || !selectedDate) {
+        if (cityDataStatus !== 'succeeded' || !cities || !stations || !selectedDate) {
             return null;
         }
 
@@ -49,15 +50,19 @@ export const useCorrelatedData = (): CorrelatedStationDataMap | null => {
 
         const correlatedData: CorrelatedStationDataMap = {};
 
-        for (const [cityId, city] of Object.entries(cities)) {
-            if (!city.stationId) {
+        for (const [cityId, cityJSON] of Object.entries(cities)) {
+            if (!cityJSON.stationId) {
                 continue;
             }
 
-            const station = stations?.[city.stationId];
-            if (!station) {
+            const stationJSON = stations?.[cityJSON.stationId];
+            if (!stationJSON) {
                 continue;
             }
+
+            // Convert JSON to instances
+            const city = City.fromJSON(cityJSON);
+            const station = Station.fromJSON(stationJSON);
 
             let data: StationData | null = null;
 
@@ -94,5 +99,5 @@ export const useCorrelatedData = (): CorrelatedStationDataMap | null => {
         }
 
         return Object.keys(correlatedData).length > 0 ? correlatedData : null;
-    }, [areCitiesCorrelated, cities, stations, liveData, dailyRecentByDate, selectedDate]);
+    }, [cityDataStatus, cities, stations, liveData, dailyRecentByDate, selectedDate]);
 };

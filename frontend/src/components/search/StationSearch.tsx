@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaSearch } from 'react-icons/fa';
 import { PREDEFINED_CITIES } from '../../constants/map.js';
 import { selectCity } from '../../store/slices/selectedCitySlice.js';
-import { selectCities, selectAreCitiesCorrelated } from '../../store/slices/cityDataSlice.js';
+import { selectCities, selectCityDataStatus } from '../../store/slices/cityDataSlice.js';
 import { selectLiveData } from '../../store/slices/liveDataSlice.js';
 import './StationSearch.css';
 import { useAppSelector } from '../../store/hooks/useAppSelector.js';
@@ -19,7 +19,7 @@ const StationSearch = ({ showSearchIcon = true }: StationSearchProps) => {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const cities = useAppSelector(selectCities);
-    const areCitiesCorrelated = useAppSelector(selectAreCitiesCorrelated);
+    const cityDataStatus = useAppSelector(selectCityDataStatus);
     const liveData = useAppSelector(selectLiveData);
     const selectedCityId = useAppSelector(state => state.selectedCity.cityId);
 
@@ -55,7 +55,7 @@ const StationSearch = ({ showSearchIcon = true }: StationSearchProps) => {
 
     // Filter cities based on search term - no fuzzy search
     useEffect(() => {
-        if (!areCitiesCorrelated) return;
+        if (cityDataStatus !== 'succeeded') return;
 
         if (!searchTerm.trim()) {
             setFilteredCities([]);
@@ -70,7 +70,7 @@ const StationSearch = ({ showSearchIcon = true }: StationSearchProps) => {
             .slice(0, 15);
 
         setFilteredCities(filtered);
-    }, [searchTerm, cities, areCitiesCorrelated]);
+    }, [searchTerm, cities, cityDataStatus]);
 
     // Reset focused index when filtered cities change
     useEffect(() => {
@@ -98,7 +98,7 @@ const StationSearch = ({ showSearchIcon = true }: StationSearchProps) => {
                     className="station-search-input"
                 />
 
-                {isDropdownOpen && searchTerm && liveData && areCitiesCorrelated && (
+                {isDropdownOpen && searchTerm && liveData && cityDataStatus === 'succeeded' && (
                     <div className="station-search-dropdown">
                         {filteredCities.length > 0 ? (
                             filteredCities.map((city, index) => {

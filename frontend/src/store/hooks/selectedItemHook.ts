@@ -3,15 +3,15 @@ import { useSelectedDate } from '../slices/selectedDateSlice.js';
 import { useHistoricalDailyDataForStation } from '../slices/historicalDataForStationSlice.js';
 import { getNow } from '../../utils/dateUtils.js';
 import StationData from '../../classes/StationData.js';
+import City from '../../classes/City.js';
+import Station from '../../classes/Station.js';
 import type { StationDataJSON } from '../../classes/StationData.js';
 import { DateTime } from 'luxon';
 import { useAppSelector } from './useAppSelector.js';
-import type { ICity } from '../../classes/City.js';
-import type { StationJSON } from '../../classes/Station.js';
 
 export interface SelectedItem {
-    city: ICity;
-    station: StationJSON;
+    city: City;
+    station: Station;
     data: StationData;
 }
 
@@ -23,18 +23,19 @@ const fromLiveData = (json: StationDataJSON | undefined): StationData | null => 
 };
 
 export const useSelectedItem = (): SelectedItem | null => {
-    const areCitiesCorrelated = useAppSelector((state) => state.cityData.areCitiesCorrelated);
+    const cityDataStatus = useAppSelector((state) => state.cityData.status);
     const selectedCityId = useAppSelector((state) => state.selectedCity.cityId);
     const cities = useAppSelector((state) => state.cityData.data);
-    const stations = useAppSelector((state) => state.stations.stations);
-    const liveData = useAppSelector((state) => state.liveData.data);
+    const liveDataResponse = useAppSelector((state) => state.liveData.data);
+    const stations = liveDataResponse?.stations;
+    const liveData = liveDataResponse?.stationData;
 
     const selectedCityStationId = selectedCityId ? cities?.[selectedCityId]?.stationId ?? null : null;
     const historicalData = useHistoricalDailyDataForStation(selectedCityStationId);
     const selectedDate = useSelectedDate();
 
     return useMemo(() => {
-        if (!areCitiesCorrelated || !selectedCityId || !cities || !stations) {
+        if (cityDataStatus !== 'succeeded' || !selectedCityId || !cities || !stations) {
             return null;
         }
 
@@ -48,13 +49,17 @@ export const useSelectedItem = (): SelectedItem | null => {
             return null;
         }
 
+        // Convert JSON to instances
+        const cityInstance = City.fromJSON(city);
+        const stationInstance = Station.fromJSON(station);
+
         const selectedDateLuxon = DateTime.fromISO(selectedDate);
         const isToday = getNow().hasSame(selectedDateLuxon, 'day');
 
         let data: StationData | null = null;
 
         if (isToday) {
-            data = fromLiveData(liveData?.[station.id]);
+            data = fromLiveData(liveData?.[stationInstance.id]);
             if (!data) {
                 return null;
             }
@@ -71,7 +76,7 @@ export const useSelectedItem = (): SelectedItem | null => {
             }
 
             data = new StationData(
-                station.id,
+                stationInstance.id,
                 matchingEntry.date,
                 matchingEntry.meanTemperature,
                 matchingEntry.minTemperature,
@@ -85,9 +90,9 @@ export const useSelectedItem = (): SelectedItem | null => {
         }
 
         return {
-            city,
-            station,
+            city: cityInstance,
+            station: stationInstance,
             data,
         } satisfies SelectedItem;
-    }, [areCitiesCorrelated, selectedCityId, cities, stations, liveData, historicalData, selectedDate]);
+    }, [cityDataStatus, selectedCityId, cities, stations, liveData, historicalData, selectedDate]);
 };

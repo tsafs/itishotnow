@@ -5,7 +5,7 @@ import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
 import { setDateAndFetchHistoricalData } from '../../store/slices/selectedDateSlice.js'
 import { getNow } from '../../utils/dateUtils.js';
-import { useHistoricalDailyDataDateRangeForStation } from '../../store/slices/historicalDataForStationSlice.js';
+import { useDateRangeForStation } from '../../store/slices/stationDateRangesSlice.js';
 import { useSelectedItem } from '../../store/hooks/selectedItemHook.js';
 import { useSelectedDate } from '../../store/slices/selectedDateSlice.js';
 import './DateSelection.css';
@@ -26,7 +26,7 @@ const DateSelection = () => {
     const navigate = useNavigate();
     const selectedDate = useSelectedDate();
     const selectedItem = useSelectedItem();
-    const dateRange = useHistoricalDailyDataDateRangeForStation(selectedItem?.station.id);
+    const dateRange = useDateRangeForStation(selectedItem?.station.id);
 
     const [isYesterdaySelected, setIsYesterdaySelected] = useState<boolean>(false);
     const [isTodaySelected, setIsTodaySelected] = useState<boolean>(true);
