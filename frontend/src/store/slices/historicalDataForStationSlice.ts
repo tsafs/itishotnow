@@ -3,14 +3,15 @@ import type { PayloadAction } from '@reduxjs/toolkit';
 import { fetchDailyWeatherStationData } from '../../services/HistoricalDataForStationService.js';
 import { useMemo } from 'react';
 import { useAppSelector } from '../hooks/useAppSelector.js';
-import type { IDateRange } from '../../classes/DateRange.js';
+import type { IDateRange, DateRangeJSON } from '../../classes/DateRange.js';
 import type { RootState } from '../index.js';
 import type { IStationDataByDate } from '../../classes/DailyRecentByStation.js';
 import DailyRecentByStation from '../../classes/DailyRecentByStation.js';
+import DateRange from '../../classes/DateRange.js';
 
 export interface DailyDataForStationState {
     data: Record<string, IStationDataByDate>; // Keyed by stationId
-    dateRange: Record<string, IDateRange>; // Keyed by stationId
+    dateRange: Record<string, DateRangeJSON>; // Keyed by stationId, stored as JSON
     status: 'idle' | 'loading' | 'succeeded' | 'failed';
     error: string | null;
 }
@@ -54,7 +55,8 @@ export const fetchDailyDataForStation = createAsyncThunk<
             const jsonData: IStationDataByDate = Object.fromEntries(
                 Object.entries(data).map(([date, obj]) => [date, obj.toJSON()])
             );
-            return { stationId, data: jsonData, dateRange };
+            const jsonDateRange: DateRangeJSON = dateRange.toJSON();
+            return { stationId, data: jsonData, dateRange: jsonDateRange };
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Failed to fetch historical data for station';
             return rejectWithValue(message);
@@ -113,7 +115,8 @@ export const useHistoricalDailyDataDateRangeForStation = (stationId: string | nu
     if (!stationId) {
         return null;
     }
-    return dateRanges[stationId] ?? null;
+    const dateRangeJson = dateRanges[stationId];
+    return dateRangeJson ? DateRange.fromJSON(dateRangeJson) : null;
 };
 
 export default historicalDailyDataSlice.reducer;
