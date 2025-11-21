@@ -38,10 +38,6 @@ const { slice, actions, selectors } = createDataSlice<
 // Export actions
 export const fetchDailyRecentByDate = actions.fetch;
 
-// Export selectors
-export const selectDailyRecentByDateStatus = selectors.selectStatus;
-export const selectDailyRecentByDateError = selectors.selectError;
-
 // Selector hooks
 export const useDailyRecentByDate = ({ year, month, day }: DailyRecentByDateArgs): IStationDataByStationId | null => {
     const data = useAppSelector(selectors.selectData) as Record<DateKey, IStationDataByStationId> | undefined;

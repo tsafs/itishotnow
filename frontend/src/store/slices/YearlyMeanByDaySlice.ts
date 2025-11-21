@@ -45,15 +45,6 @@ export const fetchYearlyMeanByDay = actions.fetch;
 export const selectYearlyMeanByDayData = (state: RootState): YearlyMeanByDayByStationId | undefined =>
     selectors.selectData(state) as YearlyMeanByDayByStationId | undefined;
 export const selectYearlyMeanByDayStatus = selectors.selectStatus;
-export const selectYearlyMeanByDayError = selectors.selectError;
-
-export const selectYearlyMeanByDayDataForStation = (state: RootState, stationId: string | null | undefined) => {
-    if (!stationId) {
-        return null;
-    }
-    const data = selectYearlyMeanByDayData(state);
-    return data?.[stationId] ?? null;
-};
 
 // Hooks
 export const useYearlyMeanByDayData = (): YearlyMeanByDayByStationId | null => {

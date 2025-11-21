@@ -40,7 +40,6 @@ const { slice, actions, selectors } = createDataSlice<
 
 // Export actions
 export const fetchReferenceYearlyHourlyInterpolatedByDay = actions.fetch;
-export const clearHourlyData = actions.reset; // Map reset to clearHourlyData for compatibility
 
 // Hooks
 export const useReferenceYearlyHourlyInterpolatedByDayData = () => {

@@ -17,11 +17,8 @@ const rememberedCitiesSlice = createSlice({
                 state.push(cityIdToAdd);
             }
         },
-        clearRememberedCities: () => {
-            return [] as RememberedCitiesState;
-        },
     },
 });
 
-export const { addRememberedCity, clearRememberedCities } = rememberedCitiesSlice.actions;
+export const { addRememberedCity } = rememberedCitiesSlice.actions;
 export default rememberedCitiesSlice.reducer;

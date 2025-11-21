@@ -23,12 +23,10 @@ const { slice, actions, selectors } = createDataSlice<
 
 // Export actions
 export const fetchRollingAverageData = actions.fetch;
-export const clearRollingAverageData = actions.reset;
 
 // Export selectors
 export const selectRollingAverageData = (state: RootState): RollingAverageRecordList =>
     selectors.selectData(state) as RollingAverageRecordList ?? [];
 export const selectRollingAverageDataStatus = selectors.selectStatus;
-export const selectRollingAverageDataError = selectors.selectError;
 
 export default slice.reducer;

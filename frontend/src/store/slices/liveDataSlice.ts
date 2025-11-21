@@ -41,34 +41,9 @@ const { slice, actions, selectors } = createDataSlice<LiveDataResponse, void, 's
 
 // Export actions
 export const fetchLiveData = actions.fetch;
-export const clearLiveData = actions.reset;
 
 // Export status selectors from factory
 export const selectLiveDataStatus = selectors.selectStatus;
-export const selectLiveDataError = selectors.selectError;
-
-// Selector for stations only
-export const selectStations = createSelector(
-    [(state: RootState) => selectors.selectData(state) as LiveDataResponse | undefined],
-    (response): Record<string, Station> => {
-        if (!response?.stations) return {};
-        return Object.fromEntries(
-            Object.entries(response.stations).map(([id, json]) => [id, Station.fromJSON(json)])
-        );
-    }
-);
-
-// Selector for station by ID
-export const selectStationById = createSelector(
-    [
-        selectStations,
-        (_state: RootState, id: string | null | undefined) => id
-    ],
-    (stations, id): Station | null => {
-        if (!id) return null;
-        return stations[id] ?? null;
-    }
-);
 
 // Selector for live data (measurements) - returns StationData instances
 export const selectLiveData = createSelector(
@@ -78,19 +53,6 @@ export const selectLiveData = createSelector(
         return Object.fromEntries(
             Object.entries(response.stationData).map(([id, json]) => [id, StationData.fromJSON(json)])
         );
-    }
-);
-
-// Selector for live data for specific station
-export const selectLiveDataForStation = createSelector(
-    [
-        (state: RootState) => selectors.selectData(state) as LiveDataResponse | undefined,
-        (_state: RootState, stationId: string | null | undefined) => stationId
-    ],
-    (response, stationId): StationData | null => {
-        if (!response?.stationData || !stationId) return null;
-        const json = response.stationData[stationId];
-        return json ? StationData.fromJSON(json) : null;
     }
 );
 

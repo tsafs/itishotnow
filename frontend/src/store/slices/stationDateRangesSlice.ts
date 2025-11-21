@@ -40,20 +40,6 @@ const { slice, actions, selectors } = createDataSlice<
 // Export actions
 export const fetchStationDateRange = actions.fetch;
 
-// Export selectors
-export const selectStationDateRangesStatus = selectors.selectStatus;
-export const selectStationDateRangesError = selectors.selectError;
-
-// Selector for date range by station ID
-export const selectDateRangeForStation = (state: RootState, stationId: string | null | undefined): DateRange | null => {
-    if (!stationId) return null;
-
-    const data = selectors.selectData(state) as Record<string, DateRangeJSON> | undefined;
-    const jsonRange = data?.[stationId];
-
-    return jsonRange ? DateRange.fromJSON(jsonRange) : null;
-};
-
 // Hook for date range by station ID
 export const useDateRangeForStation = (stationId: string | null | undefined): DateRange | null => {
     const data = useAppSelector(selectors.selectData) as Record<string, DateRangeJSON> | undefined;
