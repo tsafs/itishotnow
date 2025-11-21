@@ -1,22 +1,32 @@
+export interface IStationData {
+    readonly stationId: string;
+    readonly date: string;
+    readonly temperature: number | undefined;
+    readonly minTemperature: number | undefined;
+    readonly maxTemperature: number | undefined;
+    readonly humidity: number | undefined;
+    equals(other: IStationData): boolean;
+}
+
 export interface StationDataJSON {
     stationId: string;
     date: string;
-    temperature?: number | undefined;
-    minTemperature?: number | undefined;
-    maxTemperature?: number | undefined;
-    humidity?: number | undefined;
+    temperature?: number;
+    minTemperature?: number;
+    maxTemperature?: number;
+    humidity?: number;
 }
 
 /**
  * Represents climate data for a station.
  */
-export default class StationData {
+export default class StationData implements IStationData {
     public readonly stationId: string;
     public readonly date: string;
-    public readonly temperature?: number | undefined;
-    public readonly minTemperature?: number | undefined;
-    public readonly maxTemperature?: number | undefined;
-    public readonly humidity?: number | undefined;
+    public readonly temperature: number | undefined;
+    public readonly minTemperature: number | undefined;
+    public readonly maxTemperature: number | undefined;
+    public readonly humidity: number | undefined;
 
     constructor(
         stationId: string,
@@ -34,15 +44,37 @@ export default class StationData {
         this.humidity = humidity;
     }
 
+    equals(other: IStationData): boolean {
+        return (
+            this.stationId === other.stationId &&
+            this.date === other.date &&
+            this.temperature === other.temperature &&
+            this.minTemperature === other.minTemperature &&
+            this.maxTemperature === other.maxTemperature &&
+            this.humidity === other.humidity
+        );
+    }
+
     toJSON(): StationDataJSON {
-        return {
+        const json: StationDataJSON = {
             stationId: this.stationId,
             date: this.date,
-            temperature: this.temperature,
-            minTemperature: this.minTemperature,
-            maxTemperature: this.maxTemperature,
-            humidity: this.humidity,
         };
+
+        if (this.temperature !== undefined) {
+            json.temperature = this.temperature;
+        }
+        if (this.minTemperature !== undefined) {
+            json.minTemperature = this.minTemperature;
+        }
+        if (this.maxTemperature !== undefined) {
+            json.maxTemperature = this.maxTemperature;
+        }
+        if (this.humidity !== undefined) {
+            json.humidity = this.humidity;
+        }
+
+        return json;
     }
 
     static fromJSON(obj: StationDataJSON): StationData {

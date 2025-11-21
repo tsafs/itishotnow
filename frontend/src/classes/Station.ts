@@ -2,11 +2,12 @@
  * Shape for a serialized station.
  */
 export interface IStation {
-    id: string;
-    name: string;
-    elevation: number;
-    lat: number;
-    lon: number;
+    readonly id: string;
+    readonly name: string;
+    readonly elevation: number;
+    readonly lat: number;
+    readonly lon: number;
+    equals(other: IStation): boolean;
 }
 
 export type StationJSON = IStation;
@@ -27,6 +28,10 @@ export default class Station implements IStation {
         this.elevation = elevation;
         this.lat = lat;
         this.lon = lon;
+    }
+
+    equals(other: IStation): boolean {
+        return this.id === other.id;
     }
 
     toJSON(): StationJSON {
