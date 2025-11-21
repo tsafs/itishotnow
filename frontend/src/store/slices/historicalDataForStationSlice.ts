@@ -6,6 +6,7 @@ import { useAppSelector } from '../hooks/useAppSelector.js';
 import type { IDateRange } from '../../classes/DateRange.js';
 import type { RootState } from '../index.js';
 import type { IStationDataByDate } from '../../classes/DailyRecentByStation.js';
+import DailyRecentByStation from '../../classes/DailyRecentByStation.js';
 
 export interface DailyDataForStationState {
     data: Record<string, IStationDataByDate>; // Keyed by stationId
@@ -49,7 +50,11 @@ export const fetchDailyDataForStation = createAsyncThunk<
         }
         try {
             const { data, dateRange } = await fetchDailyWeatherStationData(stationId);
-            return { stationId, data, dateRange };
+            // Convert objects to JSON for storage
+            const jsonData: IStationDataByDate = Object.fromEntries(
+                Object.entries(data).map(([date, obj]) => [date, obj.toJSON()])
+            );
+            return { stationId, data: jsonData, dateRange };
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Failed to fetch historical data for station';
             return rejectWithValue(message);
@@ -87,13 +92,19 @@ export const selectHistoricalDailyDataStatus = (state: RootState) => state.histo
 export const selectHistoricalDailyDataError = (state: RootState) => state.historicalDailyData.error;
 
 // Selector hooks
-export const useHistoricalDailyDataForStation = (stationId: string | null | undefined): IStationDataByDate | null => {
+export const useHistoricalDailyDataForStation = (stationId: string | null | undefined): Record<string, DailyRecentByStation> | null => {
     const data = useAppSelector(state => state.historicalDailyData.data);
     return useMemo(() => {
         if (!stationId) {
             return null;
         }
-        return data[stationId] ?? null;
+        const stationData = data[stationId];
+        if (!stationData) {
+            return null;
+        }
+        return Object.fromEntries(
+            Object.entries(stationData).map(([date, json]) => [date, DailyRecentByStation.fromJSON(json)])
+        );
     }, [data, stationId]);
 };
 

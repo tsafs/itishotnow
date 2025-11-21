@@ -18,7 +18,7 @@ import DailyRecentByStation, { type IStationDataByDate } from "../classes/DailyR
  * @returns {Promise<{data: {[date: string]: DailyRecentByStation}, dateRange: DateRange}>} Historical data for station
  */
 export interface DailyWeatherStationDataResponse {
-    data: IStationDataByDate;
+    data: Record<string, DailyRecentByStation>;
     dateRange: DateRange;
 }
 
@@ -84,8 +84,8 @@ export const fetchDailyWeatherStationData = async (stationId: string): Promise<D
             throw new Error(`No historical data found for station ${stationId}.`);
         }
 
-        const result: IStationDataByDate = Object.fromEntries(
-            data.map(item => [item.date, item.toJSON()])
+        const result: Record<string, DailyRecentByStation> = Object.fromEntries(
+            data.map(item => [item.date, item])
         );
 
         return {
