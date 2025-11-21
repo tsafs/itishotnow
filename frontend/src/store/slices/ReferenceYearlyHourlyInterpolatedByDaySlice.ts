@@ -1,83 +1,52 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { useMemo } from 'react';
 import { fetchReferenceYearlyHourlyInterpolatedByDayData } from '../../services/ReferenceYearlyHourlyInterpolatedByDayService.js';
 import { useAppSelector } from '../hooks/useAppSelector.js';
 import type { ReferenceYearlyHourlyInterpolatedByDayByStationId } from '../../classes/ReferenceYearlyHourlyInterpolatedByDay.js';
-
-export interface ReferenceYearlyHourlyInterpolatedByDayState {
-    data: ReferenceYearlyHourlyInterpolatedByDayByStationId | null;
-    status: 'idle' | 'loading' | 'succeeded' | 'failed';
-    error: string | null;
-    currentDay: { month: number; day: number } | null;
-}
+import { createDataSlice } from '../factories/createDataSlice.js';
+import type { RootState } from '../index.js';
 
 export interface FetchReferenceYearlyHourlyInterpolatedByDayArgs {
     month: number;
     day: number;
 }
 
-const initialState: ReferenceYearlyHourlyInterpolatedByDayState = {
-    data: null,
-    status: 'idle',
-    error: null,
-    currentDay: null,
-};
+export interface ReferenceYearlyHourlyInterpolatedByDayContext {
+    month: number;
+    day: number;
+}
 
 /**
- * Async thunk to fetch interpolated hourly data for a specific day
+ * Create referenceYearlyHourlyInterpolatedByDay slice using factory
  */
-export const fetchReferenceYearlyHourlyInterpolatedByDay = createAsyncThunk<
+const { slice, actions, selectors } = createDataSlice<
     ReferenceYearlyHourlyInterpolatedByDayByStationId,
     FetchReferenceYearlyHourlyInterpolatedByDayArgs,
-    { rejectValue: string }
->(
-    'referenceYearlyHourlyInterpolatedByDay/fetch',
-    async ({ month, day }, { rejectWithValue }) => {
-        try {
-            return await fetchReferenceYearlyHourlyInterpolatedByDayData(month, day);
-        } catch (error) {
-            const message = error instanceof Error ? error.message : 'Failed to fetch interpolated hourly data';
-            return rejectWithValue(message);
-        }
-    }
-);
-
-const referenceYearlyHourlyInterpolatedByDaySlice = createSlice({
+    'with-context',
+    ReferenceYearlyHourlyInterpolatedByDayContext
+>({
     name: 'referenceYearlyHourlyInterpolatedByDay',
-    initialState,
-    reducers: {
-        clearHourlyData: (state) => {
-            state.data = null;
-            state.status = 'idle';
-            state.error = null;
-            state.currentDay = null;
-        },
+    fetchFn: ({ month, day }) => fetchReferenceYearlyHourlyInterpolatedByDayData(month, day),
+    stateShape: 'with-context',
+    cache: {
+        strategy: 'by-key',
+        keyExtractor: ({ month, day }) => `${month}-${day}`,
+        ttl: 3600000, // 1 hour
     },
-    extraReducers: (builder) => {
-        builder
-            .addCase(fetchReferenceYearlyHourlyInterpolatedByDay.pending, (state) => {
-                state.status = 'loading';
-            })
-            .addCase(fetchReferenceYearlyHourlyInterpolatedByDay.fulfilled, (state, action) => {
-                state.status = 'succeeded';
-                state.data = action.payload;
-                state.currentDay = action.meta.arg;
-                state.error = null;
-            })
-            .addCase(fetchReferenceYearlyHourlyInterpolatedByDay.rejected, (state, action) => {
-                state.status = 'failed';
-                state.error = action.payload ?? 'Failed to fetch interpolated hourly data';
-            });
+    contextConfig: {
+        initialContext: undefined,
+        updateContext: ({ month, day }) => ({ month, day }),
     },
 });
 
-export const { clearHourlyData } = referenceYearlyHourlyInterpolatedByDaySlice.actions;
+// Export actions
+export const fetchReferenceYearlyHourlyInterpolatedByDay = actions.fetch;
+export const clearHourlyData = actions.reset; // Map reset to clearHourlyData for compatibility
 
 // Hooks
 export const useReferenceYearlyHourlyInterpolatedByDayData = () => {
-    const referenceYearlyHourlyInterpolatedByDay = useAppSelector(state => state.referenceYearlyHourlyInterpolatedByDay.data);
-    const currentDay = useAppSelector(state => state.referenceYearlyHourlyInterpolatedByDay.currentDay);
-    const status = useAppSelector(state => state.referenceYearlyHourlyInterpolatedByDay.status);
+    const referenceYearlyHourlyInterpolatedByDay = useAppSelector(selectors.selectData) as ReferenceYearlyHourlyInterpolatedByDayByStationId | undefined;
+    const currentDay = useAppSelector((state: RootState) => (state.referenceYearlyHourlyInterpolatedByDay as any).context) as ReferenceYearlyHourlyInterpolatedByDayContext | undefined;
+    const status = useAppSelector(selectors.selectStatus);
 
     return useMemo(() => {
         if (status !== 'succeeded' || !referenceYearlyHourlyInterpolatedByDay || !currentDay) {
@@ -87,4 +56,4 @@ export const useReferenceYearlyHourlyInterpolatedByDayData = () => {
     }, [referenceYearlyHourlyInterpolatedByDay, currentDay, status]);
 };
 
-export default referenceYearlyHourlyInterpolatedByDaySlice.reducer;
+export default slice.reducer;

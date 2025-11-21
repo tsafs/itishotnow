@@ -10,7 +10,13 @@ export interface IStation {
     equals(other: IStation): boolean;
 }
 
-export type StationJSON = IStation;
+export interface StationJSON {
+    readonly id: string;
+    readonly name: string;
+    readonly elevation: number;
+    readonly lat: number;
+    readonly lon: number;
+}
 
 /**
  * Represents a weather station's metadata.

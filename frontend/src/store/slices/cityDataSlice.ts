@@ -4,19 +4,26 @@ import { fetchGermanCities } from '../../services/CityService.js';
 import City, { type CityJSON } from '../../classes/City.js';
 import type { RootState } from '../index.js';
 
+/**
+ * City data state
+ * Extended from base data state to include correlation flag
+ */
 export interface CityDataState {
     data: Record<string, CityJSON>;
     areCitiesCorrelated: boolean;
     status: 'idle' | 'loading' | 'succeeded' | 'failed';
-    error: string | null;
+    error: string | undefined;
 }
 
+/**
+ * Fetch city data async thunk
+ */
 export const fetchCityData = createAsyncThunk<
     Record<string, CityJSON>,
     void,
     { rejectValue: string }
 >(
-    'cityData/fetchData',
+    'cityData/fetch',
     async (_, { rejectWithValue }) => {
         try {
             const data = await fetchGermanCities();
@@ -32,13 +39,19 @@ export const fetchCityData = createAsyncThunk<
     }
 );
 
+/**
+ * Initial state
+ */
 const initialState: CityDataState = {
     data: {},
     areCitiesCorrelated: false,
     status: 'idle',
-    error: null,
+    error: undefined,
 };
 
+/**
+ * City data slice with custom correlation logic
+ */
 const cityDataSlice = createSlice({
     name: 'cityData',
     initialState,
@@ -46,7 +59,7 @@ const cityDataSlice = createSlice({
         setCities: (state, action: PayloadAction<Record<string, CityJSON>>) => {
             state.data = action.payload;
             state.areCitiesCorrelated = true;
-        }
+        },
     },
     extraReducers: (builder) => {
         builder
@@ -54,23 +67,26 @@ const cityDataSlice = createSlice({
                 state.status = 'loading';
                 state.areCitiesCorrelated = false;
             })
-            .addCase(fetchCityData.fulfilled, (state, action: PayloadAction<Record<string, CityJSON>>) => {
+            .addCase(fetchCityData.fulfilled, (state, action) => {
                 state.status = 'succeeded';
                 state.data = action.payload;
-                state.error = null;
+                state.error = undefined;
             })
             .addCase(fetchCityData.rejected, (state, action) => {
                 state.status = 'failed';
-                state.error = typeof action.payload === 'string'
-                    ? action.payload
-                    : action.error?.message ?? 'Failed to fetch city data';
+                state.error = action.payload ?? 'Failed to fetch city data';
             });
     },
 });
 
+// Export actions
 export const { setCities } = cityDataSlice.actions;
 
 // Selectors
+export const selectCityDataStatus = (state: RootState) => state.cityData.status;
+export const selectCityDataError = (state: RootState) => state.cityData.error;
+export const selectAreCitiesCorrelated = (state: RootState) => state.cityData.areCitiesCorrelated;
+
 export const selectCities = createSelector(
     (state: RootState) => state.cityData.data,
     (data): Record<string, City> => {
@@ -81,6 +97,7 @@ export const selectCities = createSelector(
         return result;
     }
 );
+
 export const selectCorrelatedCities = createSelector(
     (state: RootState) => state.cityData,
     (cityData): Record<string, City> | null => {
@@ -92,8 +109,5 @@ export const selectCorrelatedCities = createSelector(
         return result;
     }
 );
-export const selectCityDataStatus = (state: RootState) => state.cityData.status;
-export const selectCityDataError = (state: RootState) => state.cityData.error;
-export const selectAreCitiesCorrelated = (state: RootState) => state.cityData.areCitiesCorrelated;
 
 export default cityDataSlice.reducer;

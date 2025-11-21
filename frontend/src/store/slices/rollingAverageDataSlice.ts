@@ -1,70 +1,34 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { fetchRollingAverageForStation } from '../../services/RollingAverageDataService.js';
 import type { RootState } from '../index.js';
 import type { RollingAverageRecordList } from '../../classes/RollingAverageRecord.js';
+import { createDataSlice } from '../factories/createDataSlice.js';
 
-export interface RollingAverageDataState {
-    data: RollingAverageRecordList;
-    status: 'idle' | 'loading' | 'succeeded' | 'failed';
-    error: string | null;
+export interface FetchRollingAverageArgs {
+    stationId: string;
 }
 
-const initialState: RollingAverageDataState = {
-    data: [],
-    status: 'idle',
-    error: null,
-};
-
-export const fetchRollingAverageData = createAsyncThunk<
+/**
+ * Create rollingAverageData slice using factory
+ */
+const { slice, actions, selectors } = createDataSlice<
     RollingAverageRecordList,
-    { stationId: string },
-    { rejectValue: string }
->(
-    'rollingAverageData/fetchData',
-    async ({ stationId }, { rejectWithValue }) => {
-        try {
-            return await fetchRollingAverageForStation(stationId);
-        } catch (error) {
-            const message = error instanceof Error ? error.message : 'Failed to fetch rolling average data';
-            return rejectWithValue(message);
-        }
-    }
-);
-
-const rollingAverageDataSlice = createSlice({
+    FetchRollingAverageArgs,
+    'simple'
+>({
     name: 'rollingAverageData',
-    initialState,
-    reducers: {
-        clearRollingAverageData: (state) => {
-            state.data = [];
-            state.status = 'idle';
-            state.error = null;
-        },
-    },
-    extraReducers: (builder) => {
-        builder
-            .addCase(fetchRollingAverageData.pending, (state) => {
-                state.status = 'loading';
-            })
-            .addCase(fetchRollingAverageData.fulfilled, (state, action) => {
-                state.status = 'succeeded';
-                state.data = action.payload;
-                state.error = null;
-            })
-            .addCase(fetchRollingAverageData.rejected, (state, action) => {
-                state.status = 'failed';
-                state.error = typeof action.payload === 'string'
-                    ? action.payload
-                    : action.error?.message ?? 'Failed to fetch rolling average data';
-            });
-    },
+    fetchFn: ({ stationId }) => fetchRollingAverageForStation(stationId),
+    stateShape: 'simple',
+    cache: { strategy: 'none' }, // No caching - always fetch fresh for selected station
 });
 
-export const { clearRollingAverageData } = rollingAverageDataSlice.actions;
+// Export actions
+export const fetchRollingAverageData = actions.fetch;
+export const clearRollingAverageData = actions.reset;
 
-// Selectors
-export const selectRollingAverageData = (state: RootState): RollingAverageRecordList => state.rollingAverageData.data;
-export const selectRollingAverageDataStatus = (state: RootState) => state.rollingAverageData.status;
-export const selectRollingAverageDataError = (state: RootState) => state.rollingAverageData.error;
+// Export selectors
+export const selectRollingAverageData = (state: RootState): RollingAverageRecordList =>
+    selectors.selectData(state) as RollingAverageRecordList ?? [];
+export const selectRollingAverageDataStatus = selectors.selectStatus;
+export const selectRollingAverageDataError = selectors.selectError;
 
-export default rollingAverageDataSlice.reducer;
+export default slice.reducer;
