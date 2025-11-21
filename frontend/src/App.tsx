@@ -5,7 +5,7 @@ import { store } from './store';
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
 import { findClosestWeatherStationsForCities } from './services/CityService';
-import type { ICity } from './classes/City';
+import type { CityJSON, ICity } from './classes/City';
 import { PREDEFINED_CITIES } from './constants/map';
 import { fetchYearlyMeanByDay } from './store/slices/YearlyMeanByDaySlice';
 import { fetchReferenceYearlyHourlyInterpolatedByDay } from './store/slices/ReferenceYearlyHourlyInterpolatedByDaySlice';
@@ -90,9 +90,9 @@ function AppContent() {
             stations,
         );
 
-        const serialized: Record<string, ICity> = {};
+        const serialized: Record<string, CityJSON> = {};
         for (const [id, city] of Object.entries(correlatedCities)) {
-            serialized[id] = city;
+            serialized[id] = city.toJSON();
         }
         dispatch(setCities(serialized));
     }, [dispatch, stations, liveDataStatus, cities, cityDataStatus, areCitiesCorrelated]);
