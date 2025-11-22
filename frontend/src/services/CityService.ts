@@ -2,6 +2,8 @@ import { v4 as uuidv4 } from 'uuid';
 import City from '../classes/City';
 import type { CityDictionary, CityJSON, ICity } from '../classes/City';
 import type { IStation } from '../classes/Station';
+import { fetchAndParseCSV, parseOptionalFloat, isValidNumber } from '../utils/csvUtils.js';
+import { buildUrl } from '../utils/serviceUtils.js';
 
 /**
  * Service to fetch German cities from CSV file
@@ -19,39 +21,31 @@ import type { IStation } from '../classes/Station';
  * @returns {Promise<Array>} Array of city data objects
  */
 export const fetchGermanCities = async (): Promise<City[]> => {
-    try {
-        const url = "/german_cities_p5000.csv";
-        const response = await fetch(url);
+    return fetchAndParseCSV<City[]>(
+        buildUrl('/german_cities_p5000.csv', false),
+        (rows) => {
+            const cities: City[] = [];
 
-        if (!response.ok) {
-            throw new Error(`Failed to fetch city data: ${response.status} ${response.statusText}`);
-        }
+            for (const [nameRaw, latRaw, lonRaw] of rows) {
+                if (!nameRaw || !latRaw || !lonRaw) continue;
 
-        const text = await response.text();
-        const lines = text.split('\n');
+                const lat = parseOptionalFloat(latRaw);
+                const lon = parseOptionalFloat(lonRaw);
 
-        const cities: City[] = [];
-        for (const line of lines.slice(1)) {
-            if (!line.trim()) continue;
+                if (!isValidNumber(lat, -90, 90) || !isValidNumber(lon, -180, 180)) {
+                    continue;
+                }
 
-            const [nameRaw, latRaw, lonRaw] = line.split(',');
-            if (!nameRaw || !latRaw || !lonRaw) continue;
-
-            const lat = Number.parseFloat(latRaw);
-            const lon = Number.parseFloat(lonRaw);
-
-            if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
-                continue;
+                cities.push(new City(uuidv4(), nameRaw.trim(), lat!, lon!));
             }
 
-            cities.push(new City(uuidv4(), nameRaw.trim(), lat, lon));
+            return cities;
+        },
+        {
+            validateHeaders: ['city_name', 'lat', 'lon'],
+            errorContext: 'German cities'
         }
-
-        return cities;
-    } catch (error) {
-        console.error("Error loading German cities data:", error);
-        throw error;
-    }
+    );
 };
 
 /**
@@ -135,7 +129,7 @@ const toCityInstance = (city: ICity | CityJSON): City => {
         city.name,
         city.lat,
         city.lon,
-        city.stationId ?? null,
-        city.distanceToStation ?? null,
+        city.stationId ?? undefined,
+        city.distanceToStation ?? undefined,
     );
 };

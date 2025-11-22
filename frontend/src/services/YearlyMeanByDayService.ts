@@ -1,4 +1,6 @@
 import YearlyMeanByDay, { type YearlyMeanByDayByStationId } from '../classes/YearlyMeanByDay';
+import { fetchAndParseCSV, parseOptionalFloat } from '../utils/csvUtils.js';
+import { buildUrl } from '../utils/serviceUtils.js';
 
 /**
  * Service to fetch historical average data for a specific day (month and day)
@@ -20,60 +22,36 @@ import YearlyMeanByDay, { type YearlyMeanByDayByStationId } from '../classes/Yea
  * @returns {Promise<YearlyMeanByDayByStationId>} Yearly mean data by station ID
  */
 export const fetchYearlyMeanByDayData = async (month: number, day: number): Promise<YearlyMeanByDayByStationId> => {
-    try {
-        // Format month and day to ensure they have leading zeros
-        const formattedMonth = String(month).padStart(2, '0');
-        const formattedDay = String(day).padStart(2, '0');
+    const formattedMonth = String(month).padStart(2, '0');
+    const formattedDay = String(day).padStart(2, '0');
 
-        const url = `/data/yearly_mean_by_day/1961_1990/${formattedMonth}_${formattedDay}.csv`;
+    return fetchAndParseCSV<YearlyMeanByDayByStationId>(
+        buildUrl(`/data/yearly_mean_by_day/1961_1990/${formattedMonth}_${formattedDay}.csv`, false),
+        (rows) => {
+            const result: YearlyMeanByDayByStationId = {};
 
-        const response = await fetch(url);
+            for (const [stationIdRaw, tasminRaw, tasmaxRaw, tasRaw] of rows) {
+                if (!stationIdRaw) continue;
 
-        if (!response.ok) {
-            throw new Error(`Failed to fetch historical data: ${response.status} ${response.statusText}`);
-        }
+                const record = new YearlyMeanByDay(
+                    stationIdRaw,
+                    parseOptionalFloat(tasminRaw),
+                    parseOptionalFloat(tasmaxRaw),
+                    parseOptionalFloat(tasRaw),
+                );
 
-        const text = await response.text();
-        const lines = text.split('\n').filter(line => line.trim().length > 0);
-
-        if (lines.length === 0) {
-            throw new Error(`No yearly mean data found for ${formattedMonth}-${formattedDay}.`);
-        }
-
-        const result: YearlyMeanByDayByStationId = {};
-
-        for (const line of lines.slice(1)) {
-            const [stationIdRaw, tasminRaw, tasmaxRaw, tasRaw] = line.split(',').map(column => column.trim());
-            if (!stationIdRaw) {
-                continue;
+                result[record.stationId] = record.toJSON();
             }
 
-            const record = new YearlyMeanByDay(
-                stationIdRaw,
-                parseOptionalFloat(tasminRaw),
-                parseOptionalFloat(tasmaxRaw),
-                parseOptionalFloat(tasRaw),
-            );
+            if (Object.keys(result).length === 0) {
+                throw new Error(`No yearly mean data rows parsed for ${formattedMonth}-${formattedDay}.`);
+            }
 
-            result[record.stationId] = record.toJSON();
+            return result;
+        },
+        {
+            validateHeaders: ['station_id', 'tasmin', 'tasmax', 'tas'],
+            errorContext: `yearly mean data for ${formattedMonth}-${formattedDay}`
         }
-
-        if (Object.keys(result).length === 0) {
-            throw new Error(`No yearly mean data rows parsed for ${formattedMonth}-${formattedDay}.`);
-        }
-
-        return result;
-    } catch (error) {
-        console.error(`Error loading historical data for day ${month}/${day}:`, error);
-        throw error;
-    }
-};
-
-const parseOptionalFloat = (value: string | undefined): number | undefined => {
-    if (!value) {
-        return undefined;
-    }
-
-    const parsed = Number.parseFloat(value);
-    return Number.isFinite(parsed) ? parsed : undefined;
+    );
 };

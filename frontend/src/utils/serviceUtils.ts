@@ -85,43 +85,6 @@ export const createServiceError = (
 };
 
 /**
- * Rules for when to use cache busting on different data types.
- * 
- * Data freshness categories:
- * - LIVE: Updates every 10 minutes, always needs fresh data
- * - RECENT: Updates daily, cache-bust by date
- * - HISTORICAL: Immutable past data, never cache-bust
- * - REFERENCE: Static data (cities, reference temperatures), never cache-bust
- */
-export const CacheBustingRules = {
-    /**
-     * Live 10-minute station data - always cache bust
-     */
-    LIVE_DATA: true,
-
-    /**
-     * Recent daily data - cache bust by date
-     * Use buildDataUrl with cacheBust=true, format='yyyyLLdd'
-     */
-    RECENT_DAILY: true,
-
-    /**
-     * Historical station data - immutable, never cache bust
-     */
-    HISTORICAL_DATA: false,
-
-    /**
-     * Reference data (cities, yearly means, etc.) - static, never cache bust
-     */
-    REFERENCE_DATA: false,
-
-    /**
-     * GeoJSON data - static, never cache bust
-     */
-    GEOJSON: false,
-} as const;
-
-/**
  * Helper to determine if a date-based resource should be cache-busted.
  * 
  * @param date - Date of the data
