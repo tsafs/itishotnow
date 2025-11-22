@@ -15,7 +15,6 @@ import { DateTime } from 'luxon';
 import { getNow } from '../../../utils/dateUtils.js';
 import { useAppSelector } from '../../../store/hooks/useAppSelector.js';
 import { useAppDispatch } from '../../../store/hooks/useAppDispatch.js';
-import type { GermanyBoundaryGeoJSON } from '../../../services/GeoJSONService.js';
 import { fetchGeoJSON } from '../../../store/slices/geoJsonSlice.js';
 
 type TemperatureMetric = 'temperature' | 'maxTemperature';
