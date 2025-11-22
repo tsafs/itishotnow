@@ -4,15 +4,14 @@ import { Provider } from 'react-redux';
 import { store } from './store';
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
-import { findClosestWeatherStationsForCities } from './services/CityService';
-import type { CityJSON, ICity } from './classes/City';
 import { PREDEFINED_CITIES } from './constants/map';
 import { fetchYearlyMeanByDay } from './store/slices/YearlyMeanByDaySlice';
 import { fetchReferenceYearlyHourlyInterpolatedByDay } from './store/slices/ReferenceYearlyHourlyInterpolatedByDaySlice';
-import { fetchLiveData, selectLiveDataStatus } from './store/slices/liveDataSlice';
-import { fetchCityData, selectCities, selectAreCitiesCorrelated, selectCityDataStatus, setCities } from './store/slices/cityDataSlice';
+import { fetchLiveData, selectLiveDataStatus, selectStationsJSON } from './store/slices/liveDataSlice';
+import { fetchCityData, selectCities, selectCityDataStatus } from './store/slices/cityDataSlice';
 import { selectCity } from './store/slices/selectedCitySlice';
 import { fetchDailyDataForStation } from './store/slices/historicalDataForStationSlice';
+import { fetchStationDateRange } from './store/slices/stationDateRangesSlice';
 
 import './App.css';
 import { getNow } from './utils/dateUtils';
@@ -35,9 +34,8 @@ function AppContent() {
     const [error, setError] = useState<string | null>(null);
     const didFetchDataRef = useRef(false);
 
-    const stations = useAppSelector(state => state.stations.stations);
+    const stationsJSON = useAppSelector(selectStationsJSON);
     const cities = useAppSelector(selectCities);
-    const areCitiesCorrelated = useAppSelector(selectAreCitiesCorrelated);
     const selectedCityId = useAppSelector(state => state.selectedCity.cityId);
 
     const liveDataStatus = useAppSelector(selectLiveDataStatus);
@@ -65,13 +63,18 @@ function AppContent() {
                 const month = today.month;
                 const day = today.day;
 
-                // Load weather stations and cities data
-                await Promise.all([
-                    dispatch(fetchLiveData()),
-                    dispatch(fetchCityData()),
-                    dispatch(fetchYearlyMeanByDay({ month, day })),
-                    dispatch(fetchReferenceYearlyHourlyInterpolatedByDay({ month, day }))
-                ]);
+                // Load weather stations first, then cities (which need stations)
+                await dispatch(fetchLiveData()).unwrap();
+
+                // Now load cities with stations and historical data in parallel
+                const stations = store.getState().liveData.data?.stations;
+                if (stations) {
+                    await Promise.all([
+                        dispatch(fetchCityData({ stations })),
+                        dispatch(fetchYearlyMeanByDay({ month, day })),
+                        dispatch(fetchReferenceYearlyHourlyInterpolatedByDay({ month, day }))
+                    ]);
+                }
             } catch (error) {
                 console.error("Failed to load data:", error);
                 setError("Failed to load data. Please try again later.");
@@ -81,21 +84,7 @@ function AppContent() {
         loadData();
     }, [dispatch]);
 
-    useEffect(() => {
-        if (liveDataStatus !== "succeeded" || cityDataStatus !== "succeeded" || areCitiesCorrelated || !stations) {
-            return;
-        }
-        const correlatedCities = findClosestWeatherStationsForCities(
-            cities,
-            stations,
-        );
-
-        const serialized: Record<string, CityJSON> = {};
-        for (const [id, city] of Object.entries(correlatedCities)) {
-            serialized[id] = city.toJSON();
-        }
-        dispatch(setCities(serialized));
-    }, [dispatch, stations, liveDataStatus, cities, cityDataStatus, areCitiesCorrelated]);
+    // Correlation is now built into fetchCityData - no separate effect needed
 
     // Set default city when cities are loaded
     useEffect(() => {
@@ -115,20 +104,22 @@ function AppContent() {
 
     // Load DilyRecentByStation data when a city is selected
     useEffect(() => {
-        if (!selectedCityId || !areCitiesCorrelated) return;
+        if (!selectedCityId || cityDataStatus !== 'succeeded') return;
 
         const city = cities[selectedCityId];
         if (!city) return;
 
         const stationId = city.stationId;
-        if (!stationId || !stations) {
+        if (!stationId || !stationsJSON) {
             return;
         }
-        const station = stations[stationId];
+        const station = stationsJSON[stationId];
         if (!station) return;
 
+        // Fetch both historical data and date range for the station
         dispatch(fetchDailyDataForStation({ stationId: station.id }));
-    }, [dispatch, selectedCityId, areCitiesCorrelated, cities, stations]);
+        dispatch(fetchStationDateRange({ stationId: station.id }));
+    }, [dispatch, selectedCityId, cityDataStatus, cities, stationsJSON]);
 
     const MainPage = React.useMemo(() => {
         return () => (

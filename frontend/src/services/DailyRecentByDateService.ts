@@ -1,5 +1,6 @@
 import DailyRecentByStation, { type IStationDataByStationId } from "../classes/DailyRecentByStation";
-import { getNow } from "../utils/dateUtils";
+import { fetchAndParseCSV, parseOptionalFloat, replaceInvalidWithUndefined } from '../utils/csvUtils.js';
+import { buildUrl } from '../utils/serviceUtils.js';
 
 export interface DailyRecentByDateArgs {
     year: number;
@@ -32,74 +33,43 @@ export interface DailyRecentByDateArgs {
  */
 export const fetchDailyRecentByDateData = async (params: DailyRecentByDateArgs): Promise<IStationDataByStationId> => {
     const { year, month, day } = params;
+    const paddedMonth = String(month).padStart(2, '0');
+    const paddedDay = String(day).padStart(2, '0');
+    const dateStr = `${year}-${paddedMonth}-${paddedDay}`;
 
-    try {
-        const paddedMonth = String(month).padStart(2, '0'); // Ensure month is two digits
-        const paddedDay = String(day).padStart(2, '0'); // Ensure day is two
+    return fetchAndParseCSV<IStationDataByStationId>(
+        buildUrl(`/data/daily_recent_by_date/${dateStr}.csv`, true, 'yyyyLLddHH'),
+        (rows) => {
+            const result: IStationDataByStationId = {};
 
-        // Get today's date in YYYYMMDDHH format using Luxon
-        const today = getNow();
-        const cacheBuster = today.toFormat('yyyyLLddHH');
+            for (const [stationIdRaw, dateRaw, temperatureMaxRaw, temperatureMinRaw, temperatureMeanRaw, humidityMeanRaw] of rows) {
+                if (!stationIdRaw || !dateRaw) continue;
 
-        const url = `/data/daily_recent_by_date/${year}-${paddedMonth}-${paddedDay}.csv?t=${cacheBuster}`;
+                if (dateRaw !== dateStr) {
+                    throw new Error(`Data for date ${dateStr} not found in the response.`);
+                }
 
-        const response = await fetch(url);
+                const record = new DailyRecentByStation(
+                    stationIdRaw,
+                    dateRaw,
+                    replaceInvalidWithUndefined(parseOptionalFloat(temperatureMeanRaw)),
+                    replaceInvalidWithUndefined(parseOptionalFloat(temperatureMinRaw)),
+                    replaceInvalidWithUndefined(parseOptionalFloat(temperatureMaxRaw)),
+                    replaceInvalidWithUndefined(parseOptionalFloat(humidityMeanRaw))
+                );
 
-        // in case of a 404 error, error out
-        if (!response.ok) {
-            throw new Error(`Failed to fetch data from ${url}: ${response.status} ${response.statusText}.`);
-        }
-
-        const text = await response.text();
-
-        const lines = text.split('\n').filter(line => line.trim());
-
-        // Skip header line
-        const dataLines = lines.slice(1);
-
-        if (dataLines.length === 0) {
-            throw new Error(`No data found for date ${year}-${paddedMonth}-${paddedDay}.`);
-        }
-
-        // Find the specific date we're looking for
-        const data = dataLines.map(line => {
-            const [stationIdRaw, dateRaw, temperatureMaxRaw, temperatureMinRaw, temperatureMeanRaw, humidityMeanRaw] = line.split(',').map(col => col.trim());
-
-            if (!stationIdRaw || !dateRaw) {
-                return null;
+                result[record.stationId] = record.toJSON();
             }
 
-            if (dateRaw !== `${year}-${paddedMonth}-${paddedDay}`) {
-                throw new Error(`Data for date ${year}-${paddedMonth}-${paddedDay} not found in the response.`);
+            if (Object.keys(result).length === 0) {
+                throw new Error(`No historical data found for date ${dateStr}.`);
             }
 
-            const meanTemperature = temperatureMeanRaw ? parseFloat(temperatureMeanRaw) : undefined;
-            const minTemperature = temperatureMinRaw ? parseFloat(temperatureMinRaw) : undefined;
-            const maxTemperature = temperatureMaxRaw ? parseFloat(temperatureMaxRaw) : undefined;
-            const meanHumidity = humidityMeanRaw ? parseFloat(humidityMeanRaw) : undefined;
-
-            return new DailyRecentByStation(
-                stationIdRaw,
-                dateRaw,
-                Number.isNaN(meanTemperature) ? undefined : meanTemperature,
-                Number.isNaN(minTemperature) ? undefined : minTemperature,
-                Number.isNaN(maxTemperature) ? undefined : maxTemperature,
-                Number.isNaN(meanHumidity) ? undefined : meanHumidity
-            );
-        });
-
-        if (!data || !data.length) {
-            throw new Error(`No historical data found for date ${year}-${paddedMonth}-${paddedDay}.`);
+            return result;
+        },
+        {
+            validateHeaders: ['station_id', 'date', 'max_temperature', 'min_temperature', 'mean_temperature', 'mean_humidity'],
+            errorContext: `daily recent data for ${dateStr}`
         }
-
-        const result: IStationDataByStationId = {};
-        for (const item of data.filter((entry): entry is DailyRecentByStation => entry !== null)) {
-            result[item.stationId] = item.toJSON();
-        }
-
-        return result;
-    } catch (error) {
-        console.error(`Error loading daily weather stations data:`, error);
-        throw error;
-    }
+    );
 };

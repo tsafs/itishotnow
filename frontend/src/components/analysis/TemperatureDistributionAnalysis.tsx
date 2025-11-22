@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import ContentSplit from '../layout/ContentSplit.js';
 import './TemperatureDistributionAnalysis.css';
-import { useSelectedItem } from '../../store/hooks/selectedItemHook.js';
+import { useSelectedStationName } from '../../store/hooks/hooks.js';
 
 const TemperatureDistributionAnalysis = () => {
-    const selectedItem = useSelectedItem();
+    const selectedStationName = useSelectedStationName();
     const [timeRange, setTimeRange] = useState<{ from: number; to: number }>({ from: 1961, to: 1990 });
     const [activeTab, setActiveTab] = useState<'description' | 'methodology'>('description');
 
@@ -12,7 +12,7 @@ const TemperatureDistributionAnalysis = () => {
         setTimeRange(range);
     };
 
-    const stationLabel = selectedItem?.station.name ?? 'der aktuell gewählten Stadt';
+    const stationLabel = selectedStationName ?? 'der aktuell gewählten Stadt';
 
     // Left side content with tabs for different content types
     const leftContent = (

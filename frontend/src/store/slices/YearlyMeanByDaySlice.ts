@@ -1,85 +1,55 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { fetchYearlyMeanByDayData } from '../../services/YearlyMeanByDayService.js';
 import { useMemo } from 'react';
 import { useAppSelector } from '../hooks/useAppSelector.js';
 import type { RootState } from '../index.js';
 import type { YearlyMeanByDayByStationId } from '../../classes/YearlyMeanByDay.js';
-
-export interface YearlyMeanByDayState {
-    data: YearlyMeanByDayByStationId | null;
-    status: 'idle' | 'loading' | 'succeeded' | 'failed';
-    error: string | null;
-    currentDay: { month: number; day: number } | null;
-}
+import { createDataSlice } from '../factories/createDataSlice.js';
 
 export interface FetchYearlyMeanByDayArgs {
     month: number;
     day: number;
 }
 
-const initialState: YearlyMeanByDayState = {
-    data: null,
-    status: 'idle',
-    error: null,
-    currentDay: null,
-};
+export interface YearlyMeanByDayContext {
+    month: number;
+    day: number;
+}
 
-// Create async thunk for fetching historical data
-export const fetchYearlyMeanByDay = createAsyncThunk<
+/**
+ * Create yearlyMeanByDay slice using factory with context-based caching
+ */
+const { slice, actions, selectors, hooks } = createDataSlice<
     YearlyMeanByDayByStationId,
     FetchYearlyMeanByDayArgs,
-    { rejectValue: string }
->(
-    'yearlyMeanByDay/fetch',
-    async ({ month, day }, { rejectWithValue }) => {
-        try {
-            return await fetchYearlyMeanByDayData(month, day);
-        } catch (error) {
-            const message = error instanceof Error ? error.message : 'Failed to fetch yearlyMeanByDay data';
-            return rejectWithValue(message);
-        }
-    }
-);
-
-const yearlyMeanByDaySlice = createSlice({
+    'with-context',
+    YearlyMeanByDayContext
+>({
     name: 'yearlyMeanByDay',
-    initialState,
-    reducers: {},
-    extraReducers: (builder) => {
-        builder
-            .addCase(fetchYearlyMeanByDay.pending, (state) => {
-                state.status = 'loading';
-            })
-            .addCase(fetchYearlyMeanByDay.fulfilled, (state, action) => {
-                state.status = 'succeeded';
-                state.data = action.payload;
-                state.currentDay = action.meta.arg;
-                state.error = null;
-            })
-            .addCase(fetchYearlyMeanByDay.rejected, (state, action) => {
-                state.status = 'failed';
-                state.error = typeof action.payload === 'string'
-                    ? action.payload
-                    : action.error?.message ?? 'Failed to fetch yearlyMeanByDay data';
-            });
+    fetchFn: ({ month, day }) => fetchYearlyMeanByDayData(month, day),
+    stateShape: 'with-context',
+    cache: {
+        strategy: 'by-key',
+        keyExtractor: ({ month, day }) => `${month}-${day}`,
+        ttl: 3600000, // 1 hour
+    },
+    contextConfig: {
+        initialContext: undefined,
+        updateContext: ({ month, day }) => ({ month, day }),
     },
 });
 
-// Selectors
-export const selectYearlyMeanByDayData = (state: RootState): YearlyMeanByDayByStationId | null => state.yearlyMeanByDay.data;
-export const selectYearlyMeanByDayStatus = (state: RootState) => state.yearlyMeanByDay.status;
-export const selectYearlyMeanByDayError = (state: RootState) => state.yearlyMeanByDay.error;
-export const selectYearlyMeanByDayDataForStation = (state: RootState, stationId: string | null | undefined) => {
-    if (!stationId) {
-        return null;
-    }
-    return state.yearlyMeanByDay.data?.[stationId] ?? null;
-};
+// Export actions
+export const fetchYearlyMeanByDay = actions.fetch;
+
+// Export selectors
+export const selectYearlyMeanByDayData = (state: RootState): YearlyMeanByDayByStationId | undefined =>
+    selectors.selectData(state) as YearlyMeanByDayByStationId | undefined;
+export const selectYearlyMeanByDayStatus = selectors.selectStatus;
 
 // Hooks
 export const useYearlyMeanByDayData = (): YearlyMeanByDayByStationId | null => {
-    const yearlyMeanByDay = useAppSelector(state => state.yearlyMeanByDay.data);
-    const status = useAppSelector(state => state.yearlyMeanByDay.status);
+    const yearlyMeanByDay = useAppSelector(selectYearlyMeanByDayData);
+    const status = useAppSelector(selectYearlyMeanByDayStatus);
 
     return useMemo(() => {
         if (status !== 'succeeded' || !yearlyMeanByDay) {
@@ -89,4 +59,4 @@ export const useYearlyMeanByDayData = (): YearlyMeanByDayByStationId | null => {
     }, [yearlyMeanByDay, status]);
 };
 
-export default yearlyMeanByDaySlice.reducer;
+export default slice.reducer;

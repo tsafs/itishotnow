@@ -3,8 +3,8 @@ export interface CityJSON {
     name: string;
     lat: number;
     lon: number;
-    stationId?: string | null;
-    distanceToStation?: number | null;
+    stationId?: string;
+    distanceToStation?: number;
 }
 
 export interface ICity {
@@ -12,8 +12,9 @@ export interface ICity {
     name: string;
     lat: number;
     lon: number;
-    stationId: string | null;
-    distanceToStation: number | null;
+    stationId: string | undefined;
+    distanceToStation: number | undefined;
+    equals(other: ICity): boolean;
 }
 
 /**
@@ -24,16 +25,16 @@ export default class City implements ICity {
     public readonly name: string;
     public readonly lat: number;
     public readonly lon: number;
-    public readonly stationId: string | null;
-    public readonly distanceToStation: number | null;
+    public readonly stationId: string | undefined;
+    public readonly distanceToStation: number | undefined;
 
     constructor(
         id: string,
         name: string,
         lat: number,
         lon: number,
-        stationId: string | null = null,
-        distanceToStation: number | null = null,
+        stationId?: string,
+        distanceToStation?: number,
     ) {
         this.id = id;
         this.name = name;
@@ -47,15 +48,27 @@ export default class City implements ICity {
         return new City(this.id, this.name, this.lat, this.lon, stationId, distanceToStation);
     }
 
+    equals(other: ICity): boolean {
+        return this.id === other.id;
+    }
+
     toJSON(): CityJSON {
-        return {
+        const json: CityJSON = {
             id: this.id,
             name: this.name,
             lat: this.lat,
             lon: this.lon,
-            stationId: this.stationId,
-            distanceToStation: this.distanceToStation,
-        } satisfies CityJSON;
+        };
+
+        if (this.stationId !== undefined) {
+            json.stationId = this.stationId;
+        }
+
+        if (this.distanceToStation !== undefined) {
+            json.distanceToStation = this.distanceToStation;
+        }
+
+        return json;
     }
 
     static fromJSON(json: CityJSON): City {
@@ -64,8 +77,8 @@ export default class City implements ICity {
             json.name,
             json.lat,
             json.lon,
-            json.stationId ?? null,
-            json.distanceToStation ?? null,
+            json.stationId ?? undefined,
+            json.distanceToStation ?? undefined,
         );
     }
 }

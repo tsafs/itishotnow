@@ -1,14 +1,22 @@
+export interface IYearlyMeanByDay {
+    readonly stationId: string;
+    readonly tasmin: number | undefined;
+    readonly tasmax: number | undefined;
+    readonly tas: number | undefined;
+    equals(other: IYearlyMeanByDay): boolean;
+}
+
 export interface YearlyMeanByDayJSON {
     stationId: string;
-    tasmin?: number | undefined;
-    tasmax?: number | undefined;
-    tas?: number | undefined;
+    tasmin?: number;
+    tasmax?: number;
+    tas?: number;
 }
 
 /**
  * Represents the historical yearly mean temperature metrics for a station on a specific day.
  */
-export default class YearlyMeanByDay {
+export default class YearlyMeanByDay implements IYearlyMeanByDay {
     public readonly stationId: string;
     public readonly tasmin: number | undefined;
     public readonly tasmax: number | undefined;
@@ -16,9 +24,9 @@ export default class YearlyMeanByDay {
 
     constructor(
         stationId: string,
-        tasmin?: number | undefined,
-        tasmax?: number | undefined,
-        tas?: number | undefined,
+        tasmin?: number,
+        tasmax?: number,
+        tas?: number,
     ) {
         this.stationId = stationId;
         this.tasmin = tasmin;
@@ -26,13 +34,31 @@ export default class YearlyMeanByDay {
         this.tas = tas;
     }
 
+    equals(other: IYearlyMeanByDay): boolean {
+        return (
+            this.stationId === other.stationId &&
+            this.tasmin === other.tasmin &&
+            this.tasmax === other.tasmax &&
+            this.tas === other.tas
+        );
+    }
+
     toJSON(): YearlyMeanByDayJSON {
-        return {
+        const json: YearlyMeanByDayJSON = {
             stationId: this.stationId,
-            tasmin: this.tasmin,
-            tasmax: this.tasmax,
-            tas: this.tas,
-        } satisfies YearlyMeanByDayJSON;
+        };
+
+        if (this.tasmin !== undefined) {
+            json.tasmin = this.tasmin;
+        }
+        if (this.tasmax !== undefined) {
+            json.tasmax = this.tasmax;
+        }
+        if (this.tas !== undefined) {
+            json.tas = this.tas;
+        }
+
+        return json;
     }
 
     static fromJSON(json: YearlyMeanByDayJSON): YearlyMeanByDay {
