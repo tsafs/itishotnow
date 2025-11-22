@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback, useMemo } from 'react';
+import type { CSSProperties } from 'react';
 import * as Plot from "@observablehq/plot";
-import ContentSplit from '../../layout/ContentSplit.js';
+import PlotView from '../../common/PlotView/PlotView.js';
 import { selectCity } from '../../../store/slices/selectedCitySlice.js';
 import { useCorrelatedData, useSelectedCityId, useGeoJSON, useGeoJSONStatus } from '../../../store/hooks/hooks.js';
 import type { CorrelatedStationDataMap } from '../../../store/selectors/correlatedDataSelectors.js';
@@ -9,7 +10,8 @@ import { useYearlyMeanByDayData } from '../../../store/slices/YearlyMeanByDaySli
 import { useReferenceYearlyHourlyInterpolatedByDayData } from '../../../store/slices/ReferenceYearlyHourlyInterpolatedByDaySlice.js';
 import { PREDEFINED_CITIES } from '../../../constants/map.js';
 import MapLegend from '../../d3map/MapLegend.js';
-import './View.css';
+import { theme, createStyles } from '../../../styles/design-system.js';
+import { useBreakpoint } from '../../../hooks/useBreakpoint.js';
 import { useSelectedDate } from '../../../store/slices/selectedDateSlice.js';
 import { DateTime } from 'luxon';
 import { getNow } from '../../../utils/dateUtils.js';
@@ -57,20 +59,73 @@ const getDataForPlot = (
     }));
 };
 
-// Helper to get fontSize and dy based on screen width
-const getTextStyle = () => {
-    const width = window.innerWidth;
-    if (width <= 480) {
+// Helper to get fontSize and dy based on breakpoint
+const getTextStyle = (breakpoint: 'mobile' | 'tablet' | 'desktop') => {
+    if (breakpoint === 'mobile') {
         return { fontSize: 16, dy: 10 };
-    } else if (width <= 768) {
+    } else if (breakpoint === 'tablet') {
         return { fontSize: 14, dy: 9 };
     } else {
         return { fontSize: 12, dy: 8 };
     }
 };
 
+// Pure style computation functions
+const getInfoStyle = (isMobile: boolean): CSSProperties => ({
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: isMobile ? 'center' : 'flex-start',
+    height: '100%',
+    gap: theme.spacing.lg,
+    marginTop: isMobile ? 0 : '30%',
+    marginRight: isMobile ? 0 : theme.spacing.lg,
+    margin: isMobile ? 0 : undefined,
+});
+
+const getPlotContainerLeftAlignStyle = (isMobile: boolean): CSSProperties => ({
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: isMobile ? 'center' : 'flex-start',
+    width: '100%',
+});
+
+const getPlotTitleStyle = (isMobile: boolean): CSSProperties => ({
+    maxWidth: isMobile ? '80%' : 500,
+    fontSize: isMobile ? theme.typography.fontSize.lg : theme.typography.fontSize.xl,
+    fontWeight: theme.typography.fontWeight.bold,
+    marginTop: theme.spacing.xl,
+    marginBottom: theme.spacing.lg,
+    textAlign: 'center',
+});
+
+const getPlotStyle = (breakpoint: 'mobile' | 'tablet' | 'desktop'): CSSProperties => ({
+    position: 'relative',
+    maxWidth: breakpoint === 'mobile' ? '90%' : breakpoint === 'tablet' ? '80%' : 500,
+    marginBottom: theme.spacing.sm,
+});
+
+const styles = createStyles({
+    container: {
+        color: theme.colors.textLight,
+    },
+    plotContainer: {
+        display: 'flex',
+        flexDirection: 'column' as const,
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: theme.colors.text,
+    },
+    dynamicPlot: {
+        position: 'absolute' as const,
+        left: 0,
+        top: 0,
+        zIndex: 1,
+    },
+});
+
 const HistoricalAnalysis = () => {
     const dispatch = useAppDispatch();
+    const breakpoint = useBreakpoint();
     const correlatedData = useCorrelatedData();
     const selectedCityId = useSelectedCityId();
     const selectedDate = useSelectedDate();
@@ -86,6 +141,7 @@ const HistoricalAnalysis = () => {
     const lastSelectedCityId = useRef<string | null>(null);
 
     const isToday = useMemo(() => DateTime.fromISO(selectedDate).hasSame(getNow(), 'day'), [selectedDate]);
+    const isMobile = breakpoint === 'mobile' || breakpoint === 'tablet';
 
     useEffect(() => {
         if (geojsonStatus === 'idle') {
@@ -195,7 +251,7 @@ const HistoricalAnalysis = () => {
             return isPredefined || isRemembered || isSelected;
         });
 
-        const { fontSize, dy } = getTextStyle();
+        const { fontSize, dy } = getTextStyle(breakpoint);
 
         const dynamicPlot = Plot.plot({
             projection: {
@@ -253,40 +309,66 @@ const HistoricalAnalysis = () => {
         selectedCityId,
         rememberedCityIds,
         dispatch,
+        breakpoint,
     ]);
 
     useEffect(() => {
         renderDynamicOverlay();
     }, [renderDynamicOverlay]);
 
-    // Left side content with tabs for different content types
+    // Memoized computed styles
+    const infoStyle = useMemo(
+        () => getInfoStyle(isMobile),
+        [isMobile]
+    );
+
+    const plotContainerLeftAlignStyle = useMemo(
+        () => getPlotContainerLeftAlignStyle(isMobile),
+        [isMobile]
+    );
+
+    const plotTitleStyle = useMemo(
+        () => getPlotTitleStyle(isMobile),
+        [isMobile]
+    );
+
+    const plotStyle = useMemo(
+        () => getPlotStyle(breakpoint),
+        [breakpoint]
+    );
+
+    // Right side content with the plot
     const rightContent = (
-        <div className="plot-container-left-align">
-            <div className="plot-container">
-                <div className="plot-title">{isToday ? "Heutige Temperaturabweichung" : "Temperaturabweichung am " + DateTime.fromISO(selectedDate).setLocale('de').toFormat("d. MMMM yyyy")} zu&nbsp;1961&nbsp;bis&nbsp;1990&nbsp;(°C)</div>
-                <div className="plot">
+        <div style={plotContainerLeftAlignStyle}>
+            <div style={styles.plotContainer}>
+                <div style={plotTitleStyle}>
+                    {isToday
+                        ? "Heutige Temperaturabweichung"
+                        : "Temperaturabweichung am " + DateTime.fromISO(selectedDate).setLocale('de').toFormat("d. MMMM yyyy")
+                    } zu&nbsp;1961&nbsp;bis&nbsp;1990&nbsp;(°C)
+                </div>
+                <div style={plotStyle}>
                     <div ref={staticPlotRef}></div>
-                    <div ref={dynamicPlotRef} className="dynamic-plot"></div>
+                    <div ref={dynamicPlotRef} style={styles.dynamicPlot}></div>
                 </div>
                 <MapLegend title="Abweichung (°C)" colorScheme="Turbo" />
             </div>
         </div>
     );
 
-    // Right side content with the scatter plot
+    // Left side content with station details
     const leftContent = (
-        <div className="info">
+        <div style={infoStyle}>
             <StationDetails />
-        </div >
+        </div>
     );
 
     return (
-        <div className="daily-anomaly-explorer">
-            <ContentSplit
+        <div style={styles.container}>
+            <PlotView
                 leftContent={leftContent}
                 rightContent={rightContent}
-                leftRatio={45}
-                rightRatio={55}
+                leftWidth={45}
             />
         </div>
     );

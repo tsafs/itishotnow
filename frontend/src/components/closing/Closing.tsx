@@ -1,4 +1,4 @@
-import ContentSplit from '../layout/ContentSplit.js';
+import PlotView from '../common/PlotView/PlotView.js';
 import FlagLink from '../common/FlagLink.js';
 import './Closing.css';
 
@@ -60,11 +60,10 @@ const HistoricalAnalysis = () => {
 
     return (
         <div className="closing">
-            <ContentSplit
+            <PlotView
                 leftContent={leftContent}
                 rightContent={rightContent}
-                leftRatio={50}
-                rightRatio={50}
+                leftWidth={50}
             />
         </div>
     );

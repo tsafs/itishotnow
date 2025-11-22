@@ -1,10 +1,21 @@
-import ContentSplit from '../layout/ContentSplit.js';
+import PlotView from '../common/PlotView/PlotView.js';
+import PlotDescription from '../common/PlotDescription/PlotDescription.js';
 import TemperatureScatterPlot from '../charts/TemperatureScatterPlot.js';
-import './HistoricalAnalysis.css';
+import { theme, createStyles } from '../../styles/design-system.js';
 import { useSelectedDate } from '../../store/slices/selectedDateSlice.js';
 import { DateTime } from 'luxon';
 import { getNow } from '../../utils/dateUtils.js';
 import { useSelectedCityName } from '../../store/hooks/hooks.js';
+
+const styles = createStyles({
+    container: {
+        padding: theme.spacing.md,
+        backgroundColor: theme.colors.backgroundLight,
+    },
+    scatterPlot: {
+        height: '100%',
+    },
+});
 
 const HistoricalAnalysis = () => {
     const selectedCityName = useSelectedCityName();
@@ -15,9 +26,9 @@ const HistoricalAnalysis = () => {
     // Format date as "7. Oktober 2025"
     const formattedDate = DateTime.fromISO(selectedDate).setLocale('de').toFormat("d. MMMM yyyy");
 
-    // Left side content with tabs for different content types
-    const rightContent = (
-        <div className="analysis-info">
+    // Description content
+    const description = (
+        <PlotDescription>
             <p>
                 Diese Grafik zeigt, wie warm der <strong>{isToday ? "heutige Tag" : formattedDate}</strong> im Vergleich zu früheren Jahren ist. Sie umfasst Daten seit <strong>1951</strong> für die Wetterstation in {selectedCityNameDisplay}.
             </p>
@@ -32,25 +43,24 @@ const HistoricalAnalysis = () => {
                     Der <strong>aktuelle Wert</strong> basiert auf den bisher heute gemessenen Temperaturen. Das vollständige Bild entsteht daher erst am Ende des Tages oder nach Erreichen der Tageshöchsttemperatur.
                 </p>
             )}
-        </div>
+        </PlotDescription>
     );
 
-    // Right side content with the scatter plot
-    const leftContent = (
-        <div className="scatter-plot">
+    // Plot content
+    const plot = (
+        <div style={styles.scatterPlot}>
             <TemperatureScatterPlot />
-        </div >
+        </div>
     );
 
     return (
         <>
             {selectedCityName && (
-                <div className="historical-analysis">
-                    <ContentSplit
-                        leftContent={leftContent}
-                        rightContent={rightContent}
-                        leftRatio={55}
-                        rightRatio={45}
+                <div style={styles.container}>
+                    <PlotView
+                        leftContent={plot}
+                        rightContent={description}
+                        leftWidth={55}
                     />
                 </div>
             )}
