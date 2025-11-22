@@ -4,8 +4,6 @@ import { Provider } from 'react-redux';
 import { store } from './store';
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
-import { findClosestWeatherStationsForCities } from './services/CityService';
-import type { CityJSON, ICity } from './classes/City';
 import { PREDEFINED_CITIES } from './constants/map';
 import { fetchYearlyMeanByDay } from './store/slices/YearlyMeanByDaySlice';
 import { fetchReferenceYearlyHourlyInterpolatedByDay } from './store/slices/ReferenceYearlyHourlyInterpolatedByDaySlice';

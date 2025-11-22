@@ -1,4 +1,5 @@
 import { useAppSelector } from './useAppSelector.js';
+import { selectGeoJSONData, selectGeoJSONStatus } from '../slices/geoJsonSlice.js';
 import {
     selectSelectedCityId,
     selectSelectedStationId,
@@ -29,6 +30,8 @@ export const useSelectedCity = () => useAppSelector(selectSelectedCity);
 export const useSelectedStation = () => useAppSelector(selectSelectedStation);
 export const useSelectedItem = () => useAppSelector(selectSelectedItem);
 export const useCorrelatedData = () => useAppSelector(selectCorrelatedData);
+export const useGeoJSON = () => useAppSelector(selectGeoJSONData);
+export const useGeoJSONStatus = () => useAppSelector(selectGeoJSONStatus);
 
 // Re-export types
 export type { SelectedItem, CorrelatedStationDataMap };

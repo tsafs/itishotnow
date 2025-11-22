@@ -9,6 +9,7 @@ import referenceYearlyHourlyInterpolatedByDayReducer from './slices/ReferenceYea
 import liveDataReducer from './slices/liveDataSlice.js';
 import rollingAverageDataReducer from './slices/rollingAverageDataSlice.js';
 import historicalDailyDataReducer from './slices/historicalDataForStationSlice.js';
+import geoJsonReducer from './slices/geoJsonSlice.js';
 import dailyRecentByDateReducer from './slices/DailyRecentByDateSlice.js';
 import stationDateRangesReducer from './slices/stationDateRangesSlice.js';
 
@@ -25,6 +26,7 @@ export const store = configureStore({
         historicalDailyData: historicalDailyDataReducer,
         dailyRecentByDate: dailyRecentByDateReducer,
         stationDateRanges: stationDateRangesReducer,
+        geoJson: geoJsonReducer,
     },
 });
 
