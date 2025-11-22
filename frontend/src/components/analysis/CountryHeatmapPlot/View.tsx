@@ -3,15 +3,14 @@ import * as Plot from "@observablehq/plot";
 import ContentSplit from '../../layout/ContentSplit.js';
 import { selectCity } from '../../../store/slices/selectedCitySlice.js';
 import { fetchGermanyGeoJSON } from '../../../services/GeoJSONService.js';
-import { useCorrelatedData } from '../../../store/hooks/correlatedDataHook.js';
-import type { CorrelatedStationDataMap } from '../../../store/hooks/correlatedDataHook.js';
+import { useCorrelatedData, useSelectedCityId } from '../../../store/hooks/hooks.js';
+import type { CorrelatedStationDataMap } from '../../../store/selectors/correlatedDataSelectors.js';
 import StationDetails from '../../stationDetails/StationDetails.js';
 import { useYearlyMeanByDayData } from '../../../store/slices/YearlyMeanByDaySlice.js';
 import { useReferenceYearlyHourlyInterpolatedByDayData } from '../../../store/slices/ReferenceYearlyHourlyInterpolatedByDaySlice.js';
 import { PREDEFINED_CITIES } from '../../../constants/map.js';
 import MapLegend from '../../d3map/MapLegend.js';
 import './View.css';
-import { useSelectedItem } from '../../../store/hooks/selectedItemHook.js';
 import { useSelectedDate } from '../../../store/slices/selectedDateSlice.js';
 import { DateTime } from 'luxon';
 import { getNow } from '../../../utils/dateUtils.js';
@@ -74,7 +73,7 @@ const getTextStyle = () => {
 const HistoricalAnalysis = () => {
     const dispatch = useAppDispatch();
     const correlatedData = useCorrelatedData();
-    const selectedItem = useSelectedItem();
+    const selectedCityId = useSelectedCityId();
     const selectedDate = useSelectedDate();
     const yearlyMeanByDayData = useYearlyMeanByDayData();
     const referenceYearlyHourlyInterpolatedByDayData = useReferenceYearlyHourlyInterpolatedByDayData();
@@ -188,7 +187,7 @@ const HistoricalAnalysis = () => {
 
     // Render dynamic overlays (city dots, labels, selection) on every relevant state change
     const renderDynamicOverlay = useCallback(() => {
-        if (!correlatedData || !geojson || !selectedItem) return;
+        if (!correlatedData || !geojson || !selectedCityId) return;
 
         if (dynamicPlotRef.current) {
             dynamicPlotRef.current.innerHTML = '';
@@ -199,7 +198,7 @@ const HistoricalAnalysis = () => {
         const cityData = data.filter((entry) => {
             const isPredefined = PREDEFINED_CITIES.some((city) => city.toLowerCase() === entry.cityName.toLowerCase());
             const isRemembered = rememberedCityIds.includes(entry.cityId);
-            const isSelected = entry.cityId === selectedItem.city.id;
+            const isSelected = entry.cityId === selectedCityId;
             return isPredefined || isRemembered || isSelected;
         });
 
@@ -258,7 +257,7 @@ const HistoricalAnalysis = () => {
     }, [
         correlatedData,
         geojson,
-        selectedItem,
+        selectedCityId,
         rememberedCityIds,
         dispatch,
     ]);

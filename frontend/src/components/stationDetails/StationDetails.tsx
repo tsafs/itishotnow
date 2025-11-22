@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { analyzeTemperatureAnomaly } from '../../utils/TemperatureUtils.js';
-import { useSelectedItem } from '../../store/hooks/selectedItemHook.js';
-import type { SelectedItem } from '../../store/hooks/selectedItemHook.js';
+import { useSelectedItem } from '../../store/hooks/hooks.js';
+import type { SelectedItem } from '../../store/selectors/selectedItemSelectors.js';
 import { CITY_SELECT_TIMEOUT } from '../../constants/page.js';
 import './StationDetails.css';
 import { useYearlyMeanByDayData } from '../../store/slices/YearlyMeanByDaySlice.js';
@@ -31,23 +31,23 @@ const StationDetails = () => {
     const [subtitle, setSubtitle] = useState<string>('');
     const [anomalyDetails, setAnomalyDetails] = useState<AnomalyDetails | null>(null);
 
-    const selectedItemRef = useRef<SelectedItem | null>(null);
+    const prevItemRef = useRef<SelectedItem | null>(null);
 
     const isToday = DateTime.fromISO(selectedDate).hasSame(getNow(), 'day');
 
-    // Get selected item
+    // Get selected data with loading delay
     useEffect(() => {
-        // If no item is selected or if there is no data for it, reset state
+        // If no data is available, reset state
         if (!selectedItem) {
             setItem(null);
             setAnomaly(null);
             setSubtitle('');
             setAnomalyDetails(null);
             return;
-        };
+        }
 
-        // If the selected item hasn't changed, do nothing
-        if (JSON.stringify(selectedItemRef.current) === JSON.stringify(selectedItem)) return;
+        // If nothing has changed, do nothing
+        if (prevItemRef.current === selectedItem) return;
 
         // Simulate loading delay
         setItem(null);
@@ -56,7 +56,7 @@ const StationDetails = () => {
         setAnomalyDetails(null);
         setTimeout(() => {
             setItem(selectedItem);
-            selectedItemRef.current = selectedItem;
+            prevItemRef.current = selectedItem;
         }, CITY_SELECT_TIMEOUT);
     }, [selectedItem]);
 

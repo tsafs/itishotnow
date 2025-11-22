@@ -6,7 +6,7 @@ import 'react-day-picker/dist/style.css';
 import { setDateAndFetchHistoricalData } from '../../store/slices/selectedDateSlice.js'
 import { getNow } from '../../utils/dateUtils.js';
 import { useDateRangeForStation } from '../../store/slices/stationDateRangesSlice.js';
-import { useSelectedItem } from '../../store/hooks/selectedItemHook.js';
+import { useSelectedStationId } from '../../store/hooks/hooks.js';
 import { useSelectedDate } from '../../store/slices/selectedDateSlice.js';
 import './DateSelection.css';
 import { DateTime } from 'luxon'; // Added Luxon
@@ -25,8 +25,8 @@ const DateSelection = () => {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const selectedDate = useSelectedDate();
-    const selectedItem = useSelectedItem();
-    const dateRange = useDateRangeForStation(selectedItem?.station.id);
+    const selectedStationId = useSelectedStationId();
+    const dateRange = useDateRangeForStation(selectedStationId);
 
     const [isYesterdaySelected, setIsYesterdaySelected] = useState<boolean>(false);
     const [isTodaySelected, setIsTodaySelected] = useState<boolean>(true);
