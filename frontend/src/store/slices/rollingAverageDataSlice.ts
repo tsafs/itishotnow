@@ -21,12 +21,15 @@ const { slice, actions, selectors } = createDataSlice<
     cache: { strategy: 'none' }, // No caching - always fetch fresh for selected station
 });
 
+// Empty constant for rolling average data to avoid creating new [] object every time the state is empty
+const EMPTY_ROLLING_AVERAGE: RollingAverageRecordList = [];
+
 // Export actions
 export const fetchRollingAverageData = actions.fetch;
 
 // Export selectors
 export const selectRollingAverageData = (state: RootState): RollingAverageRecordList =>
-    selectors.selectData(state) as RollingAverageRecordList ?? [];
+    selectors.selectData(state) as RollingAverageRecordList ?? EMPTY_ROLLING_AVERAGE;
 export const selectRollingAverageDataStatus = selectors.selectStatus;
 
 export default slice.reducer;
