@@ -28,6 +28,12 @@ export const store = configureStore({
         stationDateRanges: stationDateRangesReducer,
         geoJson: geoJsonReducer,
     },
+    middleware: (getDefaultMiddleware) =>
+        getDefaultMiddleware({
+            serializableCheck: {
+                warnAfter: 64
+            },
+        }),
 });
 
 export type RootState = ReturnType<typeof store.getState>;
