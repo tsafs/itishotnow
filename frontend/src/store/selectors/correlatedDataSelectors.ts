@@ -5,6 +5,8 @@ import Station from '../../classes/Station.js';
 import StationData from '../../classes/StationData.js';
 import { DateTime } from 'luxon';
 import { selectSelectedDate, selectCityDataStatus, selectIsToday } from './selectedItemSelectors.js';
+import type { YearlyMeanByDayByStationId } from '../../classes/YearlyMeanByDay.js';
+import type { ReferenceYearlyHourlyInterpolatedByDayByStationId } from '../../classes/ReferenceYearlyHourlyInterpolatedByDay.js';
 
 /**
  * Granular selectors for correlated city-station-data across all cities.
@@ -33,6 +35,15 @@ const selectDailyRecentByDate = (state: RootState) => {
     // The factory returns data directly for keyed state
     return state.dailyRecentByDate.data as Record<string, Record<string, any>> | undefined;
 };
+
+// Cache for StationData instances to avoid recreating on every date change
+const stationDataCache = new Map<string, StationData>();
+
+const selectYearlyMeanByDayData = (state: RootState) => state.yearlyMeanByDay.data as YearlyMeanByDayByStationId | undefined;
+const selectYearlyMeanByDayStatus = (state: RootState) => state.yearlyMeanByDay.status;
+const selectReferenceHourlyData = (state: RootState) => state.referenceYearlyHourlyInterpolatedByDay.data as ReferenceYearlyHourlyInterpolatedByDayByStationId | undefined;
+const selectReferenceHourlyDataStatus = (state: RootState) => state.referenceYearlyHourlyInterpolatedByDay.status;
+const selectReferenceHourlyContext = (state: RootState) => (state.referenceYearlyHourlyInterpolatedByDay as any).context;
 
 // ============================================================================
 // Derived selectors
@@ -114,35 +125,42 @@ const selectAllStationDataForDate = createSelector(
         const selectedDateLuxon = DateTime.fromISO(selectedDate);
 
         if (isToday) {
-            // Use live data for today
             if (!liveData) return null;
-
-            return Object.fromEntries(
-                Object.entries(liveData).map(([stationId, dataJSON]) => [
-                    stationId,
-                    StationData.fromJSON(dataJSON as any)
-                ])
-            );
+            const result: Record<string, StationData> = {};
+            for (const [stationId, dataJSON] of Object.entries(liveData)) {
+                const dateStr = (dataJSON as any).date || selectedDateLuxon.toFormat('yyyyLLdd');
+                const cacheKey = `${stationId}|${dateStr}|live`;
+                let sd = stationDataCache.get(cacheKey);
+                if (!sd) {
+                    sd = StationData.fromJSON(dataJSON as any);
+                    stationDataCache.set(cacheKey, sd);
+                }
+                result[stationId] = sd;
+            }
+            return result;
         } else {
-            // Use daily recent data for past dates
             const dateKey = `${selectedDateLuxon.year}-${String(selectedDateLuxon.month).padStart(2, '0')}-${String(selectedDateLuxon.day).padStart(2, '0')}`;
             const dateData = dailyRecentByDate?.[dateKey];
-
             if (!dateData) return null;
-
-            return Object.fromEntries(
-                Object.entries(dateData).map(([stationId, data]) => [
-                    stationId,
-                    new StationData(
+            const result: Record<string, StationData> = {};
+            for (const [stationId, data] of Object.entries(dateData)) {
+                const dateStr = selectedDateLuxon.toFormat('yyyyLLdd');
+                const cacheKey = `${stationId}|${dateStr}|hist`;
+                let sd = stationDataCache.get(cacheKey);
+                if (!sd) {
+                    sd = new StationData(
                         stationId,
-                        selectedDateLuxon.toFormat('yyyyLLdd'),
+                        dateStr,
                         (data as any).meanTemperature,
                         (data as any).minTemperature,
                         (data as any).maxTemperature,
                         (data as any).meanHumidity,
-                    )
-                ])
-            );
+                    );
+                    stationDataCache.set(cacheKey, sd);
+                }
+                result[stationId] = sd;
+            }
+            return result;
         }
     }
 );
@@ -173,5 +191,148 @@ export const selectCorrelatedData = createSelector(
         }
 
         return Object.keys(correlatedData).length > 0 ? correlatedData : null;
+    }
+);
+
+// ============================================================================
+// Enhanced selectors with precomputed anomalies for performance
+// ============================================================================
+
+/**
+ * Plot data with precomputed anomalies
+ */
+export interface PlotDatum {
+    cityId: string;
+    cityName: string;
+    cityLat: number;
+    cityLon: number;
+    stationId: string;
+    stationLat: number;
+    stationLon: number;
+    date: string;
+    temperature: number | null;
+    rawTemperature: number | null;
+    rawMaxTemperature: number | null;
+    anomaly: number | null;
+}
+
+// Cache for parsed dates to avoid repeated parsing
+const dateParseCache = new Map<string, DateTime>();
+
+const parseDateCached = (dateString: string): DateTime => {
+    let parsed = dateParseCache.get(dateString);
+    if (!parsed) {
+        parsed = DateTime.fromFormat(dateString, 'dd.MM.yyyy HH:mm', { zone: 'Europe/Berlin' });
+        dateParseCache.set(dateString, parsed);
+    }
+    return parsed;
+};
+
+/**
+ * Precompute plot data with anomalies in the selector layer
+ * This avoids expensive computation in components
+ */
+export const selectPlotDataWithAnomalies = createSelector(
+    [
+        selectCorrelatedData,
+        selectIsToday,
+        selectSelectedDate,
+        selectYearlyMeanByDayData,
+        selectYearlyMeanByDayStatus,
+        selectReferenceHourlyData,
+        selectReferenceHourlyDataStatus,
+        selectReferenceHourlyContext,
+    ],
+    (
+        correlatedData,
+        isToday,
+        selectedDate,
+        yearlyMeanByDayData,
+        yearlyMeanStatus,
+        referenceHourlyData,
+        referenceHourlyStatus,
+        referenceHourlyContext
+    ): PlotDatum[] | null => {
+        // Stable identity cache across recomputations
+        const staticGlobal: any = (selectPlotDataWithAnomalies as any);
+        if (!staticGlobal._cache) {
+            staticGlobal._lastKey = null;
+            staticGlobal._cache = null;
+        }
+
+        if (!correlatedData) return staticGlobal._cache;
+
+        const selectedDateLuxon = DateTime.fromISO(selectedDate);
+        const readinessKeyParts = [
+            selectedDateLuxon.toISODate(),
+            isToday ? 'T' : 'H',
+            yearlyMeanStatus,
+            referenceHourlyStatus,
+        ];
+        const key = readinessKeyParts.join('|');
+
+        // If data not fully ready, return previous cache to avoid new identity
+        const needsHourly = isToday;
+        const hourlyReady = !needsHourly || (referenceHourlyStatus === 'succeeded' && referenceHourlyData && referenceHourlyContext && referenceHourlyContext.month === selectedDateLuxon.month && referenceHourlyContext.day === selectedDateLuxon.day);
+        const dailyReady = !isToday || (yearlyMeanStatus === 'succeeded' && yearlyMeanByDayData);
+        const fullyReady = hourlyReady && dailyReady;
+
+        if (!fullyReady) {
+            return staticGlobal._cache; // keep previous result
+        }
+
+        // If same key and we have cache, reuse it
+        if (staticGlobal._lastKey === key && staticGlobal._cache) {
+            return staticGlobal._cache;
+        }
+
+        if (import.meta.env.MODE === 'development') {
+            console.time('plotData-build');
+        }
+
+        const plotData: PlotDatum[] = Object.values(correlatedData).map(({ city, station, data }) => ({
+            cityId: city.id,
+            cityName: city.name,
+            cityLat: city.lat,
+            cityLon: city.lon,
+            stationId: station.id,
+            stationLat: station.lat,
+            stationLon: station.lon,
+            date: data.date,
+            temperature: isToday ? (data.temperature ?? null) : (data.maxTemperature ?? null),
+            rawTemperature: data.temperature ?? null,
+            rawMaxTemperature: data.maxTemperature ?? null,
+            anomaly: null,
+        }));
+
+        if (isToday) {
+            for (const entry of plotData) {
+                const stationData = referenceHourlyData![entry.stationId];
+                if (!stationData) continue;
+                const parsedDate = parseDateCached(entry.date);
+                if (!parsedDate.isValid) continue;
+                const hourKey = `hour_${parsedDate.hour}` as const;
+                const referenceValue = stationData[hourKey];
+                if (typeof entry.temperature === 'number' && typeof referenceValue === 'number') {
+                    entry.anomaly = entry.temperature - referenceValue;
+                }
+            }
+        } else {
+            for (const entry of plotData) {
+                const reference = yearlyMeanByDayData![entry.stationId]?.tasmax;
+                if (typeof entry.temperature === 'number' && typeof reference === 'number') {
+                    entry.anomaly = entry.temperature - reference;
+                }
+            }
+        }
+
+        staticGlobal._lastKey = key;
+        staticGlobal._cache = plotData;
+
+        if (import.meta.env.MODE === 'development') {
+            console.timeEnd('plotData-build');
+        }
+
+        return plotData;
     }
 );

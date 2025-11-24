@@ -13,7 +13,9 @@ import {
 } from '../selectors/selectedItemSelectors.js';
 import {
     selectCorrelatedData,
+    selectPlotDataWithAnomalies,
     type CorrelatedStationDataMap,
+    type PlotDatum,
 } from '../selectors/correlatedDataSelectors.js';
 
 /**
@@ -30,8 +32,9 @@ export const useSelectedCity = () => useAppSelector(selectSelectedCity);
 export const useSelectedStation = () => useAppSelector(selectSelectedStation);
 export const useSelectedItem = () => useAppSelector(selectSelectedItem);
 export const useCorrelatedData = () => useAppSelector(selectCorrelatedData);
+export const usePlotDataWithAnomalies = () => useAppSelector(selectPlotDataWithAnomalies);
 export const useGeoJSON = () => useAppSelector(selectGeoJSONData);
 export const useGeoJSONStatus = () => useAppSelector(selectGeoJSONStatus);
 
 // Re-export types
-export type { SelectedItem, CorrelatedStationDataMap };
+export type { SelectedItem, CorrelatedStationDataMap, PlotDatum };
