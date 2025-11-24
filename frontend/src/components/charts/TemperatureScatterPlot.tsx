@@ -1,12 +1,14 @@
 /** This file is not yet being used. Do not consider it for any code changes. */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
+import type { CSSProperties } from 'react';
 import * as Plot from "@observablehq/plot";
 import { html } from 'htl';
 import * as d3 from "d3";
 import { getNow } from '../../utils/dateUtils.js';
 import { filterTemperatureDataByDateWindow } from '../../utils/rollingAverageUtils.js';
-import './TemperatureScatterPlot.css';
+import { theme, createStyles } from '../../styles/design-system.js';
+import { useBreakpoint } from '../../hooks/useBreakpoint.js';
 import { selectRollingAverageData } from '../../store/slices/rollingAverageDataSlice.js';
 import { fetchRollingAverageData, selectRollingAverageDataStatus } from '../../store/slices/rollingAverageDataSlice.js';
 import { useSelectedStationId, useSelectedCityName, useSelectedStationData } from '../../store/hooks/hooks.js';
@@ -25,8 +27,31 @@ interface BasePlotEntry {
 
 type PlotEntry = BasePlotEntry & { anomaly: number };
 
+// Pure style computation functions
+const getContainerStyle = (isMobile: boolean): CSSProperties => ({
+    overflow: 'visible',
+    textAlign: 'center',
+    margin: isMobile ? 0 : undefined,
+});
+
+const getErrorStyle = (): CSSProperties => ({
+    padding: theme.spacing.lg,
+    textAlign: 'center',
+    width: '100%',
+    boxSizing: 'border-box',
+    color: '#d32f2f',
+    fontWeight: 500,
+});
+
+const styles = createStyles({
+    plotRef: {
+        overflow: 'visible',
+    },
+});
+
 const TemperatureScatterPlot = () => {
     const dispatch = useAppDispatch();
+    const breakpoint = useBreakpoint();
 
     const containerRef = useRef<HTMLDivElement | null>(null);
     const selectedStationId = useSelectedStationId();
@@ -38,6 +63,8 @@ const TemperatureScatterPlot = () => {
     const rollingAverageDataStatus = useAppSelector(selectRollingAverageDataStatus);
 
     const [error, setError] = useState<string | null>(null);
+
+    const isMobile = breakpoint === 'mobile';
 
     const fromYear = 1951;
     const toYear = 2024;
@@ -309,10 +336,21 @@ const TemperatureScatterPlot = () => {
         }
     }, [rollingAverageData, rollingAverageDataStatus, selectedStationData, selectedCityName, fromYear, toYear, selectedDate]);
 
+    // Memoized computed styles
+    const containerStyle = useMemo(
+        () => getContainerStyle(isMobile),
+        [isMobile]
+    );
+
+    const errorStyle = useMemo(
+        () => getErrorStyle(),
+        []
+    );
+
     return (
-        <div className="temperature-scatter-container">
-            {error && <div className="error-message">{error}</div>}
-            <div ref={containerRef}></div>
+        <div style={containerStyle}>
+            {error && <div style={errorStyle}>{error}</div>}
+            <div ref={containerRef} style={styles.plotRef}></div>
         </div>
     );
 };

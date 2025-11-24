@@ -1,38 +1,78 @@
 import { getAnomalyColor } from '../../utils/TemperatureUtils.js';
 import type { ColorSchemeName } from '../../utils/TemperatureUtils.js';
-import './MapLegend.css';
+import { theme, createStyles } from '../../styles/design-system.js';
 
 interface MapLegendProps {
     title?: string;
     colorScheme?: ColorSchemeName;
 }
 
+const styles = createStyles({
+    container: {
+        width: 300,
+        position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        marginTop: 10,
+        color: theme.colors.text,
+    },
+    title: {
+        marginBottom: 5,
+        fontSize: '0.8em',
+    },
+    colorsContainer: {
+        display: 'flex',
+        width: '100%',
+        height: 12,
+        marginBottom: 4,
+        border: '1px solid #ccc',
+        borderRadius: 3,
+    },
+    colorBox: {
+        flex: 1,
+        height: '100%',
+    },
+    labelsContainer: {
+        display: 'flex',
+        width: '100%',
+        height: '1em',
+    },
+    label: {
+        flex: 1,
+        fontSize: '0.8em',
+        textAlign: 'center',
+    },
+});
+
 const MapLegend = ({ title, colorScheme = 'BlueWhiteRed' }: MapLegendProps) => {
     // Create an array from -10 to +10 with steps of 2
     const anomalyValues = Array.from({ length: 11 }, (_, i) => (i * 2) - 10);
 
     return (
-        <div className="map-legend">
+        <div style={styles.container}>
             {title && (
-                <div className="map-legend-title">
+                <div style={styles.title}>
                     {title}
                 </div>
             )}
-            <div className="map-legend-colors">
+            <div style={styles.colorsContainer}>
                 {anomalyValues.map(value => (
                     <div
                         key={`color-${value}`}
-                        className="map-legend-color-box"
-                        style={{ backgroundColor: getAnomalyColor(value, colorScheme) }}
+                        style={{
+                            ...styles.colorBox,
+                            backgroundColor: getAnomalyColor(value, colorScheme)
+                        }}
                     />
                 ))}
             </div>
 
-            <div className="map-legend-labels">
+            <div style={styles.labelsContainer}>
                 {anomalyValues.map(value => (
                     <div
                         key={`label-${value}`}
-                        className="map-legend-label"
+                        style={styles.label}
                     >
                         {value}
                     </div>

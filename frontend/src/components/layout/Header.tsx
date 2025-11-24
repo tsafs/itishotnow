@@ -1,14 +1,93 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import type { CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import StationSearch from '../search/StationSearch.js';
 import DateSelection from '../dateSelection/DateSelection.js';
-import './Header.css';
+import { createStyles } from '../../styles/design-system.js';
+import { useBreakpoint } from '../../hooks/useBreakpoint.js';
+
+// Pure style computation functions
+const getHeaderStyle = (isVisible: boolean): CSSProperties => ({
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fefefe',
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+    zIndex: 1100,
+    transition: 'transform 0.3s ease-in-out, opacity 0.3s ease-in-out',
+    transform: isVisible ? 'translateY(0)' : 'translateY(-100%)',
+    opacity: isVisible ? 1 : 0,
+    pointerEvents: isVisible ? 'auto' : 'none',
+});
+
+const getContainerStyle = (isMobile: boolean): CSSProperties => ({
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: isMobile ? 10 : 50,
+    padding: isMobile ? '8px 10px' : '10px 20px',
+    maxWidth: 1200,
+    margin: '0 auto',
+    flexDirection: isMobile ? 'column' : 'row',
+});
+
+const getTitleStyle = (breakpoint: 'mobile' | 'tablet' | 'desktop'): CSSProperties => ({
+    fontSize: breakpoint === 'mobile' ? '1.2rem' : '1.5rem',
+    margin: 0,
+    fontWeight: 600,
+});
+
+const styles = createStyles({
+    link: {
+        textDecoration: 'none',
+        color: 'inherit',
+    },
+    menuContainer: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        gap: 10,
+    },
+    headerSearch: {
+        width: 300,
+    },
+    headerSearchMobile: {
+        width: '100%',
+    },
+});
 
 const Header = () => {
+    const breakpoint = useBreakpoint();
+    const isMobile = breakpoint === 'mobile';
     const [isVisible, setIsVisible] = useState(true);
     const [lastScrollY, setLastScrollY] = useState(0);
     const [scrollUpDistance, setScrollUpDistance] = useState(0);
     const scrollUpThreshold = 100;
+
+    // Memoized computed styles
+    const headerStyle = useMemo(
+        () => getHeaderStyle(isVisible),
+        [isVisible]
+    );
+
+    const containerStyle = useMemo(
+        () => getContainerStyle(isMobile),
+        [isMobile]
+    );
+
+    const titleStyle = useMemo(
+        () => getTitleStyle(breakpoint),
+        [breakpoint]
+    );
+
+    const searchStyle = useMemo(
+        () => ({
+            ...styles.headerSearch,
+            ...(isMobile && styles.headerSearchMobile),
+        }),
+        [isMobile]
+    );
 
     useEffect(() => {
         const controlHeader = () => {
@@ -43,16 +122,16 @@ const Header = () => {
     }, [lastScrollY, scrollUpDistance]);
 
     return (
-        <header className={`site-header ${isVisible ? 'visible' : 'hidden'}`}>
-            <div className="header-container">
-                <Link to="/">
-                    <h1 className="site-title">Ist es jetzt wirklich&nbsp;warm?</h1>
+        <header style={headerStyle}>
+            <div style={containerStyle}>
+                <Link to="/" style={styles.link}>
+                    <h1 style={titleStyle}>Ist es jetzt wirklich&nbsp;warm?</h1>
                 </Link>
-                <div className="menu-container">
-                    <div className="header-date-selection">
+                <div style={styles.menuContainer}>
+                    <div>
                         <DateSelection />
                     </div>
-                    <div className="header-search">
+                    <div style={searchStyle}>
                         <StationSearch />
                     </div>
                 </div>

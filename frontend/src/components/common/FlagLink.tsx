@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import './FlagLink.css';
+import { createStyles } from '../../styles/design-system.js';
 
 interface FlagLinkProps {
     url: string;
@@ -7,6 +7,32 @@ interface FlagLinkProps {
     title: string;
     customStyle?: CSSProperties;
 }
+
+const styles = createStyles({
+    link: {
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        textDecoration: 'none',
+        color: 'inherit',
+        transition: 'transform 0.2s ease',
+    },
+    flag: {
+        width: 60,
+        height: 40,
+        marginBottom: '0.5rem',
+        borderRadius: 4,
+        overflow: 'hidden',
+        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.2)',
+    },
+    flagImage: {
+        width: '100%',
+        height: '100%',
+    },
+    title: {
+        fontSize: '0.9rem',
+    },
+});
 
 const FlagLink = ({ url, flagImage, title, customStyle }: FlagLinkProps) => {
     const flagStyle: CSSProperties | undefined = customStyle ?? (
@@ -20,14 +46,23 @@ const FlagLink = ({ url, flagImage, title, customStyle }: FlagLinkProps) => {
     );
 
     return (
-        <a href={url} target="_blank" rel="noopener noreferrer" className="flag-link">
-            <div className="flag">
+        <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={styles.link}
+            onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-3px)'}
+            onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+        >
+            <div style={styles.flag}>
                 <div
-                    className="flag-image"
-                    style={flagStyle}
+                    style={{
+                        ...styles.flagImage,
+                        ...flagStyle,
+                    }}
                 ></div>
             </div>
-            <span className="flag-title">{title}</span>
+            <span style={styles.title}>{title}</span>
         </a>
     );
 };

@@ -1,15 +1,94 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import type { CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaSearch } from 'react-icons/fa';
 import { PREDEFINED_CITIES } from '../../constants/map.js';
 import { selectCity } from '../../store/slices/selectedCitySlice.js';
 import { selectCities, selectCityDataStatus } from '../../store/slices/cityDataSlice.js';
 import { selectLiveData } from '../../store/slices/liveDataSlice.js';
-import './StationSearch.css';
+import { theme, createStyles } from '../../styles/design-system.js';
+import { useBreakpointDown } from '../../hooks/useBreakpoint.js';
 import { useAppSelector } from '../../store/hooks/useAppSelector.js';
 import { useAppDispatch } from '../../store/hooks/useAppDispatch.js';
 import type { ICity } from '../../classes/City.js';
 import type StationData from '../../classes/StationData.js';
+
+const getDropdownStyle = (isMobile: boolean): CSSProperties => ({
+    position: isMobile ? 'fixed' : 'absolute',
+    top: isMobile ? undefined : 'calc(100% + 5px)',
+    left: isMobile ? '50%' : 0,
+    transform: isMobile ? 'translateX(-50%)' : undefined,
+    width: isMobile ? undefined : '100%',
+    maxWidth: isMobile ? 350 : undefined,
+    maxHeight: 300,
+    overflowY: 'auto',
+    backgroundColor: '#fefefe',
+    border: '1px solid #ccc',
+    borderRadius: '0 0 4px 4px',
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+    zIndex: 1001,
+    animation: isMobile ? 'fadeInMobile 0.2s ease-in-out' : 'fadeIn 0.2s ease-in-out',
+});
+
+const styles = createStyles({
+    container: {
+        position: 'relative',
+        width: '100%',
+    },
+    inputContainer: {
+        position: 'relative',
+        width: '100%',
+    },
+    icon: {
+        position: 'absolute',
+        left: 10,
+        top: '50%',
+        transform: 'translateY(-50%)',
+        color: theme.colors.textLight,
+        zIndex: 2,
+    },
+    input: {
+        position: 'relative',
+        boxSizing: 'border-box',
+        width: '100%',
+        padding: '8px 12px',
+        fontSize: '1rem',
+        border: '1px solid #ccc',
+        borderRadius: 4,
+        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+        backgroundColor: '#fefefe',
+    },
+    inputWithIcon: {
+        paddingLeft: 35,
+    },
+    inputMobile: {
+        fontSize: 16,
+        padding: 10,
+    },
+    item: {
+        padding: '8px 12px',
+        cursor: 'pointer',
+        borderBottom: '1px solid #eee',
+        display: 'flex',
+        justifyContent: 'space-between',
+    },
+    itemMobile: {
+        padding: 10,
+    },
+    itemHover: {
+        backgroundColor: '#f5f5f5',
+    },
+    itemSelected: {
+        backgroundColor: '#f0f0f0',
+    },
+    itemFocused: {
+        backgroundColor: '#e6f2ff',
+    },
+    temperature: {
+        color: theme.colors.textLight,
+        fontSize: '0.9em',
+    },
+});
 
 interface StationSearchProps {
     showSearchIcon?: boolean;
@@ -22,11 +101,14 @@ const StationSearch = ({ showSearchIcon = true }: StationSearchProps) => {
     const cityDataStatus = useAppSelector(selectCityDataStatus);
     const liveData = useAppSelector(selectLiveData);
     const selectedCityId = useAppSelector(state => state.selectedCity.cityId);
+    const isMobile = useBreakpointDown('mobile');
 
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
     const [filteredCities, setFilteredCities] = useState<ICity[]>([]);
     const [focusedIndex, setFocusedIndex] = useState<number>(-1);
+    const [hoveredIndex, setHoveredIndex] = useState<number>(-1);
+    const [inputFocused, setInputFocused] = useState<boolean>(false);
     const searchRef = useRef<HTMLDivElement | null>(null);
     const inputRef = useRef<HTMLInputElement | null>(null);
 
@@ -77,14 +159,10 @@ const StationSearch = ({ showSearchIcon = true }: StationSearchProps) => {
         setFocusedIndex(-1);
     }, [filteredCities]);
 
-    const inputContainerClassName = showSearchIcon
-        ? 'station-search-input-container with-icon'
-        : 'station-search-input-container';
-
     return (
-        <div ref={searchRef} className="station-search-container">
-            <div className={inputContainerClassName}>
-                {showSearchIcon && <FaSearch className="station-search-icon" />}
+        <div ref={searchRef} style={styles.container}>
+            <div style={styles.inputContainer}>
+                {showSearchIcon && <FaSearch style={styles.icon} />}
                 <input
                     ref={inputRef}
                     type="text"
@@ -95,39 +173,61 @@ const StationSearch = ({ showSearchIcon = true }: StationSearchProps) => {
                         setIsDropdownOpen(true);
                     }}
                     onClick={() => setIsDropdownOpen(true)}
-                    className="station-search-input"
+                    onFocus={() => setInputFocused(true)}
+                    onBlur={() => setInputFocused(false)}
+                    style={{
+                        ...styles.input,
+                        ...(showSearchIcon && styles.inputWithIcon),
+                        ...(isMobile && styles.inputMobile),
+                        ...(inputFocused && {
+                            outline: 'none',
+                            borderColor: 'rgb(7, 87, 156)',
+                            boxShadow: 'inset 0 0 0 1px rgb(7, 87, 156), 0 2px 4px rgba(0, 0, 0, 0.1)',
+                        }),
+                    }}
                 />
 
                 {isDropdownOpen && searchTerm && liveData && cityDataStatus === 'succeeded' && (
-                    <div className="station-search-dropdown">
+                    <div style={getDropdownStyle(isMobile)}>
                         {filteredCities.length > 0 ? (
                             filteredCities.map((city, index) => {
                                 const data: StationData | undefined = liveData[city.stationId!];
                                 if (!data) return null;
 
-                                // Only show temperature if city has a nearest station with data
                                 const hasTemperature = data.temperature !== undefined;
-
                                 const isSelected = city.id === selectedCityId;
+                                const isHovered = hoveredIndex === index;
+                                const isFocused = focusedIndex === index;
 
                                 return (
                                     <div
                                         key={city.id}
                                         onClick={() => handleCitySelect(city)}
-                                        className={`station-search-item ${isSelected ?
-                                            'station-search-item-selected' : ''} ${focusedIndex === index ? 'station-search-item-focused' : ''}`}
+                                        onMouseEnter={() => setHoveredIndex(index)}
+                                        onMouseLeave={() => setHoveredIndex(-1)}
+                                        style={{
+                                            ...styles.item,
+                                            ...(isMobile && styles.itemMobile),
+                                            ...(isHovered && styles.itemHover),
+                                            ...(isSelected && styles.itemSelected),
+                                            ...(isFocused && styles.itemFocused),
+                                            ...(index === filteredCities.length - 1 && { borderBottom: 'none' }),
+                                        }}
                                         title={`${city.name}${hasTemperature ? `: ${data.temperature.toFixed(1)}°C` : ''}`}
                                     >
                                         <span>{city.name}</span>
-                                        <span className="station-search-item-temperature">
-                                            {hasTemperature ?
-                                                `${data.temperature.toFixed(1)}°C` : ''}
+                                        <span style={styles.temperature}>
+                                            {hasTemperature ? `${data.temperature.toFixed(1)}°C` : ''}
                                         </span>
                                     </div>
                                 );
                             })
                         ) : (
-                            <div className="station-search-item">
+                            <div style={{
+                                ...styles.item,
+                                ...(isMobile && styles.itemMobile),
+                                cursor: 'default',
+                            }}>
                                 Keine Städte gefunden
                             </div>
                         )}

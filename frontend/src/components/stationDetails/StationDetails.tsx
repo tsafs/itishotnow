@@ -1,15 +1,120 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import type { CSSProperties } from 'react';
 import { analyzeTemperatureAnomaly } from '../../utils/TemperatureUtils.js';
 import { useSelectedItem } from '../../store/hooks/hooks.js';
 import type { SelectedItem } from '../../store/selectors/selectedItemSelectors.js';
 import { CITY_SELECT_TIMEOUT } from '../../constants/page.js';
-import './StationDetails.css';
+import { theme, createStyles } from '../../styles/design-system.js';
+import { useBreakpointDown } from '../../hooks/useBreakpoint.js';
 import { useYearlyMeanByDayData } from '../../store/slices/YearlyMeanByDaySlice.js';
 import { useReferenceYearlyHourlyInterpolatedByDayData } from '../../store/slices/ReferenceYearlyHourlyInterpolatedByDaySlice.js';
 import { useSelectedDate } from '../../store/slices/selectedDateSlice.js';
 import { getNow } from '../../utils/dateUtils.js';
 import { DateTime } from 'luxon';
 import { useAppSelector } from '../../store/hooks/useAppSelector.js';
+
+const getPanelStyle = (isMobile: boolean): CSSProperties => ({
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: isMobile ? 'center' : 'flex-end',
+    maxWidth: 340,
+    borderRight: isMobile ? 'none' : '1px solid #666',
+    borderBottom: isMobile ? '1px solid #666' : 'none',
+    paddingRight: isMobile ? 0 : 20,
+    padding: isMobile ? '0 20px 30px 20px' : undefined,
+    marginTop: isMobile ? 20 : undefined,
+});
+
+const getMetricsStyle = (isMobile: boolean): CSSProperties => ({
+    display: 'flex',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    justifyContent: isMobile ? 'center' : 'flex-end',
+});
+
+const getNameStyle = (isMobile: boolean): CSSProperties => ({
+    margin: 0,
+    fontSize: '1.6rem',
+    fontWeight: 600,
+    color: theme.colors.text,
+    textAlign: isMobile ? 'center' : undefined,
+    width: isMobile ? '100%' : undefined,
+});
+
+const getSubtitleStyle = (isMobile: boolean): CSSProperties => ({
+    fontSize: '0.9rem',
+    marginTop: 5,
+    marginBottom: 30,
+    maxWidth: 300,
+    whiteSpaceCollapse: 'preserve' as any,
+    textWrap: 'pretty' as any,
+    textAlign: isMobile ? 'center' : undefined,
+    width: isMobile ? '100%' : undefined,
+});
+
+const getComparisonStyle = (isMobile: boolean): CSSProperties => ({
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: isMobile ? 'center' : 'flex-end',
+    marginTop: 30,
+    maxWidth: 300,
+});
+
+const placeholderStyle: CSSProperties = {
+    backgroundColor: '#555',
+    color: 'transparent',
+    borderRadius: 4,
+};
+
+const styles = createStyles({
+    placeholder: {
+        fontSize: '1rem',
+        textAlign: 'center',
+        padding: '30px 0',
+    },
+    doubleCell: {
+        display: 'flex',
+        flexDirection: 'row',
+        gap: 10,
+    },
+    metricCell: {
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        padding: 4,
+    },
+    metricCellHighlight: {
+        backgroundColor: '#fefefe',
+        borderRadius: 6,
+        borderLeft: '4px solid rgb(7, 87, 156)',
+        paddingLeft: 10,
+        paddingRight: 10,
+    },
+    metricLabel: {
+        fontSize: '0.8rem',
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
+    },
+    metricValue: {
+        fontSize: '1.2rem',
+        fontWeight: 'bold',
+        marginTop: 4,
+        color: theme.colors.text,
+    },
+    comparisonMessage: {
+        fontSize: '1.4rem',
+        fontWeight: 600,
+        color: theme.colors.text,
+    },
+    anomaly: {
+        marginTop: 5,
+        fontSize: '0.8rem',
+    },
+    nowrap: {
+        whiteSpace: 'nowrap',
+    },
+});
 
 interface AnomalyDetails {
     comparisonMessage: string;
@@ -25,6 +130,7 @@ const StationDetails = () => {
     const referenceYearlyHourlyInterpolatedByDayData = useReferenceYearlyHourlyInterpolatedByDayData();
     const selectedItem = useSelectedItem();
     const selectedDate = useSelectedDate();
+    const isMobile = useBreakpointDown('mobile');
 
     const [item, setItem] = useState<SelectedItem | null>(null);
     const [anomaly, setAnomaly] = useState<number | null>(null);
@@ -154,11 +260,18 @@ const StationDetails = () => {
         setAnomalyDetails(analyzeTemperatureAnomaly(isToday, anomaly));
     }, [anomaly, selectedDate]);
 
+    // Memoized computed styles
+    const panelStyle = useMemo(() => getPanelStyle(isMobile), [isMobile]);
+    const metricsStyle = useMemo(() => getMetricsStyle(isMobile), [isMobile]);
+    const nameStyle = useMemo(() => getNameStyle(isMobile), [isMobile]);
+    const subtitleStyle = useMemo(() => getSubtitleStyle(isMobile), [isMobile]);
+    const comparisonStyle = useMemo(() => getComparisonStyle(isMobile), [isMobile]);
+
     // If no city is selected, show a placeholder
     if (!selectedCityId) {
         return (
-            <div className="station-info-panel">
-                <div className="station-info-placeholder">
+            <div style={panelStyle}>
+                <div style={styles.placeholder}>
                     Klicke auf eine Stadt oder nutze die Suchfunktion um Details anzuzeigen
                 </div>
             </div>
@@ -166,79 +279,79 @@ const StationDetails = () => {
     }
 
     return (
-        <div className="station-info-panel">
-            {item && (<h2 className="station-name">{item.city.name}</h2>)}
-            {!item && (<h2 className="station-name-placeholder">Eine Stadt</h2>)}
+        <div style={panelStyle}>
+            {item && (<h2 style={nameStyle}>{item.city.name}</h2>)}
+            {!item && (<h2 style={{ ...nameStyle, ...placeholderStyle }}>Eine Stadt</h2>)}
 
             {subtitle && (
-                <div className="station-subtitle" dangerouslySetInnerHTML={{ __html: subtitle }} />
+                <div style={subtitleStyle} dangerouslySetInnerHTML={{ __html: subtitle }} />
             )}
             {!subtitle && (
-                <div className="station-subtitle-placeholder">
+                <div style={{ ...subtitleStyle, ...placeholderStyle }}>
                     Wetterstation: Eine-Wetterstation (6km) 88.88.2025 19:20 Uhr
                 </div>
             )}
 
-            <div className="station-metrics">
-                <div className="metric-double-cell">
-                    <div className="metric-cell metric-cell-highlight">
-                        <span className="metric-label">{isToday ? "Zuletzt" : "Mittel"}</span>
+            <div style={metricsStyle}>
+                <div style={styles.doubleCell}>
+                    <div style={{ ...styles.metricCell, ...styles.metricCellHighlight }}>
+                        <span style={styles.metricLabel}>{isToday ? "Zuletzt" : "Mittel"}</span>
                         {item && (
-                            <span className="metric-value">
+                            <span style={styles.metricValue}>
                                 {item.data.temperature !== undefined
                                     ? `${item.data.temperature.toFixed(1)}°C`
                                     : "k. A."}
                             </span>
                         )}
                         {!item && (
-                            <span className="metric-value-placeholder">
+                            <span style={{ ...styles.metricValue, ...placeholderStyle }}>
                                 20.5°C
                             </span>
                         )}
                     </div>
-                    <div className="metric-cell">
-                        <span className="metric-label">Min</span>
+                    <div style={styles.metricCell}>
+                        <span style={styles.metricLabel}>Min</span>
                         {item && (
-                            <span className="metric-value">
+                            <span style={styles.metricValue}>
                                 {item.data.minTemperature !== undefined
                                     ? `${item.data.minTemperature.toFixed(1)}°C`
                                     : "k. A."}
                             </span>
                         )}
                         {!item && (
-                            <span className="metric-value-placeholder">
+                            <span style={{ ...styles.metricValue, ...placeholderStyle }}>
                                 14.1°C
                             </span>
                         )}
                     </div>
                 </div>
-                <div className="metric-double-cell">
-                    <div className="metric-cell">
-                        <span className="metric-label">Max</span>
+                <div style={styles.doubleCell}>
+                    <div style={styles.metricCell}>
+                        <span style={styles.metricLabel}>Max</span>
                         {item && (
-                            <span className="metric-value">
+                            <span style={styles.metricValue}>
                                 {item.data.maxTemperature !== undefined
                                     ? `${item.data.maxTemperature.toFixed(1)}°C`
                                     : "k. A."}
                             </span>
                         )}
                         {!item && (
-                            <span className="metric-value-placeholder">
+                            <span style={{ ...styles.metricValue, ...placeholderStyle }}>
                                 28.1°C
                             </span>
                         )}
                     </div>
-                    <div className="metric-cell">
-                        <span className="metric-label">Luft</span>
+                    <div style={styles.metricCell}>
+                        <span style={styles.metricLabel}>Luft</span>
                         {item && (
-                            <span className="metric-value">
+                            <span style={styles.metricValue}>
                                 {item.data.humidity !== undefined
                                     ? `${item.data.humidity.toFixed(0)}%`
                                     : "k. A."}
                             </span>
                         )}
                         {!item && (
-                            <span className="metric-value-placeholder">
+                            <span style={{ ...styles.metricValue, ...placeholderStyle }}>
                                 64%
                             </span>
                         )}
@@ -246,23 +359,23 @@ const StationDetails = () => {
                 </div>
             </div>
 
-            <div className="temperature-comparison">
+            <div style={comparisonStyle}>
                 {!anomalyDetails && (
                     <>
-                        <div className="message-placeholder">
+                        <div style={{ ...styles.comparisonMessage, ...placeholderStyle }}>
                             Absolut keine Ahnung
                         </div>
-                        <div className="anomaly-placeholder">
+                        <div style={{ ...styles.anomaly, ...placeholderStyle }}>
                             Die maximale Temperatur liegt 3.1&nbsp;°C unter dem historischen&nbsp;Mittelwert.
                         </div>
                     </>
                 )}
                 {anomalyDetails && (
                     <>
-                        <div className="message">
+                        <div style={styles.comparisonMessage}>
                             {anomalyDetails.comparisonMessage}
                         </div>
-                        <span className="anomaly">
+                        <span style={styles.anomaly}>
                             {anomalyDetails.anomalyMessage}
                         </span>
                     </>

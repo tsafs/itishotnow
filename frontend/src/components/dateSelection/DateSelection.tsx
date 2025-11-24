@@ -8,9 +8,90 @@ import { getNow } from '../../utils/dateUtils.js';
 import { useDateRangeForStation } from '../../store/slices/stationDateRangesSlice.js';
 import { useSelectedStationId } from '../../store/hooks/hooks.js';
 import { useSelectedDate } from '../../store/slices/selectedDateSlice.js';
-import './DateSelection.css';
-import { DateTime } from 'luxon'; // Added Luxon
+import { createStyles } from '../../styles/design-system.js';
+import { useBreakpointDown } from '../../hooks/useBreakpoint.js';
+import { DateTime } from 'luxon';
 import { useAppDispatch } from '../../store/hooks/useAppDispatch.js';
+
+const styles = createStyles({
+    container: {
+        position: 'relative',
+        display: 'inline-block',
+    },
+    row: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+    },
+    calendarIconContainer: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 9,
+        cursor: 'pointer',
+        transition: 'all 0.2s',
+        position: 'relative',
+        boxSizing: 'border-box',
+        border: '1px solid #ccc',
+        borderRadius: 4,
+        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+        backgroundColor: '#fefefe',
+    },
+    calendarIconContainerHover: {
+        backgroundColor: '#e0e0e0',
+    },
+    calendarIconContainerActive: {
+        backgroundColor: 'rgb(7, 87, 156)',
+        borderColor: 'rgb(7, 87, 156)',
+    },
+    icon: {
+        fontSize: '1rem',
+        color: '#555',
+    },
+    iconActive: {
+        color: 'rgb(7, 87, 156)',
+    },
+    iconInActiveContainer: {
+        color: '#f8f9fa',
+    },
+    toggleButton: {
+        cursor: 'pointer',
+        transition: 'all 0.2s',
+        position: 'relative',
+        boxSizing: 'border-box',
+        padding: '6.5px 12px',
+        fontSize: '1rem',
+        border: '1px solid #ccc',
+        borderRadius: 4,
+        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+        backgroundColor: '#fefefe',
+    },
+    toggleButtonHover: {
+        backgroundColor: '#f8f9fa',
+    },
+    toggleButtonActive: {
+        backgroundColor: 'rgb(7, 87, 156)',
+        color: '#f8f9fa',
+        borderColor: 'rgb(7, 87, 156)',
+    },
+    popup: {
+        position: 'absolute',
+        top: 'calc(100% + 5px)',
+        left: 0,
+        backgroundColor: '#f8f9fa',
+        borderRadius: 6,
+        boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
+        padding: 15,
+        zIndex: 1000,
+        minWidth: 250,
+    },
+    popupMobile: {
+        position: 'fixed',
+        left: '50%',
+        transform: 'translate(-50%)',
+        maxWidth: 350,
+    },
+});
 
 /**
  * Component for selecting "Yesterday", "Today", or an arbitrary date of a preconfigured selection of years.
@@ -27,12 +108,15 @@ const DateSelection = () => {
     const selectedDate = useSelectedDate();
     const selectedStationId = useSelectedStationId();
     const dateRange = useDateRangeForStation(selectedStationId);
+    const isMobile = useBreakpointDown('mobile');
 
     const [isYesterdaySelected, setIsYesterdaySelected] = useState<boolean>(false);
     const [isTodaySelected, setIsTodaySelected] = useState<boolean>(true);
     const [isCalendarOpen, setIsCalendarOpen] = useState<boolean>(false);
     const [recentlyClosed, setRecentlyClosed] = useState<boolean>(false);
     const [renderYesterdayButton, setRenderYesterdayButton] = useState<boolean>(false);
+
+    const [hoveredButton, setHoveredButton] = useState<'yesterday' | 'today' | 'calendar' | null>(null);
 
     const [startMonth, setStartMonth] = useState<Date | null>(null);
     const [endMonth, setEndMonth] = useState<Date | null>(null);
@@ -165,33 +249,62 @@ const DateSelection = () => {
     }, []);
 
     return (
-        <div className="date-select-container">
-            <div className="date-selection-row">
+        <div style={styles.container}>
+            <div style={styles.row}>
                 {renderYesterdayButton && (
                     <div
-                        className={`date-toggle-button ${isYesterdaySelected ? 'active' : ''}`}
+                        style={{
+                            ...styles.toggleButton,
+                            ...(hoveredButton === 'yesterday' && !isYesterdaySelected && styles.toggleButtonHover),
+                            ...(isYesterdaySelected && styles.toggleButtonActive),
+                        }}
                         onClick={handleYesterdayClick}
+                        onMouseEnter={() => setHoveredButton('yesterday')}
+                        onMouseLeave={() => setHoveredButton(null)}
                     >
                         Gestern
                     </div>)
                 }
 
                 <div
-                    className={`date-toggle-button ${isTodaySelected ? 'active' : ''}`}
+                    style={{
+                        ...styles.toggleButton,
+                        ...(hoveredButton === 'today' && !isTodaySelected && styles.toggleButtonHover),
+                        ...(isTodaySelected && styles.toggleButtonActive),
+                    }}
                     onClick={handleTodayClick}
+                    onMouseEnter={() => setHoveredButton('today')}
+                    onMouseLeave={() => setHoveredButton(null)}
                 >
                     Heute
                 </div>
 
                 <div
-                    className={`calendar-icon-container ${!isYesterdaySelected && !isTodaySelected ? 'active' : ''}`}
-                    onClick={toggleCalendar}>
-                    <FaCalendarDay className={`date-select-icon ${isCalendarOpen ? 'active' : ''}`} />
+                    style={{
+                        ...styles.calendarIconContainer,
+                        ...(hoveredButton === 'calendar' && !(!isYesterdaySelected && !isTodaySelected) && styles.calendarIconContainerHover),
+                        ...(!isYesterdaySelected && !isTodaySelected && styles.calendarIconContainerActive),
+                    }}
+                    onClick={toggleCalendar}
+                    onMouseEnter={() => setHoveredButton('calendar')}
+                    onMouseLeave={() => setHoveredButton(null)}
+                >
+                    <FaCalendarDay style={{
+                        ...styles.icon,
+                        ...(isCalendarOpen && styles.iconActive),
+                        ...(!isYesterdaySelected && !isTodaySelected && styles.iconInActiveContainer),
+                    }} />
                 </div>
             </div>
 
             {isCalendarOpen && startMonth && endMonth && disabledBefore && disabledAfter && (
-                <div ref={dateSelectRef} className="date-picker-popup">
+                <div
+                    ref={dateSelectRef}
+                    style={{
+                        ...styles.popup,
+                        ...(isMobile && styles.popupMobile),
+                    }}
+                >
                     <DayPicker
                         mode="single"
                         selected={selectedDate ? DateTime.fromISO(selectedDate).toJSDate() : undefined}

@@ -36,8 +36,6 @@ interface PlotDatum {
     anomaly?: number | null;
 }
 
-type PlotFigure = ReturnType<typeof Plot.plot>;
-
 const getDataForPlot = (
     correlatedData: CorrelatedStationDataMap,
     temperatureType: TemperatureMetric = 'temperature',
