@@ -35,7 +35,7 @@ export interface SimpleDataState<TData> extends BaseState {
 export interface KeyedDataState<TData, TKey extends string = string> extends BaseState {
     data: Record<TKey, TData>;
     /** Tracks loading state per key */
-    loadingKeys: Set<TKey>;
+    loadingKeys: TKey[];
 }
 
 /**

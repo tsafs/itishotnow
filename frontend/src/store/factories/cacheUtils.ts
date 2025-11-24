@@ -75,7 +75,7 @@ export const shouldFetchFromCacheKeyed = <TData, TKey extends string = string>(
     }
 
     // Currently loading this key
-    if (state.loadingKeys.has(key)) {
+    if (state.loadingKeys.includes(key)) {
         return true; // Don't re-fetch while loading
     }
 

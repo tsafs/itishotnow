@@ -270,11 +270,12 @@ function createInitialState<TData, TShape extends StateShape, TContext, TKey ext
             } as StateForShape<TShape, TData, TContext, TKey>;
 
         case 'keyed':
-            return {
+            const keyedState: KeyedDataState<TData, TKey> = {
                 ...baseState,
                 data: {} as Record<TKey, TData>,
-                loadingKeys: new Set<TKey>(),
-            } as StateForShape<TShape, TData, TContext, TKey>;
+                loadingKeys: [] as TKey[],
+            };
+            return keyedState as StateForShape<TShape, TData, TContext, TKey>;
 
         case 'with-context':
             return {
@@ -380,7 +381,9 @@ function handlePending<TArgs, TKey extends string>(
 
     if (stateShape === 'keyed' && cache?.keyExtractor) {
         const key = cache.keyExtractor(args) as TKey;
-        state.loadingKeys.add(key);
+        if (!state.loadingKeys.includes(key)) {
+            state.loadingKeys.push(key);
+        }
     }
 }
 
@@ -412,7 +415,7 @@ function handleFulfilled<TData, TArgs, TContext, TKey extends string>(
             if (cache?.keyExtractor) {
                 const key = cache.keyExtractor(args) as TKey;
                 state.data[key] = payload;
-                state.loadingKeys.delete(key);
+                state.loadingKeys = state.loadingKeys.filter((k: TKey) => k !== key);
                 if (sliceName) {
                     setCacheMetadataKeyed(sliceName, key);
                 }
@@ -447,7 +450,7 @@ function handleRejected<TArgs, TKey extends string>(
 
     if (stateShape === 'keyed' && cache?.keyExtractor) {
         const key = cache.keyExtractor(args) as TKey;
-        state.loadingKeys.delete(key);
+        state.loadingKeys = state.loadingKeys.filter((k: TKey) => k !== key);
     }
 }
 

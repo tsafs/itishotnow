@@ -185,7 +185,7 @@ export const {
 ```typescript
 {
     data: Record<TKey, TData>;
-    loadingKeys: Set<TKey>;
+    loadingKeys: TKey[]; // Array of keys currently loading
     status: 'idle' | 'loading' | 'succeeded' | 'failed';
     error: string | undefined;
 }
