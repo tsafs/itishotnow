@@ -35,7 +35,7 @@ const { slice, actions, selectors } = createDataSlice<LiveDataResponse, void, 's
     stateShape: 'simple',
     cache: {
         strategy: 'all',
-        ttl: 60000 // 1 minute
+        ttl: 1000 * 60 * 60 // 1 hour
     }
 });
 
