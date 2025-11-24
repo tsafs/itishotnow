@@ -21,7 +21,6 @@ import { useAppDispatch } from './store/hooks/useAppDispatch';
 // Lazy load components
 const CountryHeatmapPlot = React.lazy(() => import('./components/analysis/CountryHeatmapPlot/View'));
 const HistoricalAnalysis = React.lazy(() => import('./components/analysis/HistoricalAnalysis'));
-// const TemperatureDistributionAnalysis = React.lazy(() => import('./components/analysis/TemperatureDistributionAnalysis'));
 const ImpressumPage = React.lazy(() => import('./pages/ImpressumPage'));
 const Closing = React.lazy(() => import('./components/closing/Closing'));
 
