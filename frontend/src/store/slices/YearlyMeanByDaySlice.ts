@@ -18,7 +18,7 @@ export interface YearlyMeanByDayContext {
 /**
  * Create yearlyMeanByDay slice using factory with context-based caching
  */
-const { slice, actions, selectors, hooks } = createDataSlice<
+const { slice, actions, selectors } = createDataSlice<
     YearlyMeanByDayByStationId,
     FetchYearlyMeanByDayArgs,
     'with-context',

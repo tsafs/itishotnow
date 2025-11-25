@@ -17,8 +17,8 @@ import { PREDEFINED_CITIES } from '../../constants/map.js';
 interface StationDataLite {
     stationId: string;
     date: string;
-    temperature: number | null;
-    maxTemperature: number | null;
+    temperature: number | undefined;
+    maxTemperature: number | undefined;
 }
 
 interface CorrelatedPoint {
@@ -30,8 +30,8 @@ interface CorrelatedPoint {
     stationLat: number;
     stationLon: number;
     date: string;
-    temperature: number | null; // mean / live temperature
-    maxTemperature: number | null; // max temp (historical tasmax)
+    temperature: number | undefined; // mean / live temperature
+    maxTemperature: number | undefined; // max temp (historical tasmax)
 }
 
 export interface PlotBaseDatum {
@@ -43,14 +43,14 @@ export interface PlotBaseDatum {
     stationLat: number;
     stationLon: number;
     date: string;
-    temperature: number | null; // chosen display temperature (today: current/live; historical: max)
-    rawTemperature: number | null; // original mean/live value
-    rawMaxTemperature: number | null; // original max value
-    anomaly: null; // placeholder for later enrichment stage
+    temperature: number | undefined; // chosen display temperature (today: current/live; historical: max)
+    rawTemperature: number | undefined; // original mean/live value
+    rawMaxTemperature: number | undefined; // original max value
+    anomaly: undefined; // placeholder for later enrichment stage
 }
 
 export interface PlotDatum extends Omit<PlotBaseDatum, 'anomaly'> {
-    anomaly: number | null;
+    anomaly: number | undefined;
 }
 
 // ---------------------------------------------
@@ -150,19 +150,7 @@ export const selectCorrelatedPoints = createSelector(
 export const selectPlotBaseData = createSelector(
     [selectCorrelatedPoints, selectIsToday],
     (points, isToday): PlotBaseDatum[] | null => {
-        // Closure-based cache on selector function
-        const self: any = selectPlotBaseData as any;
-        if (!self._cache) {
-            self._cache = null;
-            self._lastKey = null;
-        }
-
-        if (!points) return self._cache;
-
-        const key = `${isToday ? 'T' : 'H'}|${points.length}`;
-        if (self._lastKey === key && self._cache) {
-            return self._cache;
-        }
+        if (!points) return null;
 
         if (import.meta.env.MODE === 'development') {
             console.time('plotBaseData-build');
@@ -179,15 +167,12 @@ export const selectPlotBaseData = createSelector(
                 stationLat: p.stationLat,
                 stationLon: p.stationLon,
                 date: p.date,
-                temperature: typeof displayTemp === 'number' ? displayTemp : null,
+                temperature: typeof displayTemp === 'number' ? displayTemp : undefined,
                 rawTemperature: p.temperature,
                 rawMaxTemperature: p.maxTemperature,
-                anomaly: null,
+                anomaly: undefined,
             };
         });
-
-        self._lastKey = key;
-        self._cache = data;
 
         if (import.meta.env.MODE === 'development') {
             console.timeEnd('plotBaseData-build');
@@ -219,36 +204,37 @@ export const selectPlotAnomaliesToday = createSelector(
         hourlyStatus,
         hourlyContext
     ): Record<string, number> | null => {
-        const self: any = selectPlotAnomaliesToday as any;
-        if (!self._cache) {
-            self._cache = null;
-            self._lastKey = null;
-        }
         if (!isToday) return null;
-        if (!baseData) return self._cache;
+        if (!baseData) return null;
+
         const selectedDateLuxon = DateTime.fromISO(selectedDate);
-        const hourlyReady = hourlyStatus === 'succeeded' && hourlyData && hourlyContext && hourlyContext.month === selectedDateLuxon.month && hourlyContext.day === selectedDateLuxon.day;
-        const key = `T|${hourlyStatus}|${hourlyContext?.month}-${hourlyContext?.day}|${baseData.length}`;
-        if (!hourlyReady) return self._cache; // keep previous until ready
-        if (self._lastKey === key && self._cache) return self._cache;
+
+        const hourlyReady =
+            hourlyStatus === 'succeeded' &&
+            hourlyData &&
+            hourlyContext &&
+            hourlyContext.month === selectedDateLuxon.month &&
+            hourlyContext.day === selectedDateLuxon.day;
+        if (!hourlyReady) return null; // keep previous until ready
 
         if (import.meta.env.MODE === 'development') {
             console.time('plotAnomaliesToday-build');
         }
+
         const map: Record<string, number> = {};
         for (const d of baseData) {
             if (typeof d.rawTemperature !== 'number') continue;
+
             // date format assumed 'dd.MM.yyyy HH:mm'
             const hourStr = d.date.length >= 13 ? d.date.slice(11, 13) : '';
             const hour = Number.parseInt(hourStr, 10);
             if (Number.isNaN(hour)) continue;
+
             const ref = hourlyData![d.stationId]?.[`hour_${hour}`];
             if (typeof ref === 'number') {
                 map[d.stationId] = d.rawTemperature - ref;
             }
         }
-        self._lastKey = key;
-        self._cache = map;
         if (import.meta.env.MODE === 'development') {
             console.timeEnd('plotAnomaliesToday-build');
         }
@@ -262,27 +248,18 @@ export const selectPlotAnomaliesHistorical = createSelector(
         selectPlotBaseData,
         selectIsToday,
         selectYearlyMeanByDayData,
-        selectYearlyMeanByDayStatus,
-        selectSelectedDate,
+        selectYearlyMeanByDayStatus
     ],
     (
         baseData,
         isToday,
         yearlyMeanData,
-        yearlyMeanStatus,
-        selectedDate
+        yearlyMeanStatus
     ): Record<string, number> | null => {
-        const self: any = selectPlotAnomaliesHistorical as any;
-        if (!self._cache) {
-            self._cache = null;
-            self._lastKey = null;
-        }
         if (isToday) return null;
-        if (!baseData) return self._cache;
+        if (!baseData) return null;
         const ready = yearlyMeanStatus === 'succeeded' && yearlyMeanData;
-        const key = `H|${yearlyMeanStatus}|${selectedDate}|${baseData.length}`;
-        if (!ready) return self._cache;
-        if (self._lastKey === key && self._cache) return self._cache;
+        if (!ready) return null;
         if (import.meta.env.MODE === 'development') {
             console.time('plotAnomaliesHistorical-build');
         }
@@ -294,8 +271,6 @@ export const selectPlotAnomaliesHistorical = createSelector(
                 map[d.stationId] = d.temperature - ref;
             }
         }
-        self._lastKey = key;
-        self._cache = map;
         if (import.meta.env.MODE === 'development') {
             console.timeEnd('plotAnomaliesHistorical-build');
         }
@@ -319,44 +294,15 @@ export const selectPlotData = createSelector(
         anomaliesHistorical,
         isToday
     ): PlotDatum[] | null => {
-        const self: any = selectPlotData as any;
-        if (!self._cache) {
-            self._cache = null;
-            self._lastBaseRef = null;
-            self._lastAnomRef = null;
-        }
-
         if (!baseData) return null;
 
         const anomalyMap = isToday ? anomaliesToday : anomaliesHistorical;
-
-        // If anomaly map not ready yet, return base with anomaly=null but reuse prior if possible
-        if (!anomalyMap) {
-            // If previous cache already corresponds to this baseData and had null anomalies, reuse
-            if (self._lastBaseRef === baseData && self._lastAnomRef == null && self._cache) {
-                return self._cache;
-            }
-            const merged: PlotDatum[] = baseData.map(d => ({ ...d, anomaly: null }));
-            self._cache = merged;
-            self._lastBaseRef = baseData;
-            self._lastAnomRef = null;
-            return merged;
-        }
-
-        // Structural sharing if unchanged
-        if (self._lastBaseRef === baseData && self._lastAnomRef === anomalyMap && self._cache) {
-            return self._cache;
-        }
 
         if (import.meta.env.MODE === 'development') {
             console.time('plotData-merge-build');
         }
 
-        const merged: PlotDatum[] = baseData.map(d => ({ ...d, anomaly: anomalyMap[d.stationId] ?? null }));
-
-        self._cache = merged;
-        self._lastBaseRef = baseData;
-        self._lastAnomRef = anomalyMap;
+        const merged: PlotDatum[] = baseData.map(d => ({ ...d, anomaly: anomalyMap ? (anomalyMap[d.stationId] ?? undefined) : undefined }));
 
         if (import.meta.env.MODE === 'development') {
             console.timeEnd('plotData-merge-build');
@@ -373,22 +319,9 @@ const CONTOUR_SAMPLE_TARGET = 10000;
 export const selectSampledPlotData = createSelector(
     [selectPlotData],
     (plotData): PlotDatum[] | null => {
-        const self: any = selectSampledPlotData as any;
-        if (!self._cache) {
-            self._cache = null;
-            self._lastKey = null;
-            self._lastPlotRef = null;
-        }
-        if (!plotData) return self._cache;
+        if (!plotData) return null;
         const length = plotData.length;
-        const key = `${length}`;
-        // If the underlying plotData reference changed, resample even if length is the same
-        const plotRefChanged = self._lastPlotRef !== plotData;
-        if (!plotRefChanged && self._lastKey === key && self._cache) return self._cache;
         if (length <= CONTOUR_SAMPLE_TARGET) {
-            self._cache = plotData; // reuse reference (safe read-only)
-            self._lastKey = key;
-            self._lastPlotRef = plotData;
             return plotData;
         }
         const step = Math.ceil(length / CONTOUR_SAMPLE_TARGET);
@@ -397,9 +330,6 @@ export const selectSampledPlotData = createSelector(
             const item = plotData[i];
             if (item) sampled.push(item);
         }
-        self._cache = sampled;
-        self._lastKey = key;
-        self._lastPlotRef = plotData;
         return sampled;
     }
 );

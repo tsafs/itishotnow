@@ -112,9 +112,7 @@ const HistoricalAnalysis = memo(() => {
         // Derive readiness from sampledPlotData presence & geojson status (selector already gates data readiness)
         const isDataPresent = !!sampledPlotData && !!geojson;
         const isNewData = contourDataRef.current !== sampledPlotData || geojsonRef.current !== geojson;
-
         if (!isDataPresent || !isNewData) return;
-        console.log('[heatmap] proceeding with contour build');
 
         contourDataRef.current = sampledPlotData;
         geojsonRef.current = geojson;
@@ -125,8 +123,6 @@ const HistoricalAnalysis = memo(() => {
         }
 
         const build = () => {
-            console.log('[heatmap] building contours now');
-
             const label = 'contour-build';
 
             if (import.meta.env.MODE === 'development') console.time(label);
@@ -164,7 +160,8 @@ const HistoricalAnalysis = memo(() => {
 
     // Render dynamic overlays (city dots, labels, selection) on every relevant state change
     const renderDynamicOverlay = useCallback(() => {
-        if (!cityLabelData || !geojson) return;
+        const isDataPresent = !!cityLabelData && !!geojson;
+        if (!isDataPresent) return;
 
         if (dynamicPlotRef.current) {
             dynamicPlotRef.current.innerHTML = '';
