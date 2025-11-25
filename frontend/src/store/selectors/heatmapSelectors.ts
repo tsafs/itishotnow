@@ -97,8 +97,8 @@ export const selectCorrelatedPoints = createSelector(
                 stationDataLite[stationId] = {
                     stationId,
                     date: dateStr,
-                    temperature: (dataJSON as any).temperature ?? null,
-                    maxTemperature: (dataJSON as any).maxTemperature ?? null,
+                    temperature: (dataJSON as any).temperature ?? undefined,
+                    maxTemperature: (dataJSON as any).maxTemperature ?? undefined,
                 };
             }
         } else {
@@ -110,8 +110,8 @@ export const selectCorrelatedPoints = createSelector(
                 stationDataLite[stationId] = {
                     stationId,
                     date: dateStr,
-                    temperature: (data as any).meanTemperature ?? null,
-                    maxTemperature: (data as any).maxTemperature ?? null,
+                    temperature: (data as any).meanTemperature ?? undefined,
+                    maxTemperature: (data as any).maxTemperature ?? undefined,
                 };
             }
         }

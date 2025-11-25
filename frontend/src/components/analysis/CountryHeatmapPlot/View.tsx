@@ -36,7 +36,6 @@ const getInfoStyle = (isMobile: boolean): CSSProperties => ({
     gap: theme.spacing.lg,
     marginTop: isMobile ? 0 : '30%',
     marginRight: isMobile ? 0 : theme.spacing.lg,
-    margin: isMobile ? 0 : undefined,
 });
 
 const getPlotContainerLeftAlignStyle = (isMobile: boolean): CSSProperties => ({

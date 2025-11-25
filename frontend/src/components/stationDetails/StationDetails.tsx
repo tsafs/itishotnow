@@ -20,8 +20,7 @@ const getPanelStyle = (isMobile: boolean): CSSProperties => ({
     maxWidth: 340,
     borderRight: isMobile ? 'none' : '1px solid #666',
     borderBottom: isMobile ? '1px solid #666' : 'none',
-    paddingRight: isMobile ? 0 : 20,
-    padding: isMobile ? '0 20px 30px 20px' : undefined,
+    padding: isMobile ? '0 20px 30px 20px' : '0 20px 0 0',
     marginTop: isMobile ? 20 : undefined,
 });
 

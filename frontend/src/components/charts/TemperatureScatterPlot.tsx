@@ -16,6 +16,7 @@ import { DateTime } from 'luxon';
 import { useSelectedDate } from '../../store/slices/selectedDateSlice.js';
 import { useAppSelector } from '../../store/hooks/useAppSelector.js';
 import { useAppDispatch } from '../../store/hooks/useAppDispatch.js';
+import './TemperatureScatterPlot.css';
 
 interface BasePlotEntry {
     year: number;
@@ -348,7 +349,7 @@ const TemperatureScatterPlot = () => {
     );
 
     return (
-        <div style={containerStyle}>
+        <div style={containerStyle} className="temperature-scatter-plot-container">
             {error && <div style={errorStyle}>{error}</div>}
             <div ref={containerRef} style={styles.plotRef}></div>
         </div>
