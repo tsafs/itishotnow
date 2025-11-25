@@ -11,11 +11,10 @@ import { useBreakpoint } from '../../../hooks/useBreakpoint.js';
 import { useSelectedDate } from '../../../store/slices/selectedDateSlice.js';
 import { DateTime } from 'luxon';
 import { getNow } from '../../../utils/dateUtils.js';
-import { useAppSelector } from '../../../store/hooks/useAppSelector.js';
 import { useAppDispatch } from '../../../store/hooks/useAppDispatch.js';
 import { fetchGeoJSON } from '../../../store/slices/geoJsonSlice.js';
-import { usePlotDataWithAnomalies, useSelectedCityId, useGeoJSON, useGeoJSONStatus } from '../../../store/hooks/hooks.js';
-import type { PlotDatum } from '../../../store/selectors/correlatedDataSelectors.js';
+import { useSampledPlotData, useCityLabelPlotData, useGeoJSON, useGeoJSONStatus } from '../../../store/hooks/hooks.js';
+import type { PlotDatum, CityLabelDatum } from '../../../store/selectors/heatmapSelectors.js';
 
 // Helper to get fontSize and dy based on breakpoint
 const getTextStyle = (breakpoint: 'mobile' | 'tablet' | 'desktop') => {
@@ -84,15 +83,12 @@ const styles = createStyles({
 const HistoricalAnalysis = memo(() => {
     const dispatch = useAppDispatch();
     const breakpoint = useBreakpoint();
-    const plotData = usePlotDataWithAnomalies();
-    const selectedCityId = useSelectedCityId();
-    const selectedDate = useSelectedDate();
-    const rememberedCityIds = useAppSelector((state) => state.rememberedCities);
 
+    const sampledPlotData = useSampledPlotData();
+    const selectedDate = useSelectedDate();
+    const cityLabelData = useCityLabelPlotData();
     const geojson = useGeoJSON();
     const geojsonStatus = useGeoJSONStatus();
-    // Derive readiness from plotData presence & geojson status (selector already gates data readiness)
-    const ready = !!plotData && geojsonStatus === 'succeeded';
 
     const staticPlotRef = useRef<HTMLDivElement | null>(null);
     const dynamicPlotRef = useRef<HTMLDivElement | null>(null);
@@ -108,26 +104,39 @@ const HistoricalAnalysis = memo(() => {
     }, [geojsonStatus, dispatch]);
 
     // Contour build dedup + idle scheduling
-    const contourKeyRef = useRef<string | null>(null);
+    const contourDataRef = useRef<PlotDatum[] | null>(null);
+    const geojsonRef = useRef<any>(null);
     const idleIdRef = useRef<number | null>(null);
 
     useEffect(() => {
-        if (!ready || !geojson || !plotData) return;
-        const key = `${selectedDate}|${isToday}|${plotData.length}|${geojsonStatus}`;
-        if (contourKeyRef.current === key) return; // already built for this key
-        contourKeyRef.current = key;
+        // Derive readiness from sampledPlotData presence & geojson status (selector already gates data readiness)
+        const isDataPresent = !!sampledPlotData && !!geojson;
+        const isNewData = contourDataRef.current !== sampledPlotData || geojsonRef.current !== geojson;
+
+        if (!isDataPresent || !isNewData) return;
+        console.log('[heatmap] proceeding with contour build');
+
+        contourDataRef.current = sampledPlotData;
+        geojsonRef.current = geojson;
+
         // Cancel previous idle task if any
         if (idleIdRef.current !== null && 'cancelIdleCallback' in window) {
             (window as any).cancelIdleCallback(idleIdRef.current);
         }
+
         const build = () => {
+            console.log('[heatmap] building contours now');
+
             const label = 'contour-build';
+
             if (import.meta.env.MODE === 'development') console.time(label);
+
             const staticPlot = Plot.plot({
                 projection: { type: 'mercator', domain: geojson },
                 color: { type: 'diverging', scheme: 'Turbo', domain: [-10, 10], pivot: 0 },
                 marks: [
-                    Plot.contour(plotData, {
+                    // Use sampled data for contours to reduce computation
+                    Plot.contour(sampledPlotData, {
                         x: 'stationLon',
                         y: 'stationLat',
                         fill: 'anomaly',
@@ -137,34 +146,29 @@ const HistoricalAnalysis = memo(() => {
                     Plot.geo(geojson, { stroke: 'black' }),
                 ],
             });
+
             if (staticPlotRef.current) {
                 staticPlotRef.current.innerHTML = '';
                 staticPlotRef.current.appendChild(staticPlot);
             }
+
             if (import.meta.env.MODE === 'development') console.timeEnd(label);
         };
+
         if ('requestIdleCallback' in window) {
             idleIdRef.current = requestIdleCallback(build, { timeout: 120 });
         } else {
             idleIdRef.current = (window as any).setTimeout(build, 0);
         }
-    }, [ready, plotData, geojson, selectedDate, isToday, geojsonStatus]);
+    }, [sampledPlotData, geojson]);
 
     // Render dynamic overlays (city dots, labels, selection) on every relevant state change
     const renderDynamicOverlay = useCallback(() => {
-        if (!plotData || !geojson || !selectedCityId) return;
+        if (!cityLabelData || !geojson) return;
 
         if (dynamicPlotRef.current) {
             dynamicPlotRef.current.innerHTML = '';
         }
-
-        // Filter out all data points that do not belong to PREDEFINED_CITIES
-        const cityData = plotData.filter((entry) => {
-            const isPredefined = PREDEFINED_CITIES.some((city) => city.toLowerCase() === entry.cityName.toLowerCase());
-            const isRemembered = rememberedCityIds.includes(entry.cityId);
-            const isSelected = entry.cityId === selectedCityId;
-            return isPredefined || isRemembered || isSelected;
-        });
 
         const { fontSize, dy } = getTextStyle(breakpoint);
 
@@ -174,7 +178,7 @@ const HistoricalAnalysis = memo(() => {
                 domain: geojson
             },
             marks: [
-                Plot.dot(cityData, {
+                Plot.dot(cityLabelData, {
                     x: "cityLon",
                     y: "cityLat",
                     r: 3,
@@ -182,7 +186,7 @@ const HistoricalAnalysis = memo(() => {
                     stroke: "white",
                     strokeWidth: 1.5,
                 }),
-                Plot.dot(cityData,
+                Plot.dot(cityLabelData,
                     Plot.pointer({
                         x: "cityLon",
                         y: "cityLat",
@@ -191,7 +195,7 @@ const HistoricalAnalysis = memo(() => {
                         r: 5
                     })
                 ),
-                Plot.text(cityData, {
+                Plot.text(cityLabelData, {
                     x: "cityLon",
                     y: "cityLat",
                     text: (i) => i.cityName,
@@ -206,7 +210,7 @@ const HistoricalAnalysis = memo(() => {
 
         dynamicPlot.addEventListener("input", () => {
             // If no city is selected, do nothing
-            const value = dynamicPlot.value as PlotDatum | null;
+            const value = dynamicPlot.value as CityLabelDatum | null;
             if (!value) return;
 
             // Prevent unnecessary dispatches if the hovered or selected city hasn't changed
@@ -219,10 +223,8 @@ const HistoricalAnalysis = memo(() => {
 
         dynamicPlotRef.current?.appendChild(dynamicPlot as unknown as HTMLElement);
     }, [
-        plotData,
+        cityLabelData,
         geojson,
-        selectedCityId,
-        rememberedCityIds,
         dispatch,
         breakpoint,
     ]);

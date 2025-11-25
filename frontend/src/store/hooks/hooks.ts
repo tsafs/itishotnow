@@ -15,8 +15,15 @@ import {
     selectCorrelatedData,
     selectPlotDataWithAnomalies,
     type CorrelatedStationDataMap,
-    type PlotDatum,
+    type PlotDatum as LegacyPlotDatum,
 } from '../selectors/correlatedDataSelectors.js';
+import {
+    selectPlotData,
+    selectSampledPlotData,
+    selectCityLabelPlotData,
+    type PlotDatum,
+    type CityLabelDatum,
+} from '../selectors/heatmapSelectors.js';
 
 /**
  * Convenience hooks that wrap the granular selectors.
@@ -33,8 +40,11 @@ export const useSelectedStation = () => useAppSelector(selectSelectedStation);
 export const useSelectedItem = () => useAppSelector(selectSelectedItem);
 export const useCorrelatedData = () => useAppSelector(selectCorrelatedData);
 export const usePlotDataWithAnomalies = () => useAppSelector(selectPlotDataWithAnomalies);
+export const usePlotData = () => useAppSelector(selectPlotData);
+export const useSampledPlotData = () => useAppSelector(selectSampledPlotData);
+export const useCityLabelPlotData = () => useAppSelector(selectCityLabelPlotData) as CityLabelDatum[] | null;
 export const useGeoJSON = () => useAppSelector(selectGeoJSONData);
 export const useGeoJSONStatus = () => useAppSelector(selectGeoJSONStatus);
 
 // Re-export types
-export type { SelectedItem, CorrelatedStationDataMap, PlotDatum };
+export type { SelectedItem, CorrelatedStationDataMap, PlotDatum, CityLabelDatum, LegacyPlotDatum };
