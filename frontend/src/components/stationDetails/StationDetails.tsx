@@ -22,6 +22,7 @@ const getPanelStyle = (isMobile: boolean): CSSProperties => ({
     borderBottom: isMobile ? '1px solid #666' : 'none',
     padding: isMobile ? '0 20px 30px 20px' : '0 20px 0 0',
     marginTop: isMobile ? 20 : undefined,
+    color: theme.colors.textLight,
 });
 
 const getMetricsStyle = (isMobile: boolean): CSSProperties => ({

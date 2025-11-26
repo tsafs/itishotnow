@@ -61,9 +61,6 @@ const getPlotStyle = (breakpoint: 'mobile' | 'tablet' | 'desktop'): CSSPropertie
 });
 
 const styles = createStyles({
-    container: {
-        color: theme.colors.textLight,
-    },
     plotContainer: {
         display: 'flex',
         flexDirection: 'column' as const,
@@ -277,13 +274,11 @@ const HistoricalAnalysis = memo(() => {
     );
 
     return (
-        <div style={styles.container}>
-            <PlotView
-                leftContent={leftContent}
-                rightContent={rightContent}
-                leftWidth={45}
-            />
-        </div>
+        <PlotView
+            leftContent={leftContent}
+            rightContent={rightContent}
+            leftWidth={45}
+        />
     );
 });
 

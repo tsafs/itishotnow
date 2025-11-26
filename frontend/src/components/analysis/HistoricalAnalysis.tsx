@@ -1,5 +1,4 @@
 import PlotView from '../common/PlotView/PlotView.js';
-import PlotDescription from '../common/PlotDescription/PlotDescription.js';
 import TemperatureScatterPlot from '../charts/TemperatureScatterPlot.js';
 import { theme, createStyles } from '../../styles/design-system.js';
 import { useSelectedDate } from '../../store/slices/selectedDateSlice.js';
@@ -26,9 +25,8 @@ const HistoricalAnalysis = () => {
     // Format date as "7. Oktober 2025"
     const formattedDate = DateTime.fromISO(selectedDate).setLocale('de').toFormat("d. MMMM yyyy");
 
-    // Description content
-    const description = (
-        <PlotDescription>
+    const descriptionChildren = (
+        <>
             <p>
                 Diese Grafik zeigt, wie warm der <strong>{isToday ? "heutige Tag" : formattedDate}</strong> im Vergleich zu früheren Jahren ist. Sie umfasst Daten seit <strong>1951</strong> für die Wetterstation in {selectedCityNameDisplay}.
             </p>
@@ -43,7 +41,7 @@ const HistoricalAnalysis = () => {
                     Der <strong>aktuelle Wert</strong> basiert auf den bisher heute gemessenen Temperaturen. Das vollständige Bild entsteht daher erst am Ende des Tages oder nach Erreichen der Tageshöchsttemperatur.
                 </p>
             )}
-        </PlotDescription>
+        </>
     );
 
     // Plot content
@@ -59,8 +57,14 @@ const HistoricalAnalysis = () => {
                 <div style={styles.container}>
                     <PlotView
                         leftContent={plot}
-                        rightContent={description}
+                        rightContent={(
+                            <div>
+                                {descriptionChildren}
+                            </div>
+                        )}
                         leftWidth={55}
+                        title={`Historische Tageswerte`}
+                        titleSide="right"
                     />
                 </div>
             )}

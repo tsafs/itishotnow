@@ -28,12 +28,22 @@ const getSideStyle = (
     ...(!isMobile && { flex: ratio }),
 });
 
+const getTitleStyle = (isMobile: boolean, titleSide: 'left' | 'right'): CSSProperties => ({
+    width: '100%',
+    textAlign: isMobile ? 'center' : (titleSide === 'left' ? 'right' : 'left'),
+    fontSize: isMobile ? theme.typography.fontSize.lg : theme.typography.fontSize.xl,
+    fontWeight: theme.typography.fontWeight.bold,
+    marginBottom: theme.spacing.md,
+});
+
 interface PlotViewProps {
     leftContent: ReactNode;
     rightContent: ReactNode;
     className?: string;
     style?: CSSProperties;
     leftWidth?: number; // Percentage (0-100)
+    title?: string; // Optional plot title
+    titleSide?: 'left' | 'right'; // Where to render the title (default: right)
 }
 
 /**
@@ -61,6 +71,8 @@ const PlotView = ({
     className = '',
     style,
     leftWidth = 33,
+    title,
+    titleSide = 'right',
 }: PlotViewProps) => {
     const breakpoint = useBreakpoint();
     const isMobile = breakpoint === 'mobile' || breakpoint === 'tablet';
@@ -83,12 +95,18 @@ const PlotView = ({
         [isMobile, rightWidth]
     );
 
+    const titleStyle = useMemo(() => getTitleStyle(isMobile, titleSide), [isMobile, titleSide]);
+
+    const Title = () => (title ? (<div style={titleStyle}>{title}</div>) : null);
+
     return (
         <div className={className} style={containerStyle}>
             <div style={leftSideStyle}>
+                {title && titleSide === 'left' && <Title />}
                 {leftContent}
             </div>
             <div style={rightSideStyle}>
+                {title && titleSide === 'right' && <Title />}
                 {rightContent}
             </div>
         </div>

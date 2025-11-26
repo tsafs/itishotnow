@@ -18,9 +18,8 @@ import { getNow } from './utils/dateUtils';
 import { useAppSelector } from './store/hooks/useAppSelector';
 import { useAppDispatch } from './store/hooks/useAppDispatch';
 
-// Lazy load components
-const CountryHeatmapPlot = React.lazy(() => import('./components/analysis/CountryHeatmapPlot/View'));
-const HistoricalAnalysis = React.lazy(() => import('./components/analysis/HistoricalAnalysis'));
+// Plot registry-based lazy loading
+import { plots } from './components/plots/registry';
 const ImpressumPage = React.lazy(() => import('./pages/ImpressumPage'));
 const Closing = React.lazy(() => import('./components/closing/Closing'));
 
@@ -120,22 +119,28 @@ function AppContent() {
         dispatch(fetchStationDateRange({ stationId: station.id }));
     }, [dispatch, selectedCityId, cityDataStatus, cities, stationsJSON]);
 
+    const LazyEntries = React.useMemo(() => {
+        return plots.map(p => ({ id: p.id, Comp: React.lazy(p.loader) }));
+    }, []);
+
     const MainPage = React.useMemo(() => {
         return () => (
             <>
                 <Suspense fallback={<div className="loading-container">Loading map data...</div>}>
-                    {!error &&
+                    {!error && (
                         <>
-                            <CountryHeatmapPlot />
-                            <HistoricalAnalysis />
+                            {LazyEntries.map(entry => {
+                                const Comp = entry.Comp;
+                                return <Comp key={entry.id} />;
+                            })}
                         </>
-                    }
+                    )}
                     {error && <div className="error-container">{error}</div>}
                 </Suspense>
                 <Closing />
             </>
         );
-    }, [error]);
+    }, [error, LazyEntries]);
 
     return (
         <div className="app-container">
