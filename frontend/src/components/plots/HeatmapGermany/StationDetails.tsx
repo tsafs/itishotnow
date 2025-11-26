@@ -13,50 +13,48 @@ import { getNow } from '../../../utils/dateUtils.js';
 import { DateTime } from 'luxon';
 import { useAppSelector } from '../../../store/hooks/useAppSelector.js';
 
-const getPanelStyle = (isMobile: boolean): CSSProperties => ({
+const getPanelStyle = (isTablet: boolean): CSSProperties => ({
     display: 'flex',
     flexDirection: 'column',
-    alignItems: isMobile ? 'center' : 'flex-end',
+    alignItems: isTablet ? 'center' : 'flex-end',
     maxWidth: 340,
-    borderRight: isMobile ? 'none' : '1px solid #666',
-    borderBottom: isMobile ? '1px solid #666' : 'none',
-    padding: isMobile ? '0 20px 30px 20px' : '0 20px 0 0',
-    marginTop: isMobile ? 20 : undefined,
+    borderRight: isTablet ? 'none' : '1px solid #666',
+    borderBottom: isTablet ? '1px solid #666' : 'none',
+    padding: isTablet ? '0 20px 30px 20px' : '0 20px 0 0',
+    marginTop: isTablet ? 20 : undefined,
+    textAlign: isTablet ? 'center' : 'right',
     color: theme.colors.textLight,
 });
 
-const getMetricsStyle = (isMobile: boolean): CSSProperties => ({
+const getMetricsStyle = (isTablet: boolean): CSSProperties => ({
     display: 'flex',
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 10,
-    justifyContent: isMobile ? 'center' : 'flex-end',
+    justifyContent: isTablet ? 'center' : 'flex-end',
 });
 
-const getNameStyle = (isMobile: boolean): CSSProperties => ({
+const getNameStyle = (isTablet: boolean): CSSProperties => ({
     margin: 0,
     fontSize: '1.6rem',
     fontWeight: 600,
     color: theme.colors.text,
-    textAlign: isMobile ? 'center' : undefined,
-    width: isMobile ? '100%' : undefined,
+    width: isTablet ? '100%' : undefined,
 });
 
-const getSubtitleStyle = (isMobile: boolean): CSSProperties => ({
+const getSubtitleStyle = (isTablet: boolean): CSSProperties => ({
     fontSize: '0.9rem',
     marginTop: 5,
     marginBottom: 30,
     maxWidth: 300,
     whiteSpaceCollapse: 'preserve' as any,
     textWrap: 'pretty' as any,
-    textAlign: isMobile ? 'center' : undefined,
-    width: isMobile ? '100%' : undefined,
+    width: isTablet ? '100%' : undefined,
 });
 
-const getComparisonStyle = (isMobile: boolean): CSSProperties => ({
+const getComparisonStyle = (isTablet: boolean): CSSProperties => ({
     display: 'flex',
     flexDirection: 'column',
-    alignItems: isMobile ? 'center' : 'flex-end',
+    alignItems: isTablet ? 'center' : 'flex-end',
     marginTop: 30,
     maxWidth: 300,
 });
@@ -83,6 +81,7 @@ const styles = createStyles({
         flexDirection: 'column',
         alignItems: 'center',
         padding: 4,
+        lineHeight: theme.typography.lineHeight.tight
     },
     metricCellHighlight: {
         backgroundColor: '#fefefe',
@@ -130,7 +129,7 @@ const StationDetails = () => {
     const referenceYearlyHourlyInterpolatedByDayData = useReferenceYearlyHourlyInterpolatedByDayData();
     const selectedItem = useSelectedItem();
     const selectedDate = useSelectedDate();
-    const isMobile = useBreakpointDown('mobile');
+    const isTablet = useBreakpointDown('tablet');
 
     const [item, setItem] = useState<SelectedItem | null>(null);
     const [anomaly, setAnomaly] = useState<number | null>(null);
@@ -261,11 +260,11 @@ const StationDetails = () => {
     }, [anomaly, selectedDate]);
 
     // Memoized computed styles
-    const panelStyle = useMemo(() => getPanelStyle(isMobile), [isMobile]);
-    const metricsStyle = useMemo(() => getMetricsStyle(isMobile), [isMobile]);
-    const nameStyle = useMemo(() => getNameStyle(isMobile), [isMobile]);
-    const subtitleStyle = useMemo(() => getSubtitleStyle(isMobile), [isMobile]);
-    const comparisonStyle = useMemo(() => getComparisonStyle(isMobile), [isMobile]);
+    const panelStyle = useMemo(() => getPanelStyle(isTablet), [isTablet]);
+    const metricsStyle = useMemo(() => getMetricsStyle(isTablet), [isTablet]);
+    const nameStyle = useMemo(() => getNameStyle(isTablet), [isTablet]);
+    const subtitleStyle = useMemo(() => getSubtitleStyle(isTablet), [isTablet]);
+    const comparisonStyle = useMemo(() => getComparisonStyle(isTablet), [isTablet]);
 
     // If no city is selected, show a placeholder
     if (!selectedCityId) {

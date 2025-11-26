@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import type { CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaSearch } from 'react-icons/fa';
@@ -30,6 +30,21 @@ const getDropdownStyle = (isMobile: boolean): CSSProperties => ({
     animation: isMobile ? 'fadeInMobile 0.2s ease-in-out' : 'fadeIn 0.2s ease-in-out',
 });
 
+const getSearchInputStyle = (isMobile: boolean, inputFocused: boolean): CSSProperties => ({
+    position: 'relative',
+    boxSizing: 'border-box',
+    width: '100%',
+    padding: '8px 12px',
+    fontSize: isMobile ? 16 : '1rem',
+    border: '1px solid #ccc',
+    borderRadius: 4,
+    backgroundColor: '#fefefe',
+    paddingLeft: 35,
+    outline: inputFocused ? 'none' : undefined,
+    borderColor: 'rgb(7, 87, 156)',
+    boxShadow: inputFocused ? 'inset 0 0 0 1px rgb(7, 87, 156), 0 2px 4px rgba(0, 0, 0, 0.1)' : '0 2px 4px rgba(0, 0, 0, 0.1)',
+});
+
 const styles = createStyles({
     container: {
         position: 'relative',
@@ -46,25 +61,6 @@ const styles = createStyles({
         transform: 'translateY(-50%)',
         color: theme.colors.textLight,
         zIndex: 2,
-    },
-    input: {
-        position: 'relative',
-        boxSizing: 'border-box',
-        width: '100%',
-        padding: '8px 12px',
-        fontSize: '1rem',
-        border: '1px solid #ccc',
-        borderRadius: 4,
-        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-        backgroundColor: '#fefefe',
-        paddingLeft: 35
-    },
-    inputWithIcon: {
-        paddingLeft: 35,
-    },
-    inputMobile: {
-        fontSize: 16,
-        padding: 10,
     },
     item: {
         padding: '8px 12px',
@@ -160,6 +156,11 @@ const StationSearch = ({ showSearchIcon = true }: StationSearchProps) => {
         setFocusedIndex(-1);
     }, [filteredCities]);
 
+    const searchInputStyle = useMemo(
+        () => getSearchInputStyle(isMobile, inputFocused),
+        [isMobile, inputFocused]
+    );
+
     return (
         <div ref={searchRef} style={styles.container}>
             <div style={styles.inputContainer}>
@@ -176,16 +177,7 @@ const StationSearch = ({ showSearchIcon = true }: StationSearchProps) => {
                     onClick={() => setIsDropdownOpen(true)}
                     onFocus={() => setInputFocused(true)}
                     onBlur={() => setInputFocused(false)}
-                    style={{
-                        ...styles.input,
-                        ...(showSearchIcon && styles.inputWithIcon),
-                        ...(isMobile && styles.inputMobile),
-                        ...(inputFocused && {
-                            outline: 'none',
-                            borderColor: 'rgb(7, 87, 156)',
-                            boxShadow: 'inset 0 0 0 1px rgb(7, 87, 156), 0 2px 4px rgba(0, 0, 0, 0.1)',
-                        }),
-                    }}
+                    style={searchInputStyle}
                 />
 
                 {isDropdownOpen && searchTerm && liveData && cityDataStatus === 'succeeded' && (
