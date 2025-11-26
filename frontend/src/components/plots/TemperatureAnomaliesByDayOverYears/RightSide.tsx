@@ -2,8 +2,25 @@ import { useSelectedDate } from '../../../store/slices/selectedDateSlice.js';
 import { DateTime } from 'luxon';
 import { getNow } from '../../../utils/dateUtils.js';
 import { useSelectedCityName } from '../../../store/hooks/hooks.js';
+import { useMemo, type CSSProperties } from 'react';
+import useBreakpoint from '../../../hooks/useBreakpoint.js';
+
+const getContainerStyle = (isMobile: boolean): CSSProperties => ({
+    maxWidth: 600,
+    textAlign: isMobile ? 'justify' : undefined,
+});
 
 const TemperatureAnomaliesByDayOverYearsRightSide = () => {
+    const breakpoint = useBreakpoint();
+    const isMobile = breakpoint === 'mobile' || breakpoint === 'tablet';
+
+
+    // Memoized computed styles
+    const containerStyle = useMemo(
+        () => getContainerStyle(isMobile),
+        [isMobile]
+    );
+
     const selectedCityName = useSelectedCityName();
     const selectedDate = useSelectedDate();
 
@@ -12,7 +29,7 @@ const TemperatureAnomaliesByDayOverYearsRightSide = () => {
     const formattedDate = DateTime.fromISO(selectedDate).setLocale('de').toFormat("d. MMMM yyyy");
 
     return (
-        <div>
+        <div style={containerStyle}>
             <p>
                 Diese Grafik zeigt, wie warm der <strong>{isToday ? "heutige Tag" : formattedDate}</strong> im Vergleich zu früheren Jahren ist. Sie umfasst Daten seit <strong>1951</strong> für die Wetterstation in {selectedCityNameDisplay}.
             </p>

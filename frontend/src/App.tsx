@@ -131,7 +131,7 @@ function AppContent() {
                         <>
                             {LazyEntries.map(entry => {
                                 const Comp = entry.Comp;
-                                return <Comp key={entry.id} darkMode={entry.darkMode} />;
+                                return <Comp key={entry.id} />;
                             })}
                         </>
                     )}

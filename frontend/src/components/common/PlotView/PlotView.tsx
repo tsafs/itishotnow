@@ -12,6 +12,7 @@ const getContainerStyle = (isMobile: boolean, darkMode: boolean, customStyle?: C
     boxSizing: 'border-box',
     marginBottom: theme.spacing.lg,
     backgroundColor: darkMode ? theme.colors.background : theme.colors.backgroundLight,
+    padding: isMobile ? theme.spacing.lg : 0,
     ...customStyle,
 });
 
@@ -35,6 +36,7 @@ const getTitleStyle = (isMobile: boolean, titleSide: 'left' | 'right'): CSSPrope
     fontSize: isMobile ? theme.typography.fontSize.lg : theme.typography.fontSize.xl,
     fontWeight: theme.typography.fontWeight.bold,
     marginBottom: theme.spacing.md,
+    marginTop: isMobile ? theme.spacing.md : 0
 });
 
 interface PlotViewProps {
