@@ -1,9 +1,7 @@
 import { useEffect, useRef, useCallback, useMemo, memo } from 'react';
 import type { CSSProperties } from 'react';
 import * as Plot from "@observablehq/plot";
-import PlotView from '../../common/PlotView/PlotView.js';
 import { selectCity } from '../../../store/slices/selectedCitySlice.js';
-import StationDetails from '../../stationDetails/StationDetails.js';
 import { PREDEFINED_CITIES } from '../../../constants/map.js';
 import MapLegend from '../../d3map/MapLegend.js';
 import { theme, createStyles } from '../../../styles/design-system.js';
@@ -26,17 +24,6 @@ const getTextStyle = (breakpoint: 'mobile' | 'tablet' | 'desktop') => {
         return { fontSize: 12, dy: 8 };
     }
 };
-
-// Pure style computation functions
-const getInfoStyle = (isMobile: boolean): CSSProperties => ({
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: isMobile ? 'center' : 'flex-start',
-    height: '100%',
-    gap: theme.spacing.lg,
-    marginTop: isMobile ? 0 : '30%',
-    marginRight: isMobile ? 0 : theme.spacing.lg,
-});
 
 const getPlotContainerLeftAlignStyle = (isMobile: boolean): CSSProperties => ({
     display: 'flex',
@@ -76,7 +63,7 @@ const styles = createStyles({
     },
 });
 
-const HistoricalAnalysis = memo(() => {
+const HeatmapGermanyRightSide = memo(() => {
     const dispatch = useAppDispatch();
     const breakpoint = useBreakpoint();
 
@@ -226,12 +213,6 @@ const HistoricalAnalysis = memo(() => {
         renderDynamicOverlay();
     }, [renderDynamicOverlay]);
 
-    // Memoized computed styles
-    const infoStyle = useMemo(
-        () => getInfoStyle(isMobile),
-        [isMobile]
-    );
-
     const plotContainerLeftAlignStyle = useMemo(
         () => getPlotContainerLeftAlignStyle(isMobile),
         [isMobile]
@@ -247,8 +228,7 @@ const HistoricalAnalysis = memo(() => {
         [breakpoint]
     );
 
-    // Right side content with the plot
-    const rightContent = (
+    return (
         <div style={plotContainerLeftAlignStyle}>
             <div style={styles.plotContainer}>
                 <div style={plotTitleStyle}>
@@ -265,23 +245,8 @@ const HistoricalAnalysis = memo(() => {
             </div>
         </div>
     );
-
-    // Left side content with station details
-    const leftContent = (
-        <div style={infoStyle}>
-            <StationDetails />
-        </div>
-    );
-
-    return (
-        <PlotView
-            leftContent={leftContent}
-            rightContent={rightContent}
-            leftWidth={45}
-        />
-    );
 });
 
-HistoricalAnalysis.displayName = 'HistoricalAnalysis';
+HeatmapGermanyRightSide.displayName = 'HeatmapGermanyRightSide';
 
-export default HistoricalAnalysis;
+export default HeatmapGermanyRightSide;

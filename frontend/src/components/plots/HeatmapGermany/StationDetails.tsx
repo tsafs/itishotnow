@@ -1,17 +1,17 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import type { CSSProperties } from 'react';
-import { analyzeTemperatureAnomaly } from '../../utils/TemperatureUtils.js';
-import { useSelectedItem } from '../../store/hooks/hooks.js';
-import type { SelectedItem } from '../../store/selectors/selectedItemSelectors.js';
-import { CITY_SELECT_TIMEOUT } from '../../constants/page.js';
-import { theme, createStyles } from '../../styles/design-system.js';
-import { useBreakpointDown } from '../../hooks/useBreakpoint.js';
-import { useYearlyMeanByDayData } from '../../store/slices/YearlyMeanByDaySlice.js';
-import { useReferenceYearlyHourlyInterpolatedByDayData } from '../../store/slices/ReferenceYearlyHourlyInterpolatedByDaySlice.js';
-import { useSelectedDate } from '../../store/slices/selectedDateSlice.js';
-import { getNow } from '../../utils/dateUtils.js';
+import { analyzeTemperatureAnomaly } from '../../../utils/TemperatureUtils.js';
+import { useSelectedItem } from '../../../store/hooks/hooks.js';
+import type { SelectedItem } from '../../../store/selectors/selectedItemSelectors.js';
+import { CITY_SELECT_TIMEOUT } from '../../../constants/page.js';
+import { theme, createStyles } from '../../../styles/design-system.js';
+import { useBreakpointDown } from '../../../hooks/useBreakpoint.js';
+import { useYearlyMeanByDayData } from '../../../store/slices/YearlyMeanByDaySlice.js';
+import { useReferenceYearlyHourlyInterpolatedByDayData } from '../../../store/slices/ReferenceYearlyHourlyInterpolatedByDaySlice.js';
+import { useSelectedDate } from '../../../store/slices/selectedDateSlice.js';
+import { getNow } from '../../../utils/dateUtils.js';
 import { DateTime } from 'luxon';
-import { useAppSelector } from '../../store/hooks/useAppSelector.js';
+import { useAppSelector } from '../../../store/hooks/useAppSelector.js';
 
 const getPanelStyle = (isMobile: boolean): CSSProperties => ({
     display: 'flex',

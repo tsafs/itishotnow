@@ -120,7 +120,7 @@ function AppContent() {
     }, [dispatch, selectedCityId, cityDataStatus, cities, stationsJSON]);
 
     const LazyEntries = React.useMemo(() => {
-        return plots.map(p => ({ id: p.id, Comp: React.lazy(p.loader) }));
+        return plots.map(p => ({ ...p, Comp: React.lazy(p.loader) }));
     }, []);
 
     const MainPage = React.useMemo(() => {
@@ -131,7 +131,7 @@ function AppContent() {
                         <>
                             {LazyEntries.map(entry => {
                                 const Comp = entry.Comp;
-                                return <Comp key={entry.id} />;
+                                return <Comp key={entry.id} darkMode={entry.darkMode} />;
                             })}
                         </>
                     )}

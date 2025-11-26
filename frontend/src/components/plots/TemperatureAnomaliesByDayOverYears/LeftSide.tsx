@@ -5,18 +5,18 @@ import type { CSSProperties } from 'react';
 import * as Plot from "@observablehq/plot";
 import { html } from 'htl';
 import * as d3 from "d3";
-import { getNow } from '../../utils/dateUtils.js';
-import { filterTemperatureDataByDateWindow } from '../../utils/rollingAverageUtils.js';
-import { theme, createStyles } from '../../styles/design-system.js';
-import { useBreakpoint } from '../../hooks/useBreakpoint.js';
-import { selectRollingAverageData } from '../../store/slices/rollingAverageDataSlice.js';
-import { fetchRollingAverageData, selectRollingAverageDataStatus } from '../../store/slices/rollingAverageDataSlice.js';
-import { useSelectedStationId, useSelectedCityName, useSelectedStationData } from '../../store/hooks/hooks.js';
+import { getNow } from '../../../utils/dateUtils.js';
+import { filterTemperatureDataByDateWindow } from '../../../utils/rollingAverageUtils.js';
+import { theme, createStyles } from '../../../styles/design-system.js';
+import { useBreakpoint } from '../../../hooks/useBreakpoint.js';
+import { selectRollingAverageData } from '../../../store/slices/rollingAverageDataSlice.js';
+import { fetchRollingAverageData, selectRollingAverageDataStatus } from '../../../store/slices/rollingAverageDataSlice.js';
+import { useSelectedStationId, useSelectedCityName, useSelectedStationData } from '../../../store/hooks/hooks.js';
 import { DateTime } from 'luxon';
-import { useSelectedDate } from '../../store/slices/selectedDateSlice.js';
-import { useAppSelector } from '../../store/hooks/useAppSelector.js';
-import { useAppDispatch } from '../../store/hooks/useAppDispatch.js';
-import './TemperatureScatterPlot.css';
+import { useSelectedDate } from '../../../store/slices/selectedDateSlice.js';
+import { useAppSelector } from '../../../store/hooks/useAppSelector.js';
+import { useAppDispatch } from '../../../store/hooks/useAppDispatch.js';
+import './LeftSide.css';
 
 interface BasePlotEntry {
     year: number;
@@ -50,7 +50,7 @@ const styles = createStyles({
     },
 });
 
-const TemperatureScatterPlot = () => {
+const TemperatureAnomaliesByDayOverYearsLeftSide = () => {
     const dispatch = useAppDispatch();
     const breakpoint = useBreakpoint();
 
@@ -356,4 +356,6 @@ const TemperatureScatterPlot = () => {
     );
 };
 
-export default TemperatureScatterPlot;
+TemperatureAnomaliesByDayOverYearsLeftSide.displayName = 'TemperatureAnomaliesByDayOverYearsLeftSide';
+
+export default TemperatureAnomaliesByDayOverYearsLeftSide;

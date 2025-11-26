@@ -1,32 +1,18 @@
-import PlotView from '../common/PlotView/PlotView.js';
-import TemperatureScatterPlot from '../charts/TemperatureScatterPlot.js';
-import { theme, createStyles } from '../../styles/design-system.js';
-import { useSelectedDate } from '../../store/slices/selectedDateSlice.js';
+import { useSelectedDate } from '../../../store/slices/selectedDateSlice.js';
 import { DateTime } from 'luxon';
-import { getNow } from '../../utils/dateUtils.js';
-import { useSelectedCityName } from '../../store/hooks/hooks.js';
+import { getNow } from '../../../utils/dateUtils.js';
+import { useSelectedCityName } from '../../../store/hooks/hooks.js';
 
-const styles = createStyles({
-    container: {
-        padding: theme.spacing.md,
-        backgroundColor: theme.colors.backgroundLight,
-    },
-    scatterPlot: {
-        height: '100%',
-    },
-});
-
-const HistoricalAnalysis = () => {
+const TemperatureAnomaliesByDayOverYearsRightSide = () => {
     const selectedCityName = useSelectedCityName();
     const selectedDate = useSelectedDate();
+
     const isToday = DateTime.fromISO(selectedDate).hasSame(getNow(), 'day');
     const selectedCityNameDisplay = selectedCityName ?? 'dieser Stadt';
-
-    // Format date as "7. Oktober 2025"
     const formattedDate = DateTime.fromISO(selectedDate).setLocale('de').toFormat("d. MMMM yyyy");
 
-    const descriptionChildren = (
-        <>
+    return (
+        <div>
             <p>
                 Diese Grafik zeigt, wie warm der <strong>{isToday ? "heutige Tag" : formattedDate}</strong> im Vergleich zu früheren Jahren ist. Sie umfasst Daten seit <strong>1951</strong> für die Wetterstation in {selectedCityNameDisplay}.
             </p>
@@ -41,35 +27,10 @@ const HistoricalAnalysis = () => {
                     Der <strong>aktuelle Wert</strong> basiert auf den bisher heute gemessenen Temperaturen. Das vollständige Bild entsteht daher erst am Ende des Tages oder nach Erreichen der Tageshöchsttemperatur.
                 </p>
             )}
-        </>
-    );
-
-    // Plot content
-    const plot = (
-        <div style={styles.scatterPlot}>
-            <TemperatureScatterPlot />
         </div>
-    );
-
-    return (
-        <>
-            {selectedCityName && (
-                <div style={styles.container}>
-                    <PlotView
-                        leftContent={plot}
-                        rightContent={(
-                            <div>
-                                {descriptionChildren}
-                            </div>
-                        )}
-                        leftWidth={55}
-                        title={`Historische Tageswerte`}
-                        titleSide="right"
-                    />
-                </div>
-            )}
-        </>
     );
 };
 
-export default HistoricalAnalysis;
+TemperatureAnomaliesByDayOverYearsRightSide.displayName = 'TemperatureAnomaliesByDayOverYearsRightSide';
+
+export default TemperatureAnomaliesByDayOverYearsRightSide;

@@ -4,13 +4,14 @@ import { theme } from '../../../styles/design-system';
 import { useBreakpoint } from '../../../hooks/useBreakpoint';
 
 // Pure style computation functions
-const getContainerStyle = (isMobile: boolean, customStyle?: CSSProperties): CSSProperties => ({
+const getContainerStyle = (isMobile: boolean, darkMode: boolean, customStyle?: CSSProperties): CSSProperties => ({
     display: 'flex',
     flexDirection: isMobile ? 'column' : 'row',
     width: '100%',
     minHeight: isMobile ? 'auto' : 400,
     boxSizing: 'border-box',
     marginBottom: theme.spacing.lg,
+    backgroundColor: darkMode ? theme.colors.background : theme.colors.backgroundLight,
     ...customStyle,
 });
 
@@ -44,6 +45,7 @@ interface PlotViewProps {
     leftWidth?: number; // Percentage (0-100)
     title?: string; // Optional plot title
     titleSide?: 'left' | 'right'; // Where to render the title (default: right)
+    darkMode?: boolean; // Whether to use dark mode styles (default: false)
 }
 
 /**
@@ -73,6 +75,7 @@ const PlotView = ({
     leftWidth = 33,
     title,
     titleSide = 'right',
+    darkMode = false,
 }: PlotViewProps) => {
     const breakpoint = useBreakpoint();
     const isMobile = breakpoint === 'mobile' || breakpoint === 'tablet';
@@ -81,8 +84,8 @@ const PlotView = ({
 
     // Memoized computed styles
     const containerStyle = useMemo(
-        () => getContainerStyle(isMobile, style),
-        [isMobile, style]
+        () => getContainerStyle(isMobile, darkMode, style),
+        [isMobile, darkMode, style]
     );
 
     const leftSideStyle = useMemo(
