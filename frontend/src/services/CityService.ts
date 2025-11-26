@@ -2,8 +2,8 @@ import { v4 as uuidv4 } from 'uuid';
 import City from '../classes/City';
 import type { CityDictionary, CityJSON, ICity } from '../classes/City';
 import type { IStation } from '../classes/Station';
-import { fetchAndParseCSV, parseOptionalFloat, isValidNumber } from '../utils/csvUtils.js';
-import { buildUrl } from '../utils/serviceUtils.js';
+import { fetchAndParseCSV, parseOptionalFloat, isValidNumber } from './utils/csvUtils.js';
+import { buildUrl } from './utils/serviceUtils.js';
 
 /**
  * Service to fetch German cities from CSV file

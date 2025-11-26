@@ -1,6 +1,6 @@
 import { RollingAverageRecordBuilder, type RollingAverageRecordList } from '../classes/RollingAverageRecord';
-import { fetchAndParseCSV, parseOptionalFloat } from '../utils/csvUtils.js';
-import { buildUrl } from '../utils/serviceUtils.js';
+import { fetchAndParseCSV, parseOptionalFloat } from './utils/csvUtils.js';
+import { buildUrl } from './utils/serviceUtils.js';
 
 /**
  * Fetch rolling average climate metrics for a specific station.

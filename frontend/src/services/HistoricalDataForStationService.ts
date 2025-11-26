@@ -1,7 +1,7 @@
 import DateRange from "../classes/DateRange";
 import DailyRecentByStation from "../classes/DailyRecentByStation";
-import { fetchAndParseCSV, parseOptionalFloat, replaceInvalidWithUndefined } from '../utils/csvUtils.js';
-import { buildUrl } from '../utils/serviceUtils.js';
+import { fetchAndParseCSV, parseOptionalFloat, replaceInvalidWithUndefined } from './utils/csvUtils.js';
+import { buildUrl } from './utils/serviceUtils.js';
 
 /**
  * Service to fetch daily weather station data from CSV file

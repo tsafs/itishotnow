@@ -6,7 +6,7 @@ import * as Plot from "@observablehq/plot";
 import { html } from 'htl';
 import * as d3 from "d3";
 import { getNow } from '../../../utils/dateUtils.js';
-import { filterTemperatureDataByDateWindow } from '../../../utils/rollingAverageUtils.js';
+import { filterTemperatureDataByDateWindow } from './rollingAverageUtils.js';
 import { theme, createStyles } from '../../../styles/design-system.js';
 import { useBreakpoint } from '../../../hooks/useBreakpoint.js';
 import { selectRollingAverageData } from '../../../store/slices/rollingAverageDataSlice.js';

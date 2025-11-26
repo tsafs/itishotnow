@@ -1,6 +1,6 @@
 import DailyRecentByStation, { type IStationDataByStationId } from "../classes/DailyRecentByStation";
-import { fetchAndParseCSV, parseOptionalFloat, replaceInvalidWithUndefined } from '../utils/csvUtils.js';
-import { buildUrl } from '../utils/serviceUtils.js';
+import { fetchAndParseCSV, parseOptionalFloat, replaceInvalidWithUndefined } from './utils/csvUtils.js';
+import { buildUrl } from './utils/serviceUtils.js';
 
 export interface DailyRecentByDateArgs {
     year: number;

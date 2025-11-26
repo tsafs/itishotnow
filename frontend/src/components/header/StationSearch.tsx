@@ -57,6 +57,7 @@ const styles = createStyles({
         borderRadius: 4,
         boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
         backgroundColor: '#fefefe',
+        paddingLeft: 35
     },
     inputWithIcon: {
         paddingLeft: 35,

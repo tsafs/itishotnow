@@ -1,4 +1,4 @@
-import { getNow } from './dateUtils.js';
+import { getNow } from '../../../utils/dateUtils.js';
 import { DateTime } from 'luxon';
 
 export interface TemperatureEntry {

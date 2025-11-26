@@ -105,6 +105,7 @@ const HistoricalAnalysis = () => {
             leftContent={leftContent}
             rightContent={rightContent}
             leftWidth={50}
+            darkMode={true}
         />
     );
 };

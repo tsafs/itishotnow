@@ -3,8 +3,8 @@ import {
     type ReferenceHourKey,
     type ReferenceYearlyHourlyInterpolatedByDayByStationId,
 } from '../classes/ReferenceYearlyHourlyInterpolatedByDay';
-import { fetchAndParseCSV, parseOptionalFloat } from '../utils/csvUtils.js';
-import { buildUrl } from '../utils/serviceUtils.js';
+import { fetchAndParseCSV, parseOptionalFloat } from './utils/csvUtils.js';
+import { buildUrl } from './utils/serviceUtils.js';
 
 /**
  * Service to fetch interpolated hourly historical temperature data for a specific day

@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import type { CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
-import StationSearch from '../search/StationSearch.js';
-import DateSelection from '../dateSelection/DateSelection.js';
+import StationSearch from './StationSearch.js';
+import DateSelection from './DateSelection.js';
 import { createStyles } from '../../styles/design-system.js';
 import { useBreakpoint } from '../../hooks/useBreakpoint.js';
 

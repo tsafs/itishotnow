@@ -2,8 +2,8 @@ import React, { Suspense, useState, useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { store } from './store';
-import Header from './components/layout/Header';
-import Footer from './components/layout/Footer';
+import Header from './components/header/Header';
+import Footer from './components/footer/Footer';
 import { PREDEFINED_CITIES } from './constants/map';
 import { fetchYearlyMeanByDay } from './store/slices/YearlyMeanByDaySlice';
 import { fetchReferenceYearlyHourlyInterpolatedByDay } from './store/slices/ReferenceYearlyHourlyInterpolatedByDaySlice';
@@ -13,10 +13,12 @@ import { selectCity } from './store/slices/selectedCitySlice';
 import { fetchDailyDataForStation } from './store/slices/historicalDataForStationSlice';
 import { fetchStationDateRange } from './store/slices/stationDateRangesSlice';
 
-import './App.css';
 import { getNow } from './utils/dateUtils';
 import { useAppSelector } from './store/hooks/useAppSelector';
 import { useAppDispatch } from './store/hooks/useAppDispatch';
+import { createStyles } from './styles/design-system';
+import { useBreakpoint } from './hooks/useBreakpoint';
+import type { CSSProperties } from 'react';
 
 // Plot registry-based lazy loading
 import { plots } from './components/plots/registry';
@@ -25,9 +27,48 @@ const Closing = React.lazy(() => import('./components/closing/Closing'));
 
 const DEFAULT_CITY = "berlin"; // Default city to select
 
+// Pure style computation functions
+const getAppContainerStyle = (): CSSProperties => ({
+    position: 'relative',
+    width: '100%',
+    minHeight: '100vh',
+    overflowX: 'visible',
+    backgroundColor: '#D7DDE2',
+    display: 'flex',
+    flexDirection: 'column',
+});
+
+const getContentWrapperStyle = (isMobile: boolean): CSSProperties => ({
+    width: '100%',
+    position: 'relative',
+    flex: 1,
+    marginTop: isMobile ? 100 : 60,
+});
+
+const getLoadingContainerStyle = (): CSSProperties => ({
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '100vh',
+    fontSize: '1.5rem',
+    color: '#666',
+});
+
+const styles = createStyles({
+    errorContainer: {
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: '2rem',
+        color: '#d32f2f',
+        fontWeight: 500,
+    },
+});
+
 function AppContent() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
+    const breakpoint = useBreakpoint();
 
     const [error, setError] = useState<string | null>(null);
     const didFetchDataRef = useRef(false);
@@ -126,7 +167,7 @@ function AppContent() {
     const MainPage = React.useMemo(() => {
         return () => (
             <>
-                <Suspense fallback={<div className="loading-container">Loading map data...</div>}>
+                <Suspense fallback={<div style={getLoadingContainerStyle()}>Loading map data...</div>}>
                     {!error && (
                         <>
                             {LazyEntries.map(entry => {
@@ -135,21 +176,27 @@ function AppContent() {
                             })}
                         </>
                     )}
-                    {error && <div className="error-container">{error}</div>}
+                    {error && <div style={styles.errorContainer}>{error}</div>}
                 </Suspense>
                 <Closing />
             </>
         );
     }, [error, LazyEntries]);
 
+    const isMobile = breakpoint === 'mobile';
+
+    const appContainerStyle = React.useMemo(() => getAppContainerStyle(), []);
+    const contentWrapperStyle = React.useMemo(() => getContentWrapperStyle(isMobile), [isMobile]);
+    const loadingContainerStyle = React.useMemo(() => getLoadingContainerStyle(), []);
+
     return (
-        <div className="app-container">
+        <div style={appContainerStyle}>
             <Header />
-            <main className="content-wrapper">
+            <main style={contentWrapperStyle}>
                 <Routes>
                     <Route path="/" element={<MainPage />} />
                     <Route path="/impressum" element={
-                        <Suspense fallback={<div className="loading-container">Loading...</div>}>
+                        <Suspense fallback={<div style={loadingContainerStyle}>Loading...</div>}>
                             <ImpressumPage />
                         </Suspense>
                     } />

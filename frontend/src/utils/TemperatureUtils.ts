@@ -1,16 +1,3 @@
-/**
- * Calculates the temperature anomaly between current temperature and a historical reference.
- */
-export const calculateAnomaly = (
-    currentTemp: number | null | undefined,
-    historicalTemp: number | null | undefined,
-): number | null => {
-    if (currentTemp === undefined || historicalTemp === undefined || currentTemp === null || historicalTemp === null) {
-        return null;
-    }
-    return currentTemp - historicalTemp;
-};
-
 export type ColorSchemeName = 'BlueWhiteRed' | 'Turbo';
 
 interface ColorStop {

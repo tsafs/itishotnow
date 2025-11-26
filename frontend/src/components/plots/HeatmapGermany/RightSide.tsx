@@ -3,7 +3,7 @@ import type { CSSProperties } from 'react';
 import * as Plot from "@observablehq/plot";
 import { selectCity } from '../../../store/slices/selectedCitySlice.js';
 import { PREDEFINED_CITIES } from '../../../constants/map.js';
-import MapLegend from '../../d3map/MapLegend.js';
+import MapLegend from './MapLegend.js';
 import { theme, createStyles } from '../../../styles/design-system.js';
 import { useBreakpoint } from '../../../hooks/useBreakpoint.js';
 import { useSelectedDate } from '../../../store/slices/selectedDateSlice.js';

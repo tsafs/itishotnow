@@ -1,7 +1,7 @@
 import Station from "../classes/Station";
 import StationData from "../classes/StationData";
-import { fetchAndParseCSV, parseOptionalFloat, replaceInvalidWithUndefined } from '../utils/csvUtils.js';
-import { buildUrl } from '../utils/serviceUtils.js';
+import { fetchAndParseCSV, parseOptionalFloat, replaceInvalidWithUndefined } from './utils/csvUtils.js';
+import { buildUrl } from './utils/serviceUtils.js';
 import { getNow } from "../utils/dateUtils";
 
 export interface LiveStationRecord {

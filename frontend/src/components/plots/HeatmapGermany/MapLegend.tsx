@@ -1,6 +1,6 @@
-import { getAnomalyColor } from '../../utils/TemperatureUtils.js';
-import type { ColorSchemeName } from '../../utils/TemperatureUtils.js';
-import { theme, createStyles } from '../../styles/design-system.js';
+import { getAnomalyColor } from '../../../utils/TemperatureUtils.js';
+import type { ColorSchemeName } from '../../../utils/TemperatureUtils.js';
+import { theme, createStyles } from '../../../styles/design-system.js';
 
 interface MapLegendProps {
     title?: string;

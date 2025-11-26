@@ -1,6 +1,6 @@
 import YearlyMeanByDay, { type YearlyMeanByDayByStationId } from '../classes/YearlyMeanByDay';
-import { fetchAndParseCSV, parseOptionalFloat } from '../utils/csvUtils.js';
-import { buildUrl } from '../utils/serviceUtils.js';
+import { fetchAndParseCSV, parseOptionalFloat } from './utils/csvUtils.js';
+import { buildUrl } from './utils/serviceUtils.js';
 
 /**
  * Service to fetch historical average data for a specific day (month and day)
