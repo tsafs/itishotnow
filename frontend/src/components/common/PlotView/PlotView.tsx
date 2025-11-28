@@ -4,39 +4,39 @@ import { theme } from '../../../styles/design-system';
 import { useBreakpoint, useBreakpointDown } from '../../../hooks/useBreakpoint';
 
 // Pure style computation functions
-const getContainerStyle = (isTablet: boolean, darkMode: boolean, customStyle?: CSSProperties): CSSProperties => ({
+const getContainerStyle = (isVertical: boolean, darkMode: boolean, customStyle?: CSSProperties): CSSProperties => ({
     display: 'flex',
-    flexDirection: isTablet ? 'column' : 'row',
+    flexDirection: isVertical ? 'column' : 'row',
     width: '100%',
-    minHeight: isTablet ? 'auto' : 400,
+    minHeight: isVertical ? 'auto' : 400,
     boxSizing: 'border-box',
     marginBottom: theme.spacing.lg,
     backgroundColor: darkMode ? theme.colors.background : theme.colors.backgroundLight,
-    padding: isTablet ? theme.spacing.xl : theme.spacing.lg,
+    padding: isVertical ? theme.spacing.xl : theme.spacing.lg,
     ...customStyle,
 });
 
 const getSideStyle = (
-    isTablet: boolean,
+    isVertical: boolean,
     position: 'first' | 'second',
     ratio: number
 ): CSSProperties => ({
-    padding: isTablet ? 0 : theme.spacing.md,
+    padding: isVertical ? 0 : theme.spacing.md,
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',
-    alignItems: isTablet ? 'center' : (position === 'first' ? 'flex-end' : 'flex-start'),
-    textAlign: isTablet ? 'center' : (position === 'first' ? 'right' : 'left'),
-    ...(!isTablet && { flex: ratio }),
+    alignItems: isVertical ? 'center' : (position === 'first' ? 'flex-end' : 'flex-start'),
+    textAlign: isVertical ? 'center' : (position === 'first' ? 'right' : 'left'),
+    ...(!isVertical && { flex: ratio }),
 });
 
-const getTitleStyle = (isTablet: boolean, titleSide: 'left' | 'right'): CSSProperties => ({
+const getTitleStyle = (isVertical: boolean, titleSide: 'left' | 'right'): CSSProperties => ({
     width: '100%',
-    textAlign: isTablet ? 'center' : (titleSide === 'left' ? 'right' : 'left'),
-    fontSize: isTablet ? theme.typography.fontSize.lg : theme.typography.fontSize.xl,
+    textAlign: isVertical ? 'center' : (titleSide === 'left' ? 'right' : 'left'),
+    fontSize: isVertical ? theme.typography.fontSize.lg : theme.typography.fontSize.xl,
     fontWeight: theme.typography.fontWeight.bold,
     marginBottom: theme.spacing.md,
-    marginTop: isTablet ? theme.spacing.xl : 0
+    marginTop: isVertical ? theme.spacing.xl : 0
 });
 
 interface PlotViewProps {
@@ -79,27 +79,27 @@ const PlotView = ({
     titleSide = 'right',
     darkMode = false,
 }: PlotViewProps) => {
-    const isTablet = useBreakpointDown('tablet');
+    const isVertical = useBreakpointDown('desktop');
 
     const rightWidth = 100 - leftWidth;
 
     // Memoized computed styles
     const containerStyle = useMemo(
-        () => getContainerStyle(isTablet, darkMode, style),
-        [isTablet, darkMode, style]
+        () => getContainerStyle(isVertical, darkMode, style),
+        [isVertical, darkMode, style]
     );
 
     const leftSideStyle = useMemo(
-        () => getSideStyle(isTablet, 'first', leftWidth),
-        [isTablet, leftWidth]
+        () => getSideStyle(isVertical, 'first', leftWidth),
+        [isVertical, leftWidth]
     );
 
     const rightSideStyle = useMemo(
-        () => getSideStyle(isTablet, 'second', rightWidth),
-        [isTablet, rightWidth]
+        () => getSideStyle(isVertical, 'second', rightWidth),
+        [isVertical, rightWidth]
     );
 
-    const titleStyle = useMemo(() => getTitleStyle(isTablet, titleSide), [isTablet, titleSide]);
+    const titleStyle = useMemo(() => getTitleStyle(isVertical, titleSide), [isVertical, titleSide]);
 
     const Title = () => (title ? (<div style={titleStyle}>{title}</div>) : null);
 

@@ -1,54 +1,54 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import type { CSSProperties } from 'react';
-import { HEATMAP_INITIAL_DISPLAY_TIMEOUT } from '../../../constants/page.js';
 import { theme, createStyles } from '../../../styles/design-system.js';
 import { useBreakpointDown } from '../../../hooks/useBreakpoint.js';
 import { useAppSelector } from '../../../store/hooks/useAppSelector.js';
 import { useStationDetailsData } from './useStationDetailsData.js';
 import type { StationDetailsData } from './useStationDetailsData.js';
+import { useIsStaticPlotRendered } from '../../../store/slices/heatmapGermanySlice.js';
 
-const getPanelStyle = (isTablet: boolean): CSSProperties => ({
+const getPanelStyle = (isVertical: boolean): CSSProperties => ({
     display: 'flex',
     flexDirection: 'column',
-    alignItems: isTablet ? 'center' : 'flex-end',
+    alignItems: isVertical ? 'center' : 'flex-end',
     maxWidth: 340,
-    borderRight: isTablet ? 'none' : '1px solid #666',
-    borderBottom: isTablet ? '1px solid #666' : 'none',
-    padding: isTablet ? '0 20px 30px 20px' : '0 20px 0 0',
-    marginTop: isTablet ? 20 : undefined,
-    textAlign: isTablet ? 'center' : 'right',
+    borderRight: isVertical ? 'none' : '1px solid #666',
+    borderBottom: isVertical ? '1px solid #666' : 'none',
+    padding: isVertical ? '0 20px 30px 20px' : '0 20px 0 0',
+    marginTop: isVertical ? 20 : undefined,
+    textAlign: isVertical ? 'center' : 'right',
     color: theme.colors.textLight,
 });
 
-const getMetricsStyle = (isTablet: boolean): CSSProperties => ({
+const getMetricsStyle = (isVertical: boolean): CSSProperties => ({
     display: 'flex',
     flexDirection: 'row',
     gap: 10,
-    justifyContent: isTablet ? 'center' : 'flex-end',
+    justifyContent: isVertical ? 'center' : 'flex-end',
 });
 
-const getNameStyle = (isTablet: boolean): CSSProperties => ({
+const getNameStyle = (isVertical: boolean): CSSProperties => ({
     margin: 0,
     fontSize: '1.6rem',
     fontWeight: 600,
     color: theme.colors.text,
-    width: isTablet ? '100%' : undefined,
+    width: isVertical ? '100%' : undefined,
 });
 
-const getSubtitleStyle = (isTablet: boolean): CSSProperties => ({
+const getSubtitleStyle = (isVertical: boolean): CSSProperties => ({
     fontSize: '0.9rem',
     marginTop: 5,
     marginBottom: 30,
     maxWidth: 300,
     whiteSpaceCollapse: 'preserve' as any,
     textWrap: 'pretty' as any,
-    width: isTablet ? '100%' : undefined,
+    width: isVertical ? '100%' : undefined,
 });
 
-const getComparisonStyle = (isTablet: boolean): CSSProperties => ({
+const getComparisonStyle = (isVertical: boolean): CSSProperties => ({
     display: 'flex',
     flexDirection: 'column',
-    alignItems: isTablet ? 'center' : 'flex-end',
+    alignItems: isVertical ? 'center' : 'flex-end',
     marginTop: 30,
     maxWidth: 300,
 });
@@ -114,13 +114,11 @@ const styles = createStyles({
  */
 const StationDetails = () => {
     const selectedCityId = useAppSelector((state) => state.selectedCity.cityId);
-    const isTablet = useBreakpointDown('tablet');
+    const isVertical = useBreakpointDown('desktop');
+    const isStaticPlotRendered = useIsStaticPlotRendered();
 
     // Get all computed data synchronously from custom hook
     const computedData = useStationDetailsData();
-
-    // Track initial mount to show placeholders only on first load
-    const isInitialMount = useRef<boolean>(true);
 
     // State for displayed data (used to delay updates on initial mount only)
     const [displayData, setDisplayData] = useState<StationDetailsData | null>(null);
@@ -128,28 +126,19 @@ const StationDetails = () => {
     // Handle initial mount delay and subsequent immediate updates
     useEffect(() => {
         // If no data is ready, don't update (wait for all data to be available)
-        if (!computedData.item || !computedData.subtitle || !computedData.anomalyDetails) {
+        if (!computedData.item || !computedData.subtitle || !computedData.anomalyDetails || !isStaticPlotRendered) {
             return;
         }
 
-        // On initial mount, show placeholders with delay for better UX
-        if (isInitialMount.current) {
-            setTimeout(() => {
-                setDisplayData(computedData);
-                isInitialMount.current = false;
-            }, HEATMAP_INITIAL_DISPLAY_TIMEOUT);
-        } else {
-            // After initial mount, update immediately and synchronously
-            setDisplayData(computedData);
-        }
-    }, [computedData]);
+        setDisplayData(computedData);
+    }, [computedData, isStaticPlotRendered]);
 
     // Memoized computed styles
-    const panelStyle = useMemo(() => getPanelStyle(isTablet), [isTablet]);
-    const metricsStyle = useMemo(() => getMetricsStyle(isTablet), [isTablet]);
-    const nameStyle = useMemo(() => getNameStyle(isTablet), [isTablet]);
-    const subtitleStyle = useMemo(() => getSubtitleStyle(isTablet), [isTablet]);
-    const comparisonStyle = useMemo(() => getComparisonStyle(isTablet), [isTablet]);
+    const panelStyle = useMemo(() => getPanelStyle(isVertical), [isVertical]);
+    const metricsStyle = useMemo(() => getMetricsStyle(isVertical), [isVertical]);
+    const nameStyle = useMemo(() => getNameStyle(isVertical), [isVertical]);
+    const subtitleStyle = useMemo(() => getSubtitleStyle(isVertical), [isVertical]);
+    const comparisonStyle = useMemo(() => getComparisonStyle(isVertical), [isVertical]);
 
     // If no city is selected, show a placeholder
     if (!selectedCityId) {

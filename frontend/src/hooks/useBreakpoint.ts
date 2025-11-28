@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { theme } from '../styles/design-system';
 
-export type Breakpoint = 'mobile' | 'tablet' | 'desktop';
+export type Breakpoint = 'mobile' | 'tablet' | 'desktop' | 'wide';
 
 /**
  * Custom hook to detect current breakpoint based on window width
  * 
- * @returns Current breakpoint ('mobile' | 'tablet' | 'desktop')
+ * @returns Current breakpoint ('mobile' | 'tablet' | 'desktop' | 'wide')
  * 
  * @example
  * const breakpoint = useBreakpoint();
@@ -14,7 +14,7 @@ export type Breakpoint = 'mobile' | 'tablet' | 'desktop';
  */
 export const useBreakpoint = (): Breakpoint => {
     const getBreakpoint = (): Breakpoint => {
-        if (typeof window === 'undefined') return 'desktop';
+        if (typeof window === 'undefined') return 'wide';
 
         const width = window.innerWidth;
 
@@ -22,8 +22,10 @@ export const useBreakpoint = (): Breakpoint => {
             return 'mobile';
         } else if (width <= theme.breakpoints.tablet) {
             return 'tablet';
-        } else {
+        } else if (width <= theme.breakpoints.desktop) {
             return 'desktop';
+        } else {
+            return 'wide';
         }
     };
 
@@ -74,7 +76,7 @@ export const useBreakpointMatch = (target: Breakpoint): boolean => {
 export const useBreakpointDown = (target: Breakpoint): boolean => {
     const breakpoint = useBreakpoint();
 
-    const order: Breakpoint[] = ['mobile', 'tablet', 'desktop'];
+    const order: Breakpoint[] = ['mobile', 'tablet', 'desktop', 'wide'];
     const currentIndex = order.indexOf(breakpoint);
     const targetIndex = order.indexOf(target);
 
@@ -93,7 +95,7 @@ export const useBreakpointDown = (target: Breakpoint): boolean => {
 export const useBreakpointUp = (target: Breakpoint): boolean => {
     const breakpoint = useBreakpoint();
 
-    const order: Breakpoint[] = ['mobile', 'tablet', 'desktop'];
+    const order: Breakpoint[] = ['mobile', 'tablet', 'desktop', 'wide'];
     const currentIndex = order.indexOf(breakpoint);
     const targetIndex = order.indexOf(target);
 

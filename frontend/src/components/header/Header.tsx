@@ -21,45 +21,23 @@ const getHeaderStyle = (isVisible: boolean): CSSProperties => ({
     pointerEvents: isVisible ? 'auto' : 'none',
 });
 
-const getContainerStyle = (isTablet: boolean): CSSProperties => ({
+const getMenuContainerStyle = (isMobile: boolean): CSSProperties => ({
     display: 'flex',
-    justifyContent: 'space-between',
+    flexDirection: isMobile ? 'column' : 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: isTablet ? 10 : 50,
-    padding: isTablet ? '8px 10px' : '10px 20px',
-    maxWidth: 1200,
-    margin: '0 auto',
-    flexDirection: isTablet ? 'column' : 'row',
+    padding: '10px 20px',
+    gap: 10,
+    width: '100%',
 });
 
-const getTitleStyle = (isTablet: boolean): CSSProperties => ({
-    fontSize: isTablet ? '1.2rem' : '1.5rem',
-    margin: 0,
-    fontWeight: 600,
-});
-
-const styles = createStyles({
-    link: {
-        textDecoration: 'none',
-        color: 'inherit',
-    },
-    menuContainer: {
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        gap: 10,
-    },
-    headerSearch: {
-        width: 300,
-    },
-    headerSearchMobile: {
-        width: '100%',
-    },
+const getSearchStyle = (isMobile: boolean): CSSProperties => ({
+    width: isMobile ? '100%' : 300,
 });
 
 const Header = () => {
     const breakpoint = useBreakpoint();
-    const isTablet = breakpoint === 'tablet';
+    const isMobile = breakpoint === 'mobile';
     const [isVisible, setIsVisible] = useState(true);
     const [lastScrollY, setLastScrollY] = useState(0);
     const [scrollUpDistance, setScrollUpDistance] = useState(0);
@@ -71,22 +49,14 @@ const Header = () => {
         [isVisible]
     );
 
-    const containerStyle = useMemo(
-        () => getContainerStyle(isTablet),
-        [isTablet]
-    );
-
-    const titleStyle = useMemo(
-        () => getTitleStyle(isTablet),
-        [isTablet]
+    const menuContainerStyle = useMemo(
+        () => getMenuContainerStyle(isMobile),
+        [isMobile]
     );
 
     const searchStyle = useMemo(
-        () => ({
-            ...styles.headerSearch,
-            ...(isTablet && styles.headerSearchMobile),
-        }),
-        [isTablet]
+        () => getSearchStyle(isMobile),
+        [isMobile]
     );
 
     useEffect(() => {
@@ -123,17 +93,10 @@ const Header = () => {
 
     return (
         <header style={headerStyle}>
-            <div style={containerStyle}>
-                <Link to="/" style={styles.link}>
-                    <h1 style={titleStyle}>Ist es jetzt wirklich&nbsp;warm?</h1>
-                </Link>
-                <div style={styles.menuContainer}>
-                    <div>
-                        <DateSelection />
-                    </div>
-                    <div style={searchStyle}>
-                        <StationSearch />
-                    </div>
+            <div style={menuContainerStyle}>
+                <DateSelection />
+                <div style={searchStyle}>
+                    <StationSearch />
                 </div>
             </div>
         </header>

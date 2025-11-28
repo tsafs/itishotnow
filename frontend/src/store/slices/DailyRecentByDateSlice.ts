@@ -5,8 +5,8 @@ import type { RootState } from '../index.js';
 import type { IStationDataByStationId } from '../../classes/DailyRecentByStation.js';
 import { createDataSlice } from '../factories/createDataSlice.js';
 
-// Type for 'YYYY-MM-DD' string
-export type DateKey = `${number}-${number}-${number}`;
+// Type for 'YYYY-MM-DD' string with zero-padded month and day
+export type DateKey = `${number}-${string}-${string}`;
 
 // Arguments for thunk
 export interface DailyRecentByDateArgs {
@@ -30,7 +30,7 @@ const { slice, actions, selectors } = createDataSlice<
     stateShape: 'keyed',
     cache: {
         strategy: 'by-key',
-        keyExtractor: ({ year, month, day }) => `${year}-${month}-${day}` as DateKey,
+        keyExtractor: ({ year, month, day }) => `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}` as DateKey,
         ttl: 3600000, // 1 hour
     },
 });
@@ -43,7 +43,7 @@ export const useDailyRecentByDate = ({ year, month, day }: DailyRecentByDateArgs
     const data = useAppSelector(selectors.selectData) as Record<DateKey, IStationDataByStationId> | undefined;
     return useMemo(() => {
         if (!data) return null;
-        return data[`${year}-${month}-${day}`] ?? null;
+        return data[`${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`] ?? null;
     }, [data, year, month, day]);
 };
 

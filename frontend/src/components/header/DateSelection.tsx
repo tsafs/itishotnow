@@ -12,6 +12,7 @@ import { createStyles } from '../../styles/design-system.js';
 import { useBreakpointDown } from '../../hooks/useBreakpoint.js';
 import { DateTime } from 'luxon';
 import { useAppDispatch } from '../../store/hooks/useAppDispatch.js';
+import { resetStaticPlotRendered } from '../../store/slices/heatmapGermanySlice.js';
 
 const styles = createStyles({
     container: {
@@ -174,6 +175,7 @@ const DateSelection = () => {
     const handleDateSelection = useCallback((date: DateTime) => {
         // date is a Luxon DateTime
         dispatch(setDateAndFetchHistoricalData(date.toISO()!));
+        dispatch(resetStaticPlotRendered());
     }, [dispatch]);
 
     // Handle today selection
