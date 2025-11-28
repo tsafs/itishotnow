@@ -21,19 +21,19 @@ const getHeaderStyle = (isVisible: boolean): CSSProperties => ({
     pointerEvents: isVisible ? 'auto' : 'none',
 });
 
-const getContainerStyle = (isMobile: boolean): CSSProperties => ({
+const getContainerStyle = (isTablet: boolean): CSSProperties => ({
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    gap: isMobile ? 10 : 50,
-    padding: isMobile ? '8px 10px' : '10px 20px',
+    gap: isTablet ? 10 : 50,
+    padding: isTablet ? '8px 10px' : '10px 20px',
     maxWidth: 1200,
     margin: '0 auto',
-    flexDirection: isMobile ? 'column' : 'row',
+    flexDirection: isTablet ? 'column' : 'row',
 });
 
-const getTitleStyle = (breakpoint: 'mobile' | 'tablet' | 'desktop'): CSSProperties => ({
-    fontSize: breakpoint === 'mobile' ? '1.2rem' : '1.5rem',
+const getTitleStyle = (isTablet: boolean): CSSProperties => ({
+    fontSize: isTablet ? '1.2rem' : '1.5rem',
     margin: 0,
     fontWeight: 600,
 });
@@ -59,7 +59,7 @@ const styles = createStyles({
 
 const Header = () => {
     const breakpoint = useBreakpoint();
-    const isMobile = breakpoint === 'mobile';
+    const isTablet = breakpoint === 'tablet';
     const [isVisible, setIsVisible] = useState(true);
     const [lastScrollY, setLastScrollY] = useState(0);
     const [scrollUpDistance, setScrollUpDistance] = useState(0);
@@ -72,21 +72,21 @@ const Header = () => {
     );
 
     const containerStyle = useMemo(
-        () => getContainerStyle(isMobile),
-        [isMobile]
+        () => getContainerStyle(isTablet),
+        [isTablet]
     );
 
     const titleStyle = useMemo(
-        () => getTitleStyle(breakpoint),
-        [breakpoint]
+        () => getTitleStyle(isTablet),
+        [isTablet]
     );
 
     const searchStyle = useMemo(
         () => ({
             ...styles.headerSearch,
-            ...(isMobile && styles.headerSearchMobile),
+            ...(isTablet && styles.headerSearchMobile),
         }),
-        [isMobile]
+        [isTablet]
     );
 
     useEffect(() => {
