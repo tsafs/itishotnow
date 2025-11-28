@@ -19,14 +19,15 @@ export const theme = {
     },
     colors: {
         // Backgrounds
-        background: '#D7DDE2',
-        backgroundLight: '#f8f9fa',
+        background: '#222222',
+        backgroundLight: '#eeeeee',
         white: '#ffffff',
 
         // Text
-        text: '#333333',
-        textLight: '#666666',
-        textDark: '#000000',
+        textDark: '#222222',
+        textLight: '#dddddd',
+        textWhite: '#ffffff',
+        textBlack: '#000000',
 
         // UI Elements
         border: '#ddd',
@@ -36,6 +37,11 @@ export const theme = {
         cold: '#4575b4',
         hot: '#d73027',
         neutral: '#999999',
+
+        // Hightlights
+        primary: 'rgb(7, 87, 156)',
+        secondary: '#ff9800',
+        accent: '#4caf50',
 
         // Interactive
         hover: 'rgba(0, 0, 0, 0.05)',

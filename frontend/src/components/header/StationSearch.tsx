@@ -41,8 +41,8 @@ const getSearchInputStyle = (isMobile: boolean, inputFocused: boolean): CSSPrope
     backgroundColor: '#fefefe',
     paddingLeft: 35,
     outline: inputFocused ? 'none' : undefined,
-    borderColor: 'rgb(7, 87, 156)',
-    boxShadow: inputFocused ? 'inset 0 0 0 1px rgb(7, 87, 156), 0 2px 4px rgba(0, 0, 0, 0.1)' : '0 2px 4px rgba(0, 0, 0, 0.1)',
+    borderColor: '#ccc',
+    boxShadow: inputFocused ? 'inset 0 0 0 1px ' + theme.colors.primary + ', 0 2px 4px rgba(0, 0, 0, 0.1)' : '0 2px 4px rgba(0, 0, 0, 0.1)',
 });
 
 const styles = createStyles({

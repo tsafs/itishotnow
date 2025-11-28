@@ -36,12 +36,12 @@ const styles = createStyles({
         gap: 10,
     },
     link: {
-        color: theme.colors.text,
+        color: theme.colors.textDark,
         textDecoration: 'none',
         transition: 'color 0.2s',
     },
     copyright: {
-        color: theme.colors.textLight,
+        color: theme.colors.textDark,
         fontSize: '0.9rem',
     },
 });

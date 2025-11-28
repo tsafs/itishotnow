@@ -13,7 +13,7 @@ const getHeaderStyle = (isVisible: boolean): CSSProperties => ({
     left: 0,
     right: 0,
     backgroundColor: '#fefefe',
-    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+    boxShadow: '0 5px 10px rgba(0, 0, 0, 0.3)',
     zIndex: 1100,
     transition: 'transform 0.3s ease-in-out, opacity 0.3s ease-in-out',
     transform: isVisible ? 'translateY(0)' : 'translateY(-100%)',

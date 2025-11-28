@@ -16,7 +16,7 @@ import { fetchStationDateRange } from './store/slices/stationDateRangesSlice';
 import { getNow } from './utils/dateUtils';
 import { useAppSelector } from './store/hooks/useAppSelector';
 import { useAppDispatch } from './store/hooks/useAppDispatch';
-import { createStyles } from './styles/design-system';
+import theme, { createStyles } from './styles/design-system';
 import { useBreakpoint } from './hooks/useBreakpoint';
 import type { CSSProperties } from 'react';
 
@@ -33,7 +33,7 @@ const getAppContainerStyle = (): CSSProperties => ({
     width: '100%',
     minHeight: '100vh',
     overflowX: 'visible',
-    backgroundColor: '#D7DDE2',
+    backgroundColor: theme.colors.background,
     display: 'flex',
     flexDirection: 'column',
 });

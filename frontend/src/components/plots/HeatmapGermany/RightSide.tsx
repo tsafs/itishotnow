@@ -23,15 +23,6 @@ const getPlotContainerLeftAlignStyle = (isVertical: boolean): CSSProperties => (
     width: '100%',
 });
 
-const getPlotTitleStyle = (isVertical: boolean): CSSProperties => ({
-    maxWidth: isVertical ? '80%' : 500,
-    fontSize: isVertical ? theme.typography.fontSize.lg : theme.typography.fontSize.xl,
-    fontWeight: theme.typography.fontWeight.bold,
-    marginTop: theme.spacing.xl,
-    marginBottom: theme.spacing.lg,
-    textAlign: 'center',
-});
-
 const getPlotStyle = (dims: { width: number; height: number }): CSSProperties => ({
     position: 'relative',
     width: dims.width,
@@ -45,7 +36,6 @@ const styles = createStyles({
         flexDirection: 'column' as const,
         alignItems: 'center',
         justifyContent: 'center',
-        color: theme.colors.text,
     },
     plotAnimationWrapper: {
         position: 'relative' as const,
@@ -60,12 +50,14 @@ const styles = createStyles({
     staticPlot: {
         width: '100%',
         height: '100%',
+        filter: 'drop-shadow(0 0 20px rgba(0, 0,0 ,1))',
     },
     dynamicPlot: {
         position: 'absolute' as const,
         left: 0,
         top: 0,
         zIndex: 1,
+        color: theme.colors.textDark
     },
     loadingOverlay: {
         position: 'absolute' as const,
@@ -76,7 +68,7 @@ const styles = createStyles({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0)',
+        backgroundColor: 'transparent',
         zIndex: 2,
     },
     shimmerContainer: {
@@ -87,12 +79,17 @@ const styles = createStyles({
         width: '12px',
         height: '12px',
         borderRadius: '50%',
-        backgroundColor: '#666',
+        backgroundColor: theme.colors.backgroundLight,
         animation: 'shimmer 1.4s ease-in-out infinite',
     },
     textStyle: {
         fontSize: 12,
         dy: 8
+    },
+    plotStyle: {
+        stroke: '#000',
+        strokeWidth: 1,
+        fill: 'white'
     }
 });
 
@@ -166,7 +163,7 @@ const HeatmapGermanyRightSide = memo(() => {
                 isOutlineOnly = true;
                 staticPlot = Plot.plot({
                     projection: { type: 'mercator', domain: geojson },
-                    marks: [Plot.geo(geojson, { stroke: 'black', strokeWidth: 1 })],
+                    marks: [Plot.geo(geojson, styles.plotStyle)],
                     width: plotDims.width,
                     height: plotDims.height,
                 });
@@ -176,6 +173,7 @@ const HeatmapGermanyRightSide = memo(() => {
                     color: { type: 'diverging', scheme: 'Turbo', domain: [-10, 10], pivot: 0 },
                     marks: [
                         // Use sampled data for contours to reduce computation
+                        Plot.geo(geojson, styles.plotStyle),
                         Plot.contour(sampledPlotData, {
                             x: 'stationLon',
                             y: 'stationLat',
@@ -183,7 +181,6 @@ const HeatmapGermanyRightSide = memo(() => {
                             blur: 1.5,
                             clip: geojson,
                         }),
-                        Plot.geo(geojson, { stroke: 'black', strokeWidth: 1 }),
                     ],
                     width: plotDims.width,
                     height: plotDims.height,
@@ -318,25 +315,19 @@ const HeatmapGermanyRightSide = memo(() => {
         [isVertical]
     );
 
-    const plotTitleStyle = useMemo(
-        () => getPlotTitleStyle(isVertical),
-        [isVertical]
-    );
-
     const plotStyle = useMemo(
         () => getPlotStyle(plotDims),
         [plotDims]
     );
 
+    let title = isToday
+        ? "Heutige Temperaturabweichung"
+        : "Temperaturabweichung am " + DateTime.fromISO(selectedDate).setLocale('de').toFormat("d. MMMM yyyy");
+    title += " zu\u00A01961\u00A0bis\u00A01990\u00A0in\u00A0°C";
+
     return (
         <div style={plotContainerLeftAlignStyle}>
             <div style={styles.plotContainer}>
-                <div style={plotTitleStyle}>
-                    {isToday
-                        ? "Heutige Temperaturabweichung"
-                        : "Temperaturabweichung am " + DateTime.fromISO(selectedDate).setLocale('de').toFormat("d. MMMM yyyy")
-                    } zu&nbsp;1961&nbsp;bis&nbsp;1990&nbsp;(°C)
-                </div>
                 <div style={plotStyle}>
                     <div style={{
                         ...styles.plotAnimationWrapper,
@@ -355,7 +346,7 @@ const HeatmapGermanyRightSide = memo(() => {
                         </div>
                     )}
                 </div>
-                <MapLegend title="Abweichung (°C)" colorScheme="Turbo" />
+                <MapLegend title={title} colorScheme="Turbo" />
             </div>
             <style>{`
                 @keyframes shimmer {

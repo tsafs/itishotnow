@@ -25,25 +25,25 @@ const styles = createStyles({
         overflow: 'hidden',
         boxShadow: '0 2px 5px rgba(0, 0, 0, 0.2)',
     },
-    flagImage: {
-        width: '100%',
-        height: '100%',
-    },
     title: {
         fontSize: '0.9rem',
     },
 });
 
 const FlagLink = ({ url, flagImage, title, customStyle }: FlagLinkProps) => {
-    const flagStyle: CSSProperties | undefined = customStyle ?? (
-        flagImage
-            ? {
-                backgroundImage: `url("${flagImage}")`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-            }
-            : undefined
-    );
+    const flagStyle: CSSProperties | undefined = flagImage
+        ? {
+            ...styles.flag,
+            backgroundImage: `url("${flagImage}")`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            ...customStyle
+        }
+        :
+        {
+            ...styles.flag,
+            ...customStyle
+        };
 
     return (
         <a
@@ -54,14 +54,7 @@ const FlagLink = ({ url, flagImage, title, customStyle }: FlagLinkProps) => {
             onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-3px)'}
             onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
         >
-            <div style={styles.flag}>
-                <div
-                    style={{
-                        ...styles.flagImage,
-                        ...flagStyle,
-                    }}
-                ></div>
-            </div>
+            <div style={flagStyle} />
             <span style={styles.title}>{title}</span>
         </a>
     );

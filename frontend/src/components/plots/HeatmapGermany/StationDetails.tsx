@@ -10,28 +10,28 @@ import { useIsStaticPlotRendered } from '../../../store/slices/heatmapGermanySli
 const getPanelStyle = (isVertical: boolean): CSSProperties => ({
     display: 'flex',
     flexDirection: 'column',
-    alignItems: isVertical ? 'center' : 'flex-end',
+    alignItems: 'center',
     maxWidth: 340,
-    borderRight: isVertical ? 'none' : '1px solid #666',
-    borderBottom: isVertical ? '1px solid #666' : 'none',
-    padding: isVertical ? '0 20px 30px 20px' : '0 20px 0 0',
-    marginTop: isVertical ? 20 : undefined,
-    textAlign: isVertical ? 'center' : 'right',
+    padding: '0 20px 30px 20px',
+    marginTop: 20,
+    textAlign: 'center',
     color: theme.colors.textLight,
+    marginRight: isVertical ? 0 : 100,
+    textShadow: '0px 0px 10px rgba(0, 0, 0, 1)',
 });
 
 const getMetricsStyle = (isVertical: boolean): CSSProperties => ({
     display: 'flex',
     flexDirection: 'row',
     gap: 10,
-    justifyContent: isVertical ? 'center' : 'flex-end',
+    justifyContent: 'center',
 });
 
 const getNameStyle = (isVertical: boolean): CSSProperties => ({
     margin: 0,
     fontSize: '1.6rem',
     fontWeight: 600,
-    color: theme.colors.text,
+    color: theme.colors.textLight,
     width: isVertical ? '100%' : undefined,
 });
 
@@ -48,7 +48,6 @@ const getSubtitleStyle = (isVertical: boolean): CSSProperties => ({
 const getComparisonStyle = (isVertical: boolean): CSSProperties => ({
     display: 'flex',
     flexDirection: 'column',
-    alignItems: isVertical ? 'center' : 'flex-end',
     marginTop: 30,
     maxWidth: 300,
 });
@@ -78,11 +77,13 @@ const styles = createStyles({
         lineHeight: theme.typography.lineHeight.tight
     },
     metricCellHighlight: {
-        backgroundColor: '#fefefe',
+        backgroundColor: theme.colors.backgroundLight,
         borderRadius: 6,
-        borderLeft: '4px solid rgb(7, 87, 156)',
         paddingLeft: 10,
         paddingRight: 10,
+        color: theme.colors.textDark,
+        boxShadow: '0px 0px 3px 0px white',
+        textShadow: 'none'
     },
     metricLabel: {
         fontSize: '0.8rem',
@@ -93,12 +94,16 @@ const styles = createStyles({
         fontSize: '1.2rem',
         fontWeight: 'bold',
         marginTop: 4,
-        color: theme.colors.text,
+        color: theme.colors.textLight,
+        textShadow: 'none',
+    },
+    metricValueHighlight: {
+        color: theme.colors.textDark,
     },
     comparisonMessage: {
         fontSize: '1.4rem',
         fontWeight: 600,
-        color: theme.colors.text,
+        color: theme.colors.textLight,
     },
     anomaly: {
         marginTop: 5,
@@ -161,7 +166,7 @@ const StationDetails = () => {
                         <div style={styles.doubleCell}>
                             <div style={{ ...styles.metricCell, ...styles.metricCellHighlight }}>
                                 <span style={styles.metricLabel}>{displayData.isToday ? "Zuletzt" : "Mittel"}</span>
-                                <span style={styles.metricValue}>
+                                <span style={{ ...styles.metricValue, ...styles.metricValueHighlight }}>
                                     {displayData.item.data.temperature !== undefined
                                         ? `${displayData.item.data.temperature.toFixed(1)}°C`
                                         : "k. A."}

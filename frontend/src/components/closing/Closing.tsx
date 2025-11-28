@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import type { CSSProperties } from 'react';
 import PlotView from '../common/PlotView/PlotView.js';
 import FlagLink from '../common/FlagLink.js';
+import Link from '../common/Link.js';
 import { theme, createStyles } from '../../styles/design-system.js';
 import { useBreakpoint } from '../../hooks/useBreakpoint.js';
 
@@ -9,6 +10,7 @@ import { useBreakpoint } from '../../hooks/useBreakpoint.js';
 const getThanksStyle = (isMobile: boolean): CSSProperties => ({
     paddingLeft: isMobile ? 10 : 20,
     padding: isMobile ? '20px 10px' : undefined,
+    color: theme.colors.textLight,
 });
 
 const getPartnerSitesH3Style = (isMobile: boolean): CSSProperties => ({
@@ -19,6 +21,7 @@ const getPartnerSitesH3Style = (isMobile: boolean): CSSProperties => ({
 const styles = createStyles({
     partnerSites: {
         padding: theme.spacing.md,
+        color: theme.colors.textLight,
     },
     flagLinks: {
         display: 'flex',
@@ -28,6 +31,9 @@ const styles = createStyles({
         justifyContent: 'left',
         maxWidth: 300,
     },
+    flagLink: {
+        boxShadow: '0 0 20px 1px black',
+    }
 });
 
 const HistoricalAnalysis = () => {
@@ -54,22 +60,33 @@ const HistoricalAnalysis = () => {
                     url="https://isithotrightnow.com"
                     flagImage="https://flagcdn.com/w320/au.png"
                     title="Australia"
+                    customStyle={styles.flagLink}
                 />
 
                 <FlagLink
                     url="https://istheukhotrightnow.com"
                     flagImage="https://flagcdn.com/w320/gb.png"
                     title="UK"
+                    customStyle={styles.flagLink}
                 />
 
                 <FlagLink
                     url="https://scp.geographie.rub.de/isithot/lmss"
                     title="Bochum"
                     customStyle={{
+                        backgroundImage: 'none',
                         background: 'linear-gradient(to bottom, #003399 50%, white 50%)',
                         backgroundSize: 'cover',
-                        backgroundPosition: 'center'
+                        backgroundPosition: 'center',
+                        ...styles.flagLink
                     }}
+                />
+
+                <FlagLink
+                    url="https://hoyextremo.com/"
+                    flagImage="https://flagcdn.com/w320/es.png"
+                    title="Spain"
+                    customStyle={styles.flagLink}
                 />
             </div>
         </div>
@@ -80,13 +97,14 @@ const HistoricalAnalysis = () => {
         <div style={thanksStyle}>
             <div className="credits">
                 <p>
-                    Entwickelt von <a href="https://www.linkedin.com/in/sebastianfast/" target="_blank" rel="noopener noreferrer">Sebastian Fast</a><br />
-                    Inspiriert durch <a href="https://isithotrightnow.com" target="_blank" rel="noopener noreferrer">isithotrightnow.com</a><br />
+                    Entwickelt von <Link href="https://www.linkedin.com/in/sebastianfast/">Sebastian Fast</Link><br />
+                    Inspiriert durch <Link href="https://isithotrightnow.com">isithotrightnow.com</Link><br />
                 </p>
                 <p>
-                    Herzlichen Dank für die Inspiration und wertvollen&nbsp;Beiträge&nbsp;an<br /><a href="https://www.theurbanist.com.au/about/" target="_blank" rel="noopener noreferrer">Mat Lipson</a>, {' '}
-                    <a href="https://jamesgoldie.dev/" target="_blank" rel="noopener noreferrer">James Goldie</a> und {' '}
-                    <a href="https://scp.geographie.rub.de/isithot/lmss" target="_blank" rel="noopener noreferrer">Jonas Kittner</a>
+                    Herzlichen Dank für die Inspiration und wertvollen&nbsp;Beiträge&nbsp;an<br />
+                    <Link href="https://www.theurbanist.com.au/about/">Mat Lipson</Link>, {' '}
+                    <Link href="https://jamesgoldie.dev/">James Goldie</Link> und {' '}
+                    <Link href="https://scp.geographie.rub.de/isithot/lmss">Jonas Kittner</Link>
                 </p>
             </div>
 
@@ -94,7 +112,7 @@ const HistoricalAnalysis = () => {
                 <p>
                     <strong>Mach mit bei diesem Projekt!</strong><br />
                     Ideen, Vorschläge oder Feedback?<br />
-                    Besuche das <a href="https://github.com/tsafs/itishotnow" target="_blank" rel="noopener noreferrer">GitHub Repo</a> oder <a href="mailto:kontakt@esistwarm.jetzt">schreib mir</a>
+                    Besuche das <Link href="https://github.com/tsafs/itishotnow">GitHub Repo</Link> oder <Link href="mailto:kontakt@esistwarm.jetzt">schreib mir</Link>
                 </p>
             </div>
         </div>

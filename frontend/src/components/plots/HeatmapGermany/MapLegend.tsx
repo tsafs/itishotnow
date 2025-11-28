@@ -15,19 +15,20 @@ const styles = createStyles({
         flexDirection: 'column',
         alignItems: 'center',
         marginTop: 10,
-        color: theme.colors.text,
+        color: theme.colors.textLight,
+        textShadow: '0px 0px 10px rgba(0, 0, 0, 1)',
     },
     title: {
+        textAlign: 'center',
         marginBottom: 5,
-        fontSize: '0.8em',
+        fontSize: '0.9em',
     },
     colorsContainer: {
         display: 'flex',
         width: '100%',
         height: 12,
         marginBottom: 4,
-        border: '1px solid #ccc',
-        borderRadius: 3,
+        borderRadius: 100,
     },
     colorBox: {
         flex: 1,
@@ -45,6 +46,13 @@ const styles = createStyles({
     },
 });
 
+const getColorBoxStyle = (idx: number, total: number) => ({
+    borderTopLeftRadius: idx === 0 ? 5 : 0,
+    borderBottomLeftRadius: idx === 0 ? 5 : 0,
+    borderTopRightRadius: idx === total - 1 ? 5 : 0,
+    borderBottomRightRadius: idx === total - 1 ? 5 : 0,
+});
+
 const MapLegend = ({ title, colorScheme = 'BlueWhiteRed' }: MapLegendProps) => {
     // Create an array from -10 to +10 with steps of 2
     const anomalyValues = Array.from({ length: 11 }, (_, i) => (i * 2) - 10);
@@ -57,12 +65,13 @@ const MapLegend = ({ title, colorScheme = 'BlueWhiteRed' }: MapLegendProps) => {
                 </div>
             )}
             <div style={styles.colorsContainer}>
-                {anomalyValues.map(value => (
+                {anomalyValues.map((value, idx) => (
                     <div
                         key={`color-${value}`}
                         style={{
                             ...styles.colorBox,
-                            backgroundColor: getAnomalyColor(value, colorScheme)
+                            ...getColorBoxStyle(idx, anomalyValues.length),
+                            backgroundColor: getAnomalyColor(value, colorScheme),
                         }}
                     />
                 ))}
