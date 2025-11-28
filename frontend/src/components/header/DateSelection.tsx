@@ -46,6 +46,13 @@ const styles = createStyles({
         backgroundColor: 'rgb(7, 87, 156)',
         borderColor: 'rgb(7, 87, 156)',
     },
+    calendarIconContainerDisabled: {
+        cursor: 'not-allowed',
+        opacity: 0.5,
+        backgroundColor: '#f5f5f5',
+        borderColor: '#e0e0e0',
+        boxShadow: 'none',
+    },
     icon: {
         fontSize: '1rem',
         color: '#555',
@@ -55,6 +62,9 @@ const styles = createStyles({
     },
     iconInActiveContainer: {
         color: '#f8f9fa',
+    },
+    iconDisabled: {
+        color: '#999',
     },
     toggleButton: {
         cursor: 'pointer',
@@ -77,6 +87,14 @@ const styles = createStyles({
         backgroundColor: 'rgb(7, 87, 156)',
         color: '#f8f9fa',
         borderColor: 'rgb(7, 87, 156)',
+    },
+    toggleButtonDisabled: {
+        cursor: 'not-allowed',
+        opacity: 0.5,
+        backgroundColor: '#f5f5f5',
+        borderColor: '#e0e0e0',
+        color: '#999',
+        boxShadow: 'none',
     },
     popup: {
         position: 'absolute',
@@ -119,6 +137,7 @@ const DateSelection = () => {
     const [isCalendarOpen, setIsCalendarOpen] = useState<boolean>(false);
     const [recentlyClosed, setRecentlyClosed] = useState<boolean>(false);
     const [renderYesterdayButton, setRenderYesterdayButton] = useState<boolean>(false);
+    const [isReady, setIsReady] = useState<boolean>(false);
 
     const [hoveredButton, setHoveredButton] = useState<'yesterday' | 'today' | 'calendar' | null>(null);
 
@@ -149,6 +168,7 @@ const DateSelection = () => {
         setDisabledAfter(convertYYYYMMDDToDate(dateRange.to).toJSDate());
 
         setRenderYesterdayButton(isWithinRange);
+        setIsReady(true);
     }, [dateRange])
 
     const handleDateSelection = useCallback((date: DateTime) => {
@@ -158,6 +178,8 @@ const DateSelection = () => {
 
     // Handle today selection
     const handleTodayClick = () => {
+        if (!isReady) return;
+
         const today = getNow();
 
         if (today.hasSame(DateTime.fromISO(selectedDate), 'day')) {
@@ -172,6 +194,8 @@ const DateSelection = () => {
 
     // Handle yesterday selection
     const handleYesterdayClick = () => {
+        if (!isReady || !renderYesterdayButton) return;
+
         const yesterday = getNow().minus({ days: 1 });
         handleDateSelection(yesterday);
         if (window.location.pathname !== '/') {
@@ -213,6 +237,8 @@ const DateSelection = () => {
 
     // Handle calendar icon click
     const toggleCalendar = () => {
+        if (!isReady) return;
+
         // Don't open if it was recently closed
         if (recentlyClosed && !isCalendarOpen) {
             return;
@@ -255,30 +281,30 @@ const DateSelection = () => {
     return (
         <div style={styles.container}>
             <div style={styles.row}>
-                {renderYesterdayButton && (
-                    <div
-                        style={{
-                            ...styles.toggleButton,
-                            ...(hoveredButton === 'yesterday' && !isYesterdaySelected && styles.toggleButtonHover),
-                            ...(isYesterdaySelected && styles.toggleButtonActive),
-                        }}
-                        onClick={handleYesterdayClick}
-                        onMouseEnter={() => setHoveredButton('yesterday')}
-                        onMouseLeave={() => setHoveredButton(null)}
-                    >
-                        Gestern
-                    </div>)
-                }
+                <div
+                    style={{
+                        ...styles.toggleButton,
+                        ...(!isReady || !renderYesterdayButton ? styles.toggleButtonDisabled : {}),
+                        ...(isReady && renderYesterdayButton && hoveredButton === 'yesterday' && !isYesterdaySelected ? styles.toggleButtonHover : {}),
+                        ...(isReady && renderYesterdayButton && isYesterdaySelected ? styles.toggleButtonActive : {}),
+                    }}
+                    onClick={handleYesterdayClick}
+                    onMouseEnter={() => isReady && renderYesterdayButton && setHoveredButton('yesterday')}
+                    onMouseLeave={() => isReady && renderYesterdayButton && setHoveredButton(null)}
+                >
+                    Gestern
+                </div>
 
                 <div
                     style={{
                         ...styles.toggleButton,
-                        ...(hoveredButton === 'today' && !isTodaySelected && styles.toggleButtonHover),
-                        ...(isTodaySelected && styles.toggleButtonActive),
+                        ...(!isReady ? styles.toggleButtonDisabled : {}),
+                        ...(isReady && hoveredButton === 'today' && !isTodaySelected ? styles.toggleButtonHover : {}),
+                        ...(isReady && isTodaySelected ? styles.toggleButtonActive : {}),
                     }}
                     onClick={handleTodayClick}
-                    onMouseEnter={() => setHoveredButton('today')}
-                    onMouseLeave={() => setHoveredButton(null)}
+                    onMouseEnter={() => isReady && setHoveredButton('today')}
+                    onMouseLeave={() => isReady && setHoveredButton(null)}
                 >
                     Heute
                 </div>
@@ -286,17 +312,19 @@ const DateSelection = () => {
                 <div
                     style={{
                         ...styles.calendarIconContainer,
-                        ...(hoveredButton === 'calendar' && !(!isYesterdaySelected && !isTodaySelected) && styles.calendarIconContainerHover),
-                        ...(!isYesterdaySelected && !isTodaySelected && styles.calendarIconContainerActive),
+                        ...(!isReady ? styles.calendarIconContainerDisabled : {}),
+                        ...(isReady && hoveredButton === 'calendar' && !(!isYesterdaySelected && !isTodaySelected) ? styles.calendarIconContainerHover : {}),
+                        ...(isReady && !isYesterdaySelected && !isTodaySelected ? styles.calendarIconContainerActive : {}),
                     }}
                     onClick={toggleCalendar}
-                    onMouseEnter={() => setHoveredButton('calendar')}
-                    onMouseLeave={() => setHoveredButton(null)}
+                    onMouseEnter={() => isReady && setHoveredButton('calendar')}
+                    onMouseLeave={() => isReady && setHoveredButton(null)}
                 >
                     <FaCalendarDay style={{
                         ...styles.icon,
-                        ...(isCalendarOpen && styles.iconActive),
-                        ...(!isYesterdaySelected && !isTodaySelected && styles.iconInActiveContainer),
+                        ...(!isReady ? styles.iconDisabled : {}),
+                        ...(isReady && isCalendarOpen ? styles.iconActive : {}),
+                        ...(isReady && !isYesterdaySelected && !isTodaySelected ? styles.iconInActiveContainer : {}),
                     }} />
                 </div>
             </div>
