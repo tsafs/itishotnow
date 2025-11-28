@@ -1,17 +1,11 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import type { CSSProperties } from 'react';
-import { analyzeTemperatureAnomaly } from '../../../utils/TemperatureUtils.js';
-import { useSelectedItem } from '../../../store/hooks/hooks.js';
-import type { SelectedItem } from '../../../store/selectors/selectedItemSelectors.js';
-import { CITY_SELECT_TIMEOUT } from '../../../constants/page.js';
+import { HEATMAP_INITIAL_DISPLAY_TIMEOUT } from '../../../constants/page.js';
 import { theme, createStyles } from '../../../styles/design-system.js';
 import { useBreakpointDown } from '../../../hooks/useBreakpoint.js';
-import { useYearlyMeanByDayData } from '../../../store/slices/YearlyMeanByDaySlice.js';
-import { useReferenceYearlyHourlyInterpolatedByDayData } from '../../../store/slices/ReferenceYearlyHourlyInterpolatedByDaySlice.js';
-import { useSelectedDate } from '../../../store/slices/selectedDateSlice.js';
-import { getNow } from '../../../utils/dateUtils.js';
-import { DateTime } from 'luxon';
 import { useAppSelector } from '../../../store/hooks/useAppSelector.js';
+import { useStationDetailsData } from './useStationDetailsData.js';
+import type { StationDetailsData } from './useStationDetailsData.js';
 
 const getPanelStyle = (isTablet: boolean): CSSProperties => ({
     display: 'flex',
@@ -115,149 +109,40 @@ const styles = createStyles({
     },
 });
 
-interface AnomalyDetails {
-    comparisonMessage: string;
-    anomalyMessage: string;
-}
-
 /**
  * Panel component to display city information with nearest weather station data
  */
 const StationDetails = () => {
     const selectedCityId = useAppSelector((state) => state.selectedCity.cityId);
-    const yearlyMeanByDayData = useYearlyMeanByDayData();
-    const referenceYearlyHourlyInterpolatedByDayData = useReferenceYearlyHourlyInterpolatedByDayData();
-    const selectedItem = useSelectedItem();
-    const selectedDate = useSelectedDate();
     const isTablet = useBreakpointDown('tablet');
 
-    const [item, setItem] = useState<SelectedItem | null>(null);
-    const [anomaly, setAnomaly] = useState<number | null>(null);
-    const [subtitle, setSubtitle] = useState<string>('');
-    const [anomalyDetails, setAnomalyDetails] = useState<AnomalyDetails | null>(null);
+    // Get all computed data synchronously from custom hook
+    const computedData = useStationDetailsData();
 
-    const prevItemRef = useRef<SelectedItem | null>(null);
+    // Track initial mount to show placeholders only on first load
+    const isInitialMount = useRef<boolean>(true);
 
-    const isToday = DateTime.fromISO(selectedDate).hasSame(getNow(), 'day');
+    // State for displayed data (used to delay updates on initial mount only)
+    const [displayData, setDisplayData] = useState<StationDetailsData | null>(null);
 
-    // Get selected data with loading delay
+    // Handle initial mount delay and subsequent immediate updates
     useEffect(() => {
-        // If no data is available, reset state
-        if (!selectedItem) {
-            setItem(null);
-            setAnomaly(null);
-            setSubtitle('');
-            setAnomalyDetails(null);
+        // If no data is ready, don't update (wait for all data to be available)
+        if (!computedData.item || !computedData.subtitle || !computedData.anomalyDetails) {
             return;
         }
 
-        // If nothing has changed, do nothing
-        if (prevItemRef.current === selectedItem) return;
-
-        // Simulate loading delay
-        setItem(null);
-        setAnomaly(null);
-        setSubtitle('');
-        setAnomalyDetails(null);
-        setTimeout(() => {
-            setItem(selectedItem);
-            prevItemRef.current = selectedItem;
-        }, CITY_SELECT_TIMEOUT);
-    }, [selectedItem]);
-
-    // Calculate anomaly
-    useEffect(() => {
-        if (!item) return;
-
-        const luxonDate = DateTime.fromISO(selectedDate);
-        const isToday = luxonDate.hasSame(getNow(), 'day');
-
-        if (isToday) {
-            if (!referenceYearlyHourlyInterpolatedByDayData) return;
-
-            const { data, month, day } = referenceYearlyHourlyInterpolatedByDayData;
-            if (!data || month !== luxonDate.month || day !== luxonDate.day) return;
-
-            const hourlyData = data[item.station.id];
-            if (!hourlyData) return;
-
-            const hour = DateTime.fromFormat(item.data.date, 'dd.MM.yyyy HH:mm', { zone: 'Europe/Berlin' }).hour;
-            const currentTemperature = item.data.temperature ?? null;
-            if (!currentTemperature) return;
-
-            const referenceTemperature = hourlyData[`hour_${hour}`];
-
-            if (referenceTemperature === undefined || referenceTemperature === null) return;
-
-            const anomalyValue = Math.round((currentTemperature - referenceTemperature) * 10) / 10;
-            setAnomaly(anomalyValue);
+        // On initial mount, show placeholders with delay for better UX
+        if (isInitialMount.current) {
+            setTimeout(() => {
+                setDisplayData(computedData);
+                isInitialMount.current = false;
+            }, HEATMAP_INITIAL_DISPLAY_TIMEOUT);
         } else {
-            if (!yearlyMeanByDayData || Object.keys(yearlyMeanByDayData).length === 0) return;
-
-            const maxTemperature = yearlyMeanByDayData[item.station.id]?.tasmax;
-            if (maxTemperature === undefined || maxTemperature === null) return;
-            if (!item.data.maxTemperature) return;
-
-            const maxAnomaly = Math.round((item.data.maxTemperature - maxTemperature) * 10) / 10;
-            setAnomaly(maxAnomaly);
+            // After initial mount, update immediately and synchronously
+            setDisplayData(computedData);
         }
-    }, [yearlyMeanByDayData, item, selectedDate, referenceYearlyHourlyInterpolatedByDayData]);
-
-    // Calculate subtitle text
-    useEffect(() => {
-        if (!item) return;
-        // Format the distance to show as km when available
-        const distance = item.city.distanceToStation;
-        const formattedDistance = distance != null ? `(${Math.round(distance)}km)` : '';
-
-        let subtitleText = '';
-        if (item.station.name) {
-            const distanceLabel = formattedDistance ? ` ${formattedDistance}` : '';
-            subtitleText = `Wetterstation: <span class="nowrap">${item.station.name}${distanceLabel}</span>`;
-        }
-        if (item.data.date) {
-            // Use Luxon for all date parsing and formatting
-            const now = getNow();
-            let date;
-            let isToday = false;
-
-            // selectedDate is a string, parse with Luxon
-            const selectedDateLuxon = DateTime.fromISO(selectedDate);
-            isToday = selectedDateLuxon.hasSame(now, 'day');
-
-            if (isToday) {
-                // Convert "20.07.2025 18:20" -> "2025-07-20T18:20"
-                date = DateTime.fromFormat(item.data.date, 'dd.MM.yyyy HH:mm', { zone: 'Europe/Berlin' });
-            } else {
-                // Convert "20250720" -> "2025-07-20"
-                date = DateTime.fromFormat(item.data.date, 'yyyyMMdd', { zone: 'Europe/Berlin' });
-            }
-
-            if (date && date.isValid) {
-                if (isToday) {
-                    subtitleText += ` <span class="nowrap">${date.toLocaleString({
-                        ...DateTime.DATE_FULL,
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    })} Uhr</span>`;
-                } else {
-                    subtitleText += ` <span class="nowrap">${date.toLocaleString(DateTime.DATE_FULL)}</span>`;
-                }
-            }
-        }
-
-        setSubtitle(subtitleText);
-    }, [item, selectedDate]);
-
-    // Calculate comparison details using the utility function
-    useEffect(() => {
-        if (anomaly === null) return;
-        // Use Luxon for date comparison
-        const now = getNow();
-        const selectedDateLuxon = DateTime.fromISO(selectedDate);
-        const isToday = selectedDateLuxon.hasSame(now, 'day');
-        setAnomalyDetails(analyzeTemperatureAnomaly(isToday, anomaly));
-    }, [anomaly, selectedDate]);
+    }, [computedData]);
 
     // Memoized computed styles
     const panelStyle = useMemo(() => getPanelStyle(isTablet), [isTablet]);
@@ -279,107 +164,107 @@ const StationDetails = () => {
 
     return (
         <div style={panelStyle}>
-            {item && (<h2 style={nameStyle}>{item.city.name}</h2>)}
-            {!item && (<h2 style={{ ...nameStyle, ...placeholderStyle }}>Eine Stadt</h2>)}
-
-            {subtitle && (
-                <div style={subtitleStyle} dangerouslySetInnerHTML={{ __html: subtitle }} />
+            {displayData && displayData.item && displayData.anomalyDetails && (
+                <>
+                    <h2 style={nameStyle}>{displayData.item.city.name}</h2>
+                    <div style={subtitleStyle} dangerouslySetInnerHTML={{ __html: displayData.subtitle }} />
+                    <div style={metricsStyle}>
+                        <div style={styles.doubleCell}>
+                            <div style={{ ...styles.metricCell, ...styles.metricCellHighlight }}>
+                                <span style={styles.metricLabel}>{displayData.isToday ? "Zuletzt" : "Mittel"}</span>
+                                <span style={styles.metricValue}>
+                                    {displayData.item.data.temperature !== undefined
+                                        ? `${displayData.item.data.temperature.toFixed(1)}°C`
+                                        : "k. A."}
+                                </span>
+                            </div>
+                            <div style={styles.metricCell}>
+                                <span style={styles.metricLabel}>Min</span>
+                                <span style={styles.metricValue}>
+                                    {displayData.item.data.minTemperature !== undefined
+                                        ? `${displayData.item.data.minTemperature.toFixed(1)}°C`
+                                        : "k. A."}
+                                </span>
+                            </div>
+                        </div>
+                        <div style={styles.doubleCell}>
+                            <div style={styles.metricCell}>
+                                <span style={styles.metricLabel}>Max</span>
+                                <span style={styles.metricValue}>
+                                    {displayData.item.data.maxTemperature !== undefined
+                                        ? `${displayData.item.data.maxTemperature.toFixed(1)}°C`
+                                        : "k. A."}
+                                </span>
+                            </div>
+                            <div style={styles.metricCell}>
+                                <span style={styles.metricLabel}>Luft</span>
+                                <span style={styles.metricValue}>
+                                    {displayData.item.data.humidity !== undefined
+                                        ? `${displayData.item.data.humidity.toFixed(0)}%`
+                                        : "k. A."}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div style={comparisonStyle}>
+                        <div style={styles.comparisonMessage}>
+                            {displayData.anomalyDetails.comparisonMessage}
+                        </div>
+                        <span style={styles.anomaly}>
+                            {displayData.anomalyDetails.anomalyMessage}
+                        </span>
+                    </div>
+                </>
             )}
-            {!subtitle && (
-                <div style={{ ...subtitleStyle, ...placeholderStyle }}>
-                    Wetterstation: Eine-Wetterstation (6km) 88.88.2025 19:20 Uhr
-                </div>
-            )}
+            {!(displayData && displayData.item && displayData.anomalyDetails) && (
+                <>
+                    <h2 style={{ ...nameStyle, ...placeholderStyle }}>Eine Stadt</h2>
+                    <div style={{ ...subtitleStyle, ...placeholderStyle }}>
+                        Wetterstation: Eine-Wetterstation (6km) 88.88.2025 19:20 Uhr
+                    </div>
 
-            <div style={metricsStyle}>
-                <div style={styles.doubleCell}>
-                    <div style={{ ...styles.metricCell, ...styles.metricCellHighlight }}>
-                        <span style={styles.metricLabel}>{isToday ? "Zuletzt" : "Mittel"}</span>
-                        {item && (
-                            <span style={styles.metricValue}>
-                                {item.data.temperature !== undefined
-                                    ? `${item.data.temperature.toFixed(1)}°C`
-                                    : "k. A."}
-                            </span>
-                        )}
-                        {!item && (
-                            <span style={{ ...styles.metricValue, ...placeholderStyle }}>
-                                20.5°C
-                            </span>
-                        )}
+                    <div style={metricsStyle}>
+                        <div style={styles.doubleCell}>
+                            <div style={{ ...styles.metricCell, ...styles.metricCellHighlight }}>
+                                <span style={styles.metricLabel}>{computedData.isToday ? "Zuletzt" : "Mittel"}</span>
+                                <span style={{ ...styles.metricValue, ...placeholderStyle }}>
+                                    20.5°C
+                                </span>
+                            </div>
+                            <div style={styles.metricCell}>
+                                <span style={styles.metricLabel}>Min</span>
+                                <span style={{ ...styles.metricValue, ...placeholderStyle }}>
+                                    14.1°C
+                                </span>
+                            </div>
+                        </div>
+                        <div style={styles.doubleCell}>
+                            <div style={styles.metricCell}>
+                                <span style={styles.metricLabel}>Max</span>
+                                <span style={{ ...styles.metricValue, ...placeholderStyle }}>
+                                    28.1°C
+                                </span>
+                            </div>
+                            <div style={styles.metricCell}>
+                                <span style={styles.metricLabel}>Luft</span>
+                                <span style={{ ...styles.metricValue, ...placeholderStyle }}>
+                                    64%
+                                </span>
+                            </div>
+                        </div>
                     </div>
-                    <div style={styles.metricCell}>
-                        <span style={styles.metricLabel}>Min</span>
-                        {item && (
-                            <span style={styles.metricValue}>
-                                {item.data.minTemperature !== undefined
-                                    ? `${item.data.minTemperature.toFixed(1)}°C`
-                                    : "k. A."}
-                            </span>
-                        )}
-                        {!item && (
-                            <span style={{ ...styles.metricValue, ...placeholderStyle }}>
-                                14.1°C
-                            </span>
-                        )}
-                    </div>
-                </div>
-                <div style={styles.doubleCell}>
-                    <div style={styles.metricCell}>
-                        <span style={styles.metricLabel}>Max</span>
-                        {item && (
-                            <span style={styles.metricValue}>
-                                {item.data.maxTemperature !== undefined
-                                    ? `${item.data.maxTemperature.toFixed(1)}°C`
-                                    : "k. A."}
-                            </span>
-                        )}
-                        {!item && (
-                            <span style={{ ...styles.metricValue, ...placeholderStyle }}>
-                                28.1°C
-                            </span>
-                        )}
-                    </div>
-                    <div style={styles.metricCell}>
-                        <span style={styles.metricLabel}>Luft</span>
-                        {item && (
-                            <span style={styles.metricValue}>
-                                {item.data.humidity !== undefined
-                                    ? `${item.data.humidity.toFixed(0)}%`
-                                    : "k. A."}
-                            </span>
-                        )}
-                        {!item && (
-                            <span style={{ ...styles.metricValue, ...placeholderStyle }}>
-                                64%
-                            </span>
-                        )}
-                    </div>
-                </div>
-            </div>
 
-            <div style={comparisonStyle}>
-                {!anomalyDetails && (
-                    <>
+                    <div style={comparisonStyle}>
                         <div style={{ ...styles.comparisonMessage, ...placeholderStyle }}>
                             Absolut keine Ahnung
                         </div>
                         <div style={{ ...styles.anomaly, ...placeholderStyle }}>
                             Die maximale Temperatur liegt 3.1&nbsp;°C unter dem historischen&nbsp;Mittelwert.
                         </div>
-                    </>
-                )}
-                {anomalyDetails && (
-                    <>
-                        <div style={styles.comparisonMessage}>
-                            {anomalyDetails.comparisonMessage}
-                        </div>
-                        <span style={styles.anomaly}>
-                            {anomalyDetails.anomalyMessage}
-                        </span>
-                    </>
-                )}
-            </div>
+                    </div>
+                </>
+            )}
+
         </div>
     );
 };
