@@ -108,7 +108,6 @@ const HeatmapGermanyRightSide = memo(() => {
         wide: { width: 700, height: 952 }
     };
     const plotDims = MAP_DIMENSIONS[breakpoint];
-    console.log('HeatmapGermanyRightSide render - breakpoint:', breakpoint, 'dims:', plotDims);
 
     const sampledPlotData = useSampledPlotData();
     const selectedDate = useSelectedDate();
