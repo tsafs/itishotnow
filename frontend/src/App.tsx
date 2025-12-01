@@ -137,7 +137,7 @@ function AppContent() {
             city.name.toLowerCase().includes(DEFAULT_CITY));
 
         if (city) {
-            dispatch(selectCity(city.id, true));
+            dispatch(selectCity(city.id, false));
         }
     }, [cities, selectedCityId, dispatch]);
 

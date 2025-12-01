@@ -1,21 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
 
-interface DateDependentLoadingOptions {
+interface AsyncLoadingOptions {
     dataStatusHook: () => { isLoading: boolean; error: string | null };
     renderCompleteSignal: boolean;
     minDisplayDuration: number;
 }
 
-interface DateDependentLoadingResult {
+interface AsyncLoadingResult {
     isLoading: boolean;
     error: string | null;
 }
 
-export const useDateDependentLoading = ({
+const useAsyncLoadingOverlay = ({
     dataStatusHook,
     renderCompleteSignal,
     minDisplayDuration,
-}: DateDependentLoadingOptions): DateDependentLoadingResult => {
+}: AsyncLoadingOptions): AsyncLoadingResult => {
     const { isLoading: sliceLoading, error } = dataStatusHook();
     const [isOverlayVisible, setIsOverlayVisible] = useState(true);
     const loadingStartRef = useRef<number | null>(null);
@@ -81,3 +81,11 @@ export const useDateDependentLoading = ({
         error,
     };
 };
+
+export const useDateDependentLoading = (options: AsyncLoadingOptions): AsyncLoadingResult =>
+    useAsyncLoadingOverlay(options);
+
+export const useCityDependentLoading = (options: AsyncLoadingOptions): AsyncLoadingResult =>
+    useAsyncLoadingOverlay(options);
+
+export type { AsyncLoadingOptions as DateDependentLoadingOptions, AsyncLoadingResult as DateDependentLoadingResult };

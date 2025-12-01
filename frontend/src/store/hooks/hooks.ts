@@ -16,6 +16,10 @@ import {
     type PlotDatum,
     type CityLabelDatum,
 } from '../selectors/heatmapSelectors.js';
+import {
+    selectRollingAverageDataStatus,
+    selectRollingAverageDataError,
+} from '../slices/rollingAverageDataSlice.js';
 import { getNow } from '../../utils/dateUtils.js';
 import type { DateKey } from '../slices/DailyRecentByDateSlice.js';
 
@@ -33,6 +37,16 @@ export const useSampledPlotData = () => useAppSelector(selectSampledPlotData);
 export const useCityLabelPlotData = () => useAppSelector(selectCityLabelPlotData) as CityLabelDatum[] | null;
 export const useGeoJSON = () => useAppSelector(selectGeoJSONData);
 export const useGeoJSONStatus = () => useAppSelector(selectGeoJSONStatus);
+export const useTemperatureAnomaliesDataStatus = () => {
+    const rollingAverageStatus = useAppSelector(selectRollingAverageDataStatus);
+    const rollingAverageError = useAppSelector(selectRollingAverageDataError);
+    const isCityChanging = useAppSelector(state => state.selectedCity.isCityChanging);
+
+    return useMemo(() => ({
+        isLoading: isCityChanging || rollingAverageStatus === 'loading',
+        error: rollingAverageError ?? null,
+    }), [isCityChanging, rollingAverageError, rollingAverageStatus]);
+};
 
 export const useHeatmapDataStatus = () => {
     const selectedDate = useAppSelector(state => state.selectedDate.value);

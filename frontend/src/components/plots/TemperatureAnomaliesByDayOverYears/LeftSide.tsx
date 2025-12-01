@@ -1,5 +1,3 @@
-/** This file is not yet being used. Do not consider it for any code changes. */
-
 import { useEffect, useRef, useState, useMemo } from 'react';
 import type { CSSProperties } from 'react';
 import * as Plot from "@observablehq/plot";
@@ -10,12 +8,22 @@ import { filterTemperatureDataByDateWindow } from './rollingAverageUtils.js';
 import { theme, createStyles } from '../../../styles/design-system.js';
 import { useBreakpoint } from '../../../hooks/useBreakpoint.js';
 import { selectRollingAverageData } from '../../../store/slices/rollingAverageDataSlice.js';
-import { fetchRollingAverageData, selectRollingAverageDataStatus } from '../../../store/slices/rollingAverageDataSlice.js';
-import { useSelectedStationId, useSelectedCityName, useSelectedStationData } from '../../../store/hooks/hooks.js';
+import {
+    useSelectedCityName,
+    useSelectedStationData,
+    useTemperatureAnomaliesDataStatus,
+} from '../../../store/hooks/hooks.js';
 import { DateTime } from 'luxon';
 import { useSelectedDate } from '../../../store/slices/selectedDateSlice.js';
 import { useAppSelector } from '../../../store/hooks/useAppSelector.js';
 import { useAppDispatch } from '../../../store/hooks/useAppDispatch.js';
+import {
+    setCityChangeRenderComplete,
+    useTemperatureAnomaliesRenderComplete,
+} from '../../../store/slices/temperatureAnomaliesByDayOverYearsSlice.js';
+import { useCityDependentLoading } from '../../../hooks/useDateDependentLoading.js';
+import { MIN_LOADING_DISPLAY_DURATION } from '../../../constants/page.js';
+import LoadingError from '../../common/LoadingError/LoadingError.js';
 import './LeftSide.css';
 
 interface BasePlotEntry {
@@ -45,8 +53,36 @@ const getErrorStyle = (): CSSProperties => ({
 });
 
 const styles = createStyles({
+    plotWrapper: {
+        position: 'relative',
+        width: '100%',
+        minHeight: 360,
+    },
     plotRef: {
         overflow: 'visible',
+    },
+    loadingOverlay: {
+        position: 'absolute' as const,
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'transparent',
+        zIndex: 2,
+    },
+    shimmerContainer: {
+        display: 'flex',
+        gap: '8px',
+    },
+    shimmerDot: {
+        width: '12px',
+        height: '12px',
+        borderRadius: '50%',
+        backgroundColor: theme.colors.backgroundLight,
+        animation: 'shimmer 1.4s ease-in-out infinite',
     },
 });
 
@@ -55,15 +91,20 @@ const TemperatureAnomaliesByDayOverYearsLeftSide = () => {
     const breakpoint = useBreakpoint();
 
     const containerRef = useRef<HTMLDivElement | null>(null);
-    const selectedStationId = useSelectedStationId();
     const selectedCityName = useSelectedCityName();
     const selectedStationData = useSelectedStationData();
     const selectedDate = useSelectedDate();
 
     const rollingAverageData = useAppSelector(selectRollingAverageData);
-    const rollingAverageDataStatus = useAppSelector(selectRollingAverageDataStatus);
 
     const [error, setError] = useState<string | null>(null);
+
+    const renderComplete = useTemperatureAnomaliesRenderComplete();
+    const { isLoading: isOverlayVisible, error: loadingError } = useCityDependentLoading({
+        dataStatusHook: useTemperatureAnomaliesDataStatus,
+        renderCompleteSignal: renderComplete,
+        minDisplayDuration: MIN_LOADING_DISPLAY_DURATION,
+    });
 
     const isMobile = breakpoint === 'mobile';
 
@@ -72,28 +113,19 @@ const TemperatureAnomaliesByDayOverYearsLeftSide = () => {
     const baselineStartYear = 1961; // Define baseline start year
     const baselineEndYear = 1990;   // Define baseline end year
 
-    // Fetch other data reliant on the selected city
     useEffect(() => {
-        if (!selectedStationId) return;
-
-        const loadData = async () => {
-            try {
-                await Promise.all([
-                    dispatch(fetchRollingAverageData({ stationId: selectedStationId })),
-                ]);
-            } catch (error) {
-                console.error("Failed to load data:", error);
-            }
-        };
-
-        loadData();
-    }, [dispatch, selectedStationId]);
+        if (loadingError) {
+            dispatch(setCityChangeRenderComplete(true));
+        }
+    }, [dispatch, loadingError]);
 
     // Create the plot using Observable Plot
     useEffect(() => {
-        if (rollingAverageDataStatus !== "succeeded" || !selectedCityName || !selectedStationData || !selectedDate) return;
+        if (!selectedCityName || !selectedStationData || !selectedDate) return;
 
         setError(null);
+
+        if (!Array.isArray(rollingAverageData) || rollingAverageData.length === 0) return;
 
         // Clear any existing plot
         if (containerRef.current) {
@@ -114,6 +146,7 @@ const TemperatureAnomaliesByDayOverYearsLeftSide = () => {
 
             if (primaryDayData.length === 0) {
                 setError(`No data found for ${todayMonthDay} in the selected time period`);
+                dispatch(setCityChangeRenderComplete(true));
                 return;
             }
 
@@ -151,11 +184,13 @@ const TemperatureAnomaliesByDayOverYearsLeftSide = () => {
 
             if (averageTempForPrimaryDay == null) {
                 setError('Insufficient baseline data to compute anomalies');
+                dispatch(setCityChangeRenderComplete(true));
                 return;
             }
 
             if (Number.isNaN(averageTempForPrimaryDay)) {
                 setError('Baseline data produced invalid average value');
+                dispatch(setCityChangeRenderComplete(true));
                 return;
             }
 
@@ -330,12 +365,15 @@ const TemperatureAnomaliesByDayOverYearsLeftSide = () => {
 
             containerRef.current?.appendChild(plot);
 
+            dispatch(setCityChangeRenderComplete(true));
+
             return () => plot.remove();
         } catch (err) {
             console.error("Error creating plot:", err);
             setError("Failed to create plot visualization");
+            dispatch(setCityChangeRenderComplete(true));
         }
-    }, [rollingAverageData, rollingAverageDataStatus, selectedStationData, selectedCityName, fromYear, toYear, selectedDate]);
+    }, [dispatch, rollingAverageData, selectedStationData, selectedCityName, fromYear, toYear, selectedDate]);
 
     // Memoized computed styles
     const containerStyle = useMemo(
@@ -350,8 +388,29 @@ const TemperatureAnomaliesByDayOverYearsLeftSide = () => {
 
     return (
         <div style={containerStyle} className="temperature-scatter-plot-container">
+            <div style={styles.plotWrapper}>
+                <div ref={containerRef} style={styles.plotRef}></div>
+                {isOverlayVisible && (
+                    <div style={styles.loadingOverlay}>
+                        {loadingError ? (
+                            <LoadingError message={loadingError} />
+                        ) : (
+                            <div style={styles.shimmerContainer}>
+                                <div style={{ ...styles.shimmerDot, animationDelay: '0s' }}></div>
+                                <div style={{ ...styles.shimmerDot, animationDelay: '0.2s' }}></div>
+                                <div style={{ ...styles.shimmerDot, animationDelay: '0.4s' }}></div>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
             {error && <div style={errorStyle}>{error}</div>}
-            <div ref={containerRef} style={styles.plotRef}></div>
+            <style>{`
+                @keyframes shimmer {
+                    0%, 100% { opacity: 0.3; transform: scale(1); }
+                    50% { opacity: 1; transform: scale(1.2); }
+                }
+            `}</style>
         </div>
     );
 };

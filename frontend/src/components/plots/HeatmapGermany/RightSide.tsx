@@ -326,7 +326,7 @@ const HeatmapGermanyRightSide = memo(() => {
             lastSelectedCityId.current = value.cityId;
 
             const isPredefined = PREDEFINED_CITIES.includes(value.cityName);
-            dispatch(selectCity(value.cityId, isPredefined));
+            dispatch(selectCity(value.cityId, !isPredefined));
         });
 
         dynamicPlotRef.current?.appendChild(dynamicPlot as unknown as HTMLElement);
