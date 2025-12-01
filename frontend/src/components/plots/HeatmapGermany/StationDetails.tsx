@@ -5,7 +5,7 @@ import { useBreakpointDown } from '../../../hooks/useBreakpoint.js';
 import { useAppSelector } from '../../../store/hooks/useAppSelector.js';
 import { useStationDetailsData } from './useStationDetailsData.js';
 import type { StationDetailsData } from './useStationDetailsData.js';
-import { useIsStaticPlotRendered } from '../../../store/slices/heatmapGermanySlice.js';
+import { useHeatmapRenderComplete } from '../../../store/slices/heatmapGermanySlice.js';
 
 const getPanelStyle = (isVertical: boolean): CSSProperties => ({
     display: 'flex',
@@ -120,7 +120,7 @@ const styles = createStyles({
 const StationDetails = () => {
     const selectedCityId = useAppSelector((state) => state.selectedCity.cityId);
     const isVertical = useBreakpointDown('desktop');
-    const isStaticPlotRendered = useIsStaticPlotRendered();
+    const isHeatmapReady = useHeatmapRenderComplete();
 
     // Get all computed data synchronously from custom hook
     const computedData = useStationDetailsData();
@@ -131,12 +131,12 @@ const StationDetails = () => {
     // Handle initial mount delay and subsequent immediate updates
     useEffect(() => {
         // If no data is ready, don't update (wait for all data to be available)
-        if (!computedData.item || !computedData.subtitle || !computedData.anomalyDetails || !isStaticPlotRendered) {
+        if (!computedData.item || !computedData.subtitle || !computedData.anomalyDetails || !isHeatmapReady) {
             return;
         }
 
         setDisplayData(computedData);
-    }, [computedData, isStaticPlotRendered]);
+    }, [computedData, isHeatmapReady]);
 
     // Memoized computed styles
     const panelStyle = useMemo(() => getPanelStyle(isVertical), [isVertical]);
