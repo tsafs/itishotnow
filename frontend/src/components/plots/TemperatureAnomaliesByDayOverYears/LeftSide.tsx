@@ -21,7 +21,7 @@ import {
     setCityChangeRenderComplete,
     useTemperatureAnomaliesRenderComplete,
 } from '../../../store/slices/temperatureAnomaliesByDayOverYearsSlice.js';
-import { useCityDependentLoading } from '../../../hooks/useDateDependentLoading.js';
+import { useAsyncLoadingOverlay } from '../../../hooks/useAsyncLoadingOverlay.js';
 import { MIN_LOADING_DISPLAY_DURATION } from '../../../constants/page.js';
 import LoadingError from '../../common/LoadingError/LoadingError.js';
 import './LeftSide.css';
@@ -100,7 +100,7 @@ const TemperatureAnomaliesByDayOverYearsLeftSide = () => {
     const [error, setError] = useState<string | null>(null);
 
     const renderComplete = useTemperatureAnomaliesRenderComplete();
-    const { isLoading: isOverlayVisible, error: loadingError } = useCityDependentLoading({
+    const { isLoading: isOverlayVisible, error: loadingError } = useAsyncLoadingOverlay({
         dataStatusHook: useTemperatureAnomaliesDataStatus,
         renderCompleteSignal: renderComplete,
         minDisplayDuration: MIN_LOADING_DISPLAY_DURATION,

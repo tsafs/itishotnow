@@ -11,7 +11,7 @@ interface AsyncLoadingResult {
     error: string | null;
 }
 
-const useAsyncLoadingOverlay = ({
+export const useAsyncLoadingOverlay = ({
     dataStatusHook,
     renderCompleteSignal,
     minDisplayDuration,
@@ -81,11 +81,5 @@ const useAsyncLoadingOverlay = ({
         error,
     };
 };
-
-export const useDateDependentLoading = (options: AsyncLoadingOptions): AsyncLoadingResult =>
-    useAsyncLoadingOverlay(options);
-
-export const useCityDependentLoading = (options: AsyncLoadingOptions): AsyncLoadingResult =>
-    useAsyncLoadingOverlay(options);
 
 export type { AsyncLoadingOptions as DateDependentLoadingOptions, AsyncLoadingResult as DateDependentLoadingResult };

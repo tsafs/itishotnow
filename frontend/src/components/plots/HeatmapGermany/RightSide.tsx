@@ -15,7 +15,7 @@ import { useSampledPlotData, useCityLabelPlotData, useGeoJSON, useGeoJSONStatus,
 import type { CityLabelDatum } from '../../../store/selectors/heatmapSelectors.js';
 import { MIN_LOADING_DISPLAY_DURATION } from '../../../constants/page.js';
 import { setDateChangeRenderComplete, useHeatmapRenderComplete } from '../../../store/slices/heatmapGermanySlice.js';
-import { useDateDependentLoading } from '../../../hooks/useDateDependentLoading.js';
+import { useAsyncLoadingOverlay } from '../../../hooks/useAsyncLoadingOverlay.js';
 import LoadingError from '../../common/LoadingError/LoadingError.js';
 
 const getPlotContainerLeftAlignStyle = (isVertical: boolean): CSSProperties => ({
@@ -127,7 +127,7 @@ const HeatmapGermanyRightSide = memo(() => {
 
     const [isPlotVisible, setShouldAnimatePlot] = useState<boolean>(false);
 
-    const { isLoading: isOverlayVisible, error: loadingError } = useDateDependentLoading({
+    const { isLoading: isOverlayVisible, error: loadingError } = useAsyncLoadingOverlay({
         dataStatusHook: useHeatmapDataStatus,
         renderCompleteSignal: renderComplete,
         minDisplayDuration: MIN_LOADING_DISPLAY_DURATION,
