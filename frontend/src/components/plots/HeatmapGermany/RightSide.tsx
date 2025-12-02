@@ -15,8 +15,7 @@ import { useSampledPlotData, useCityLabelPlotData, useGeoJSON, useGeoJSONStatus,
 import type { CityLabelDatum } from '../../../store/selectors/heatmapSelectors.js';
 import { MIN_LOADING_DISPLAY_DURATION } from '../../../constants/page.js';
 import { setDateChangeRenderComplete, useHeatmapRenderComplete } from '../../../store/slices/heatmapGermanySlice.js';
-import { useAsyncLoadingOverlay } from '../../../hooks/useAsyncLoadingOverlay.js';
-import LoadingError from '../../common/LoadingError/LoadingError.js';
+import AsyncLoadingOverlayWrapper from '../../common/AsyncLoadingOverlayWrapper/AsyncLoadingOverlayWrapper.js';
 
 const getPlotContainerLeftAlignStyle = (isVertical: boolean): CSSProperties => ({
     display: 'flex',
@@ -61,29 +60,6 @@ const styles = createStyles({
         zIndex: 1,
         color: theme.colors.textDark
     },
-    loadingOverlay: {
-        position: 'absolute' as const,
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'transparent',
-        zIndex: 2,
-    },
-    shimmerContainer: {
-        display: 'flex',
-        gap: '8px',
-    },
-    shimmerDot: {
-        width: '12px',
-        height: '12px',
-        borderRadius: '50%',
-        backgroundColor: theme.colors.backgroundLight,
-        animation: 'shimmer 1.4s ease-in-out infinite',
-    },
     textStyle: {
         fontSize: 12,
         dy: 8
@@ -126,17 +102,7 @@ const HeatmapGermanyRightSide = memo(() => {
 
     const [isPlotVisible, setShouldAnimatePlot] = useState<boolean>(false);
 
-    const { isLoading: isOverlayVisible, error: loadingError } = useAsyncLoadingOverlay({
-        dataStatusHook: useHeatmapDataStatus,
-        renderCompleteSignal: renderComplete,
-        minDisplayDuration: MIN_LOADING_DISPLAY_DURATION,
-    });
 
-    useEffect(() => {
-        if (loadingError) {
-            dispatch(setDateChangeRenderComplete(true));
-        }
-    }, [dispatch, loadingError]);
 
     const isToday = useMemo(() => DateTime.fromISO(selectedDate).hasSame(getNow(), 'day'), [selectedDate]);
 
@@ -361,7 +327,13 @@ const HeatmapGermanyRightSide = memo(() => {
     return (
         <div style={plotContainerLeftAlignStyle}>
             <div style={styles.plotContainer}>
-                <div style={plotStyle}>
+                <AsyncLoadingOverlayWrapper
+                    dataStatusHook={useHeatmapDataStatus}
+                    renderCompleteSignal={renderComplete}
+                    minDisplayDuration={MIN_LOADING_DISPLAY_DURATION}
+                    onError={() => dispatch(setDateChangeRenderComplete(true))}
+                    style={plotStyle}
+                >
                     <div style={{
                         ...styles.plotAnimationWrapper,
                         ...(isPlotVisible ? styles.plotAnimationWrapperVisible : {})
@@ -369,28 +341,9 @@ const HeatmapGermanyRightSide = memo(() => {
                         <div ref={staticPlotRef} style={styles.staticPlot}></div>
                         <div ref={dynamicPlotRef} style={styles.dynamicPlot}></div>
                     </div>
-                    {isOverlayVisible && (
-                        <div style={styles.loadingOverlay}>
-                            {loadingError ? (
-                                <LoadingError message={loadingError} />
-                            ) : (
-                                <div style={styles.shimmerContainer}>
-                                    <div style={{ ...styles.shimmerDot, animationDelay: '0s' }}></div>
-                                    <div style={{ ...styles.shimmerDot, animationDelay: '0.2s' }}></div>
-                                    <div style={{ ...styles.shimmerDot, animationDelay: '0.4s' }}></div>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
+                </AsyncLoadingOverlayWrapper>
                 <MapLegend title={title} colorScheme="Turbo" />
             </div>
-            <style>{`
-                @keyframes shimmer {
-                    0%, 100% { opacity: 0.3; transform: scale(1); }
-                    50% { opacity: 1; transform: scale(1.2); }
-                }
-            `}</style>
         </div>
     );
 });

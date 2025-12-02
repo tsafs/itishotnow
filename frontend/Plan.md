@@ -1,31 +1,49 @@
-Implement a comprehensive loading indicator system that appears when users select a different date, tracking both data fetching and plot generation completion, with a unified minimum display duration for smooth UX, overlay-based transitions that keep previous plot visible, and centralized reusable logic.
+Advise me whether it makes sense to abstract out the construction of useAsyncLoadingOverlay, showing the loading indicator and error into a wrapper component. I want to make it as easy as possible with as little as possible boilerplate code to create new plots.
 
-### Steps
+I could imagine that placeholder items very between plots, so keeping them configurable would be a good choice. However, error display and loading animations are probably the same for all plots. It also looks like the construction of the AsyncLoadingOptions is always very similar. As well as the use of useTemperatureAnomaliesRenderComplete or useHeatmapRenderComplete or similar functions of future plots. Functions calls like setCityChangeRenderComplete or setDateChangeRenderComplete would probably still have to be called from within the individual plot components.
 
-1. **Update loading configuration constants** in page.tsx: Remove `HEATMAP_INITIAL_DISPLAY_TIMEOUT` and replace with single `MIN_LOADING_DISPLAY_DURATION` constant (500ms) used for both initial page load and date changes, with clear documentation.
+loading overlay abstraction research
 
-2. **Create reusable error component** in new file `components/common/LoadingError/LoadingError.tsx`: Implement `<LoadingError message={string} />` component with consistent error styling (centered, red text, appropriate padding) that can be embedded within plot-specific placeholder containers.
+Searched for files matching `**/useAsyncLoadingOverlay.ts`, 1 match
 
-3. **Add global date change flag to Redux** in [`selectedDateSlice.ts`](store/slices/selectedDateSlice.ts): Add `isDateChanging: boolean` to state, set to `true` at start of `setDateAndFetchHistoricalData` thunk and `false` when data fetches complete. Export `selectIsDateChanging` selector.
+Read [](file:///home/sebastian/Projects/itishotnow/frontend/src/hooks/useAsyncLoadingOverlay.ts)
 
-4. **Create heatmap-specific data status hook** in [`store/hooks/hooks.ts`](store/hooks/hooks.ts): Add `useHeatmapDataStatus()` hook that internally uses selectors for `yearlyMeanByDayStatus`, `dailyRecentByDateStatus`, and their errors. Returns `{ isLoading: boolean, error: string | null }` representing the combined loading/error state of all data dependencies.
+Searched for text `useAsyncLoadingOverlay` (`**/frontend/**`), 7 results
 
-5. **Create generic loading orchestration hook** in new file `hooks/useDateDependentLoading.ts`: Implement `useDateDependentLoading({ dataStatusHook: () => { isLoading, error }, renderCompleteSignal: boolean, minDisplayDuration: number })` hook that enforces minimum display timing for both initial mount and date changes, waits for `renderCompleteSignal`, and returns `{ isLoading: boolean, error: string | null }` for overlay visibility control.
+Read [](file:///home/sebastian/Projects/itishotnow/frontend/src/components/plots/HeatmapGermany/RightSide.tsx)
 
-6. **Extend Redux state management** in [`heatmapGermanySlice.ts`](store/slices/heatmapGermanySlice.ts): Add `dateChangeRenderComplete: boolean` to state with actions `setDateChangeRenderComplete(boolean)` and `resetDateChangeRenderComplete()`. Export `selectDateChangeRenderComplete` selector. Remove `staticPlotRendered` and `setStaticPlotRendered`/`resetStaticPlotRendered` actions as they are no longer needed.
+Read [](file:///home/sebastian/Projects/itishotnow/frontend/src/components/plots/TemperatureAnomaliesByDayOverYears/LeftSide.tsx#1-1), lines 1 to 400
 
-7. **Update HeatmapGermany RightSide component** in [`RightSide.tsx`](components/plots/HeatmapGermany/RightSide.tsx): Replace local loading state (`isMapLoading`, `isInitialMount`) with `useDateDependentLoading({ dataStatusHook: useHeatmapDataStatus, renderCompleteSignal: dateChangeRenderComplete, minDisplayDuration: MIN_LOADING_DISPLAY_DURATION })`. Keep `isPlotVisible` state and `plotAnimationWrapper` transition for initial fade-in on first mount. Set `isPlotVisible` to true once initial loading completes. Dispatch `setDateChangeRenderComplete(true)` when plot build completes. Dispatch `resetDateChangeRenderComplete()` when dependencies change. Update loading overlay to show shimmer dots (no error) or `<LoadingError />` (when error) as transparent overlay over existing plot, controlled by loading state from hook.
+Read [](file:///home/sebastian/Projects/itishotnow/frontend/src/components/plots/TemperatureAnomaliesByDayOverYears/LeftSide.tsx#400-400), lines 400 to 421
 
-8. **Reset render flags on date change** in [`selectedDateSlice.ts`](store/slices/selectedDateSlice.ts): Dispatch `resetDateChangeRenderComplete()` for heatmap slice at the beginning of `setDateAndFetchHistoricalData` thunk to ensure loading indicator appears for new date selection.
-
-9. **Disable date picker during loading** in [`DateSelection.tsx`](components/header/DateSelection.tsx): Subscribe to `selectIsDateChanging` and disable all date selection buttons/calendar while `true` to prevent race conditions from rapid date changes.
-
-10. **Remove deprecated imports and usages**: Search for and remove all remaining references to `HEATMAP_INITIAL_DISPLAY_TIMEOUT`, `staticPlotRendered`, `setStaticPlotRendered`, `resetStaticPlotRendered`, and `useIsStaticPlotRendered` across the codebase including `LeftSide.tsx` and any other components.
-
-tsafs: Start the implementation.
-
-GitHub Copilot: Optimizing tool selection...
+Read [](file:///home/sebastian/Projects/itishotnow/frontend/src/store/hooks/hooks.ts)
 
 Read [](file:///home/sebastian/Projects/itishotnow/frontend/src/store/slices/heatmapGermanySlice.ts)
 
+Read [](file:///home/sebastian/Projects/itishotnow/frontend/src/store/slices/temperatureAnomaliesByDayOverYearsSlice.ts)
+
+Searched for text `setDateChangeRenderComplete(` (`**/frontend/**`), 10 results
+
 Read [](file:///home/sebastian/Projects/itishotnow/frontend/src/store/slices/selectedDateSlice.ts)
+
+Searched for text `setCityChangeRenderComplete(` (`**/frontend/**`), 9 results
+
+Read [](file:///home/sebastian/Projects/itishotnow/frontend/src/store/slices/selectedCitySlice.ts)
+
+Searched for text `LoadingError` (`**/frontend/src/components/**`), 20 results
+
+Read [](file:///home/sebastian/Projects/itishotnow/frontend/src/components/common/LoadingError/LoadingError.tsx)
+
+## Plan: Loading Overlay Wrapper
+
+Centralize the async-loading overlay into a reusable wrapper component (or hook+component pair) that consumes the existing status hooks and render-complete selectors. Expose knobs for placeholder content while defaulting to the shared shimmer/error UI, so future plots only pass their status hook, render-complete flag, and completion dispatcher, keeping per-plot side effects intact.
+
+### Steps
+1. Audit `useAsyncLoadingOverlay` usage in RightSide.tsx and LeftSide.tsx to map common props and lifecycle needs.
+2. Define a wrapper component under common that accepts `statusHook`, `renderCompleteSelector`, `onRenderComplete`, and optional `placeholder`/`errorMessage`.
+3. Refactor both plots to compose their plot body inside the wrapper, passing dispatch callbacks and retaining plot-specific effects (e.g., fade, idle scheduling).
+4. Ensure the wrapper forwards a render prop or children function so plots can trigger `setDateChangeRenderComplete`/`setCityChangeRenderComplete` at the right moments.
+5. Update styles to share shimmer/error presentation from a single stylesheet, removing duplicated inline CSS.
+
+### Further Considerations
+1. Confirm whether other plots (future ones) need multiple placeholders; Option A: single shimmer default; Option B: allow custom JSX.
