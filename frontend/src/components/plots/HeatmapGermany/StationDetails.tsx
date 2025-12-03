@@ -30,6 +30,7 @@ const getMetricsStyle = (isVertical: boolean): CSSProperties => ({
 const getNameStyle = (isVertical: boolean): CSSProperties => ({
     margin: 0,
     fontSize: '1.6rem',
+    lineHeight: 1.2,
     fontWeight: 600,
     color: theme.colors.textLight,
     width: isVertical ? '100%' : undefined,

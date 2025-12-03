@@ -13,8 +13,9 @@ const TemperatureAnomaliesByDayOverYears = createPlotView({
         darkMode: false,
     },
     useShouldRender: () => {
-        const cityName = useSelectedCityName();
-        return !!cityName;
+        // const cityName = useSelectedCityName();
+        // return !!cityName;
+        return true;
     },
 });
 

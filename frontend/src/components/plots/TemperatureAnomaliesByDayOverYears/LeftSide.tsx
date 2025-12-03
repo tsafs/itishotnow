@@ -1,9 +1,5 @@
 import { useEffect, useRef, useMemo } from 'react';
 import type { CSSProperties } from 'react';
-import * as Plot from "@observablehq/plot";
-import type { Markish } from "@observablehq/plot";
-import { html } from 'htl';
-import { DateTime } from 'luxon';
 import { theme, createStyles } from '../../../styles/design-system.js';
 import { useBreakpoint } from '../../../hooks/useBreakpoint.js';
 import { useSelectedCityName, useTemperatureAnomaliesDataStatus } from '../../../store/hooks/hooks.js';
@@ -16,6 +12,7 @@ import { MIN_LOADING_DISPLAY_DURATION } from '../../../constants/page.js';
 import AsyncLoadingOverlayWrapper from '../../common/AsyncLoadingOverlayWrapper/AsyncLoadingOverlayWrapper.js';
 import { useTemperatureAnomalyPlotData } from './hooks/useTemperatureAnomalyPlotData.js';
 import './LeftSide.css';
+import { createPlot } from './plot.js';
 
 // Pure style computation functions
 const getContainerStyle = (isMobile: boolean): CSSProperties => ({
@@ -24,24 +21,20 @@ const getContainerStyle = (isMobile: boolean): CSSProperties => ({
     margin: isMobile ? 0 : undefined,
 });
 
-const getErrorStyle = (): CSSProperties => ({
-    padding: theme.spacing.lg,
-    textAlign: 'center',
-    width: '100%',
-    boxSizing: 'border-box',
-    color: '#d32f2f',
-    fontWeight: 500,
+const getPlotStyle = (dims: { width: number; height: number }): CSSProperties => ({
+    position: 'relative',
+    maxWidth: dims.width,
+    maxHeight: dims.height,
+    marginBottom: theme.spacing.sm,
 });
 
 const styles = createStyles({
-    plotWrapper: {
-        position: 'relative',
-        width: '100%',
-        minHeight: 360,
-    },
     plotRef: {
         overflow: 'visible',
     },
+    overlayStyle: {
+        backgroundColor: theme.colors.backgroundLight
+    }
 });
 
 const TemperatureAnomaliesByDayOverYearsLeftSide = () => {
@@ -49,11 +42,22 @@ const TemperatureAnomaliesByDayOverYearsLeftSide = () => {
     const breakpoint = useBreakpoint();
 
     const containerRef = useRef<HTMLDivElement | null>(null);
+
     const selectedCityName = useSelectedCityName();
 
     const renderComplete = useTemperatureAnomaliesRenderComplete();
 
     const isMobile = breakpoint === 'mobile';
+
+
+    // Fixed dimensions per breakpoint to keep projected shape scale consistent
+    const MAP_DIMENSIONS: Record<'mobile' | 'tablet' | 'desktop' | 'wide', { width: number; height: number }> = {
+        mobile: { width: 400, height: 286 },
+        tablet: { width: 600, height: 428 },
+        desktop: { width: 700, height: 500 },
+        wide: { width: 700, height: 500 }
+    };
+    const plotDims = MAP_DIMENSIONS[breakpoint];
 
     const fromYear = 1951;
     const toYear = 2024;
@@ -78,140 +82,12 @@ const TemperatureAnomaliesByDayOverYearsLeftSide = () => {
     useEffect(() => {
         const container = containerRef.current;
 
-        if (!container) {
-            return;
-        }
-
-        container.innerHTML = '';
-
-        if (!selectedCityName || !plotData || !targetDate) return;
+        if (!container || !selectedCityName || !plotData || !targetDate) return;
 
         try {
-            const primaryDayOnly = plotData.filter((d) => d.isPrimaryDay);
-
-            const marks: Markish[] = [
-                Plot.ruleY([0], {
-                    stroke: "#666",
-                    strokeWidth: 1,
-                }),
-                Plot.ruleX([baselineStartYear, baselineEndYear], {
-                    stroke: "#666",
-                    strokeWidth: 1,
-                    strokeDasharray: "5,2",
-                }),
-                Plot.dot(
-                    plotData.filter((d) => !d.isPrimaryDay),
-                    {
-                        x: "year",
-                        y: "anomaly",
-                        stroke: "#ddd",
-                        fill: "#ddd",
-                        r: 2,
-                    }
-                ),
-                Plot.linearRegressionY(primaryDayOnly, {
-                    x: "year",
-                    y: "anomaly",
-                    stroke: "#333",
-                    strokeWidth: 1,
-                    strokeOpacity: 1,
-                    strokeDasharray: "5,2",
-                }),
-                Plot.dot(primaryDayOnly, {
-                    x: "year",
-                    y: "anomaly",
-                    stroke: "anomaly",
-                    strokeWidth: 2,
-                    fill: "anomaly",
-                    fillOpacity: 0.2,
-                    r: 4,
-                })
-            ];
-
-            if (todayDataPoint) {
-                marks.push(
-                    Plot.dot([todayDataPoint], {
-                        x: "year",
-                        y: "anomaly",
-                        stroke: "anomaly",
-                        fill: "anomaly",
-                        fillOpacity: 0.2,
-                        strokeWidth: 2,
-                        r: 6,
-                    })
-                );
-
-                marks.push(
-                    Plot.text([todayDataPoint], {
-                        x: "year",
-                        y: (d) => d.anomaly + 0.7,
-                        text: () => (isToday ? "Heute" : targetDate.setLocale('de').toFormat("d. MMMM yyyy")),
-                        className: "today-label",
-                    })
-                );
-            }
-
-            if (formattedTrend) {
-                marks.push(
-                    Plot.text([{ year: 1975, anomaly: 1.6 }], {
-                        x: "year",
-                        y: "anomaly",
-                        text: () => `Trend: ${formattedTrend}°C / Jahrzehnt`,
-                        fontSize: 12,
-                        fontWeight: "bold",
-                        fill: "#333",
-                    })
-                );
-            }
-
-            marks.push(
-                Plot.text(
-                    anomaliesForDetails,
-                    Plot.pointerX({
-                        px: "year",
-                        py: "anomaly",
-                        dy: -17,
-                        frameAnchor: "top",
-                        text: (d) => [
-                            DateTime.fromISO(d.date).setLocale('de').toFormat("d. MMMM yyyy"),
-                            `Durchschnittstemperatur: ${d.temperature.toFixed(1)}°C`,
-                            `Abweichung: ${d.anomaly.toFixed(1)}°C`,
-                        ].join("   "),
-                        className: "hover-text",
-                    })
-                )
-            );
-
-            const plot = Plot.plot({
-                title: html`<p class="title">Abweichung zum Referenzzeitraum von 1961 bis 1990 in ${selectedCityName}</p>`,
-                y: {
-                    label: "Temperaturabweichung (°C)",
-                    grid: true,
-                    nice: true,
-                    labelOffset: 55,
-                    labelAnchor: "center",
-                    tickSize: 5,
-                    labelArrow: false,
-                },
-                x: {
-                    label: null,
-                    domain: [fromYear - 1, toYear + 1],
-                    tickFormat: (d) => Math.round(d).toString(),
-                    tickSize: 5,
-                    tickPadding: 5,
-                },
-                color: {
-                    scheme: "BuYlRd",
-                },
-                marks,
-            });
-
-            container.appendChild(plot as unknown as HTMLElement);
+            const nextPlot = createPlot(baselineStartYear, baselineEndYear, plotData, todayDataPoint, isToday, targetDate, formattedTrend, anomaliesForDetails, selectedCityName, fromYear, toYear, plotDims);
+            container.replaceChildren(nextPlot);
             dispatch(setCityChangeRenderComplete(true));
-
-            return () => {
-                plot.remove();
-            };
         } catch (err) {
             console.error("Error creating plot:", err);
             dispatch(setCityChangeRenderComplete(true));
@@ -229,7 +105,14 @@ const TemperatureAnomaliesByDayOverYearsLeftSide = () => {
         targetDate,
         todayDataPoint,
         toYear,
+        plotDims.width,
+        plotDims.height,
     ]);
+
+    // Cleanup on unmount
+    useEffect(() => () => {
+        containerRef.current = null;
+    }, []);
 
     useEffect(() => {
         if (plotDataError) {
@@ -244,6 +127,11 @@ const TemperatureAnomaliesByDayOverYearsLeftSide = () => {
         [isMobile]
     );
 
+    const plotStyle = useMemo(
+        () => getPlotStyle(plotDims),
+        [plotDims]
+    );
+
     return (
         <div style={containerStyle} className="temperature-scatter-plot-container">
             <AsyncLoadingOverlayWrapper
@@ -251,7 +139,9 @@ const TemperatureAnomaliesByDayOverYearsLeftSide = () => {
                 renderCompleteSignal={renderComplete}
                 minDisplayDuration={MIN_LOADING_DISPLAY_DURATION}
                 onError={() => dispatch(setCityChangeRenderComplete(true))}
-                style={styles.plotWrapper}
+                style={plotStyle}
+                overlayStyle={styles.overlayStyle}
+                themeMode='light'
             >
                 <div ref={containerRef} style={styles.plotRef}></div>
             </AsyncLoadingOverlayWrapper>

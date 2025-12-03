@@ -16,6 +16,7 @@ interface AsyncLoadingOverlayWrapperProps {
     style?: CSSProperties;
     overlayClassName?: string;
     overlayStyle?: CSSProperties;
+    themeMode?: 'dark' | 'light';
 }
 
 const SHIMMER_ANIMATION_NAME = 'async-loading-overlay-shimmer';
@@ -51,16 +52,19 @@ const defaultStyles = createStyles({
         width: '12px',
         height: '12px',
         borderRadius: '50%',
-        backgroundColor: theme.colors.backgroundLight,
         animation: `${SHIMMER_ANIMATION_NAME} 1.4s ease-in-out infinite`,
     },
 });
 
-const DefaultShimmer = () => (
+interface DefaultShimmerProps {
+    color: string;
+}
+
+const DefaultShimmer = ({ color }: DefaultShimmerProps) => (
     <div style={defaultStyles.shimmerContainer}>
-        <div style={{ ...defaultStyles.shimmerDot, animationDelay: '0s' }}></div>
-        <div style={{ ...defaultStyles.shimmerDot, animationDelay: '0.2s' }}></div>
-        <div style={{ ...defaultStyles.shimmerDot, animationDelay: '0.4s' }}></div>
+        <div style={{ ...defaultStyles.shimmerDot, backgroundColor: color, animationDelay: '0s' }}></div>
+        <div style={{ ...defaultStyles.shimmerDot, backgroundColor: color, animationDelay: '0.2s' }}></div>
+        <div style={{ ...defaultStyles.shimmerDot, backgroundColor: color, animationDelay: '0.4s' }}></div>
     </div>
 );
 
@@ -76,6 +80,7 @@ const AsyncLoadingOverlayWrapper = ({
     style,
     overlayClassName,
     overlayStyle,
+    themeMode = 'dark',
 }: AsyncLoadingOverlayWrapperProps) => {
     const { isLoading, error } = useAsyncLoadingOverlay({
         dataStatusHook,
@@ -99,11 +104,13 @@ const AsyncLoadingOverlayWrapper = ({
 
     const showOverlay = isLoading || Boolean(error);
 
+    const shimmerDotColor = themeMode === 'dark' ? theme.colors.backgroundLight : theme.colors.background; // Keep shimmer legible against overlay
+
     const resolvedPlaceholder = error
         ? typeof errorFallback === 'function'
             ? errorFallback(error)
             : errorFallback ?? <LoadingError message={error} />
-        : placeholder ?? <DefaultShimmer />;
+        : placeholder ?? <DefaultShimmer color={shimmerDotColor} />;
 
     return (
         <div className={className} style={{ ...styles.container, ...style }}>
