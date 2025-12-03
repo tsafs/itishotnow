@@ -26,10 +26,12 @@ const EMPTY_ROLLING_AVERAGE: RollingAverageRecordList = [];
 
 // Export actions
 export const fetchRollingAverageData = actions.fetch;
+export const resetRollingAverageData = actions.reset;
 
 // Export selectors
 export const selectRollingAverageData = (state: RootState): RollingAverageRecordList =>
     selectors.selectData(state) as RollingAverageRecordList ?? EMPTY_ROLLING_AVERAGE;
 export const selectRollingAverageDataStatus = selectors.selectStatus;
+export const selectRollingAverageDataError = selectors.selectError;
 
 export default slice.reducer;

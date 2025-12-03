@@ -58,10 +58,16 @@ const styles = createStyles({
     errorContainer: {
         display: 'flex',
         justifyContent: 'center',
+        textAlign: 'center',
         alignItems: 'center',
-        padding: '2rem',
+        padding: '100px',
         color: '#d32f2f',
         fontWeight: 500,
+    },
+    errorPageLayout: {
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
     },
 });
 
@@ -116,7 +122,7 @@ function AppContent() {
                 }
             } catch (error) {
                 console.error("Failed to load data:", error);
-                setError("Failed to load data. Please try again later.");
+                setError("There is currently no data available. Please try again later.");
             }
         };
 
@@ -137,7 +143,7 @@ function AppContent() {
             city.name.toLowerCase().includes(DEFAULT_CITY));
 
         if (city) {
-            dispatch(selectCity(city.id, true));
+            dispatch(selectCity(city.id, false));
         }
     }, [cities, selectedCityId, dispatch]);
 
@@ -192,7 +198,10 @@ function AppContent() {
     return (
         <div style={appContainerStyle}>
             <Header />
-            <main style={contentWrapperStyle}>
+            <main style={error ? {
+                ...contentWrapperStyle,
+                ...styles.errorPageLayout
+            } : contentWrapperStyle}>
                 <Routes>
                     <Route path="/" element={<MainPage />} />
                     <Route path="/impressum" element={

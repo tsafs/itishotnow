@@ -13,6 +13,7 @@ import geoJsonReducer from './slices/geoJsonSlice.js';
 import dailyRecentByDateReducer from './slices/DailyRecentByDateSlice.js';
 import stationDateRangesReducer from './slices/stationDateRangesSlice.js';
 import heatmapGermanySlice from './slices/heatmapGermanySlice.js';
+import temperatureAnomaliesByDayOverYearsReducer from './slices/temperatureAnomaliesByDayOverYearsSlice.js';
 
 export const store = configureStore({
     reducer: {
@@ -29,6 +30,7 @@ export const store = configureStore({
         stationDateRanges: stationDateRangesReducer,
         geoJson: geoJsonReducer,
         heatmapGermany: heatmapGermanySlice,
+        temperatureAnomaliesByDayOverYears: temperatureAnomaliesByDayOverYearsReducer,
     },
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({

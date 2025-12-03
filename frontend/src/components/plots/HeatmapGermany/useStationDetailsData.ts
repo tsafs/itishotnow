@@ -13,6 +13,8 @@ interface AnomalyDetails {
     anomalyMessage: string;
 }
 
+const replaceSpacesWithNbsp = (value: string): string => value.replace(/\s/g, '&nbsp;');
+
 export interface StationDetailsData {
     item: SelectedItem | null;
     anomaly: number | null;
@@ -61,14 +63,18 @@ export const useStationDetailsData = (): StationDetailsData => {
             }
 
             if (date && date.isValid) {
+                const localizedDate = date.setLocale('de');
                 if (isToday) {
-                    subtitle += ` <span class="nowrap">${date.toLocaleString({
+                    const formattedDateTime = localizedDate.toLocaleString({
                         ...DateTime.DATE_FULL,
                         hour: '2-digit',
-                        minute: '2-digit'
-                    })} Uhr</span>`;
+                        minute: '2-digit',
+                        hour12: false
+                    });
+                    subtitle += ` <span class="nowrap">${replaceSpacesWithNbsp(formattedDateTime)}&nbsp;Uhr</span>`;
                 } else {
-                    subtitle += ` <span class="nowrap">${date.toLocaleString(DateTime.DATE_FULL)}</span>`;
+                    const formattedDate = localizedDate.toLocaleString(DateTime.DATE_FULL);
+                    subtitle += ` <span class="nowrap">${replaceSpacesWithNbsp(formattedDate)}</span>`;
                 }
             }
         }

@@ -112,7 +112,7 @@ const StationSearch = ({ showSearchIcon = true }: StationSearchProps) => {
     // Handle city selection
     const handleCitySelect = useCallback((city: ICity) => {
         const isPredefined = PREDEFINED_CITIES.includes(city.name);
-        dispatch(selectCity(city.id, isPredefined));
+        dispatch(selectCity(city.id, !isPredefined));
         setSearchTerm('');
         setIsDropdownOpen(false);
         navigate('/'); // Navigate to home page when a city is selected

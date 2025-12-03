@@ -5,39 +5,78 @@ import { getNow } from '../../utils/dateUtils.js';
 import { fetchYearlyMeanByDay } from './YearlyMeanByDaySlice.js';
 import { fetchDailyRecentByDate } from './DailyRecentByDateSlice.js';
 import { useAppSelector } from '../hooks/useAppSelector.js';
-import type { AppThunk } from '../index.js';
+import type { AppThunk, RootState } from '../index.js';
+import { resetDateChangeRenderComplete, setDateChangeRenderComplete } from './heatmapGermanySlice.js';
 
-export type SelectedDateState = string;
+export interface SelectedDateState {
+    value: string;
+    isDateChanging: boolean;
+}
 
-const initialSelectedDate: SelectedDateState = getNow().toISO() ?? new Date().toISOString();
+const initialSelectedDate: SelectedDateState = {
+    value: getNow().toISO() ?? new Date().toISOString(),
+    isDateChanging: false,
+};
 
 const selectedDateSlice = createSlice({
     name: 'selectedDate',
     initialState: initialSelectedDate,
     reducers: {
-        setSelectedDate: (_state, action: PayloadAction<string>) => action.payload,
+        setSelectedDate: (state, action: PayloadAction<string>) => {
+            state.value = action.payload;
+        },
+        setIsDateChanging: (state, action: PayloadAction<boolean>) => {
+            state.isDateChanging = action.payload;
+        },
     },
 });
 
-const { setSelectedDate } = selectedDateSlice.actions;
+const { setSelectedDate, setIsDateChanging } = selectedDateSlice.actions;
 
 // Thunk to set date and fetch historical data
-export const setDateAndFetchHistoricalData = (isoDateString: string): AppThunk => (dispatch) => {
+export const setDateAndFetchHistoricalData = (isoDateString: string): AppThunk => async (dispatch) => {
+    dispatch(setIsDateChanging(true));
+    dispatch(resetDateChangeRenderComplete());
     dispatch(setSelectedDate(isoDateString));
+
     const dt = DateTime.fromISO(isoDateString);
     if (!dt.isValid) {
+        dispatch(setIsDateChanging(false));
+        dispatch(setDateChangeRenderComplete(true));
         return;
     }
-    dispatch(fetchYearlyMeanByDay({ month: dt.month, day: dt.day }));
+
+    const tasks: Promise<unknown>[] = [];
+    tasks.push(
+        dispatch(fetchYearlyMeanByDay({ month: dt.month, day: dt.day }))
+            .unwrap()
+            .catch(() => undefined)
+    );
+
     if (!dt.hasSame(getNow(), 'day')) {
-        // If the date is not today, fetch daily recent data
-        dispatch(fetchDailyRecentByDate({ year: dt.year, month: dt.month, day: dt.day }));
+        tasks.push(
+            dispatch(fetchDailyRecentByDate({ year: dt.year, month: dt.month, day: dt.day }))
+                .unwrap()
+                .catch(() => undefined)
+        );
     }
+
+    await Promise.allSettled(tasks);
+
+    dispatch(setIsDateChanging(false));
 };
 
-export const useSelectedDate = (): SelectedDateState => {
-    return useAppSelector(state => state.selectedDate);
+export const selectSelectedDateState = (state: RootState): SelectedDateState => state.selectedDate;
+
+export const useSelectedDate = (): string => {
+    return useAppSelector(state => state.selectedDate.value);
 };
 
-export { setSelectedDate };
+export const useIsDateChanging = (): boolean => {
+    return useAppSelector(state => state.selectedDate.isDateChanging);
+};
+
+export const selectIsDateChanging = (state: RootState): boolean => state.selectedDate.isDateChanging;
+
+export { setSelectedDate, setIsDateChanging };
 export default selectedDateSlice.reducer;

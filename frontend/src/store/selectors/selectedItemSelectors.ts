@@ -27,7 +27,7 @@ export const selectSelectedCityId = (state: RootState): string | null => {
  * Select the selected date (ISO string)
  */
 export const selectSelectedDate = (state: RootState): string => {
-    return state.selectedDate;
+    return state.selectedDate.value;
 };
 
 /**

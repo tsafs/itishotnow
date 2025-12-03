@@ -7,12 +7,11 @@ import { setDateAndFetchHistoricalData } from '../../store/slices/selectedDateSl
 import { getNow } from '../../utils/dateUtils.js';
 import { useDateRangeForStation } from '../../store/slices/stationDateRangesSlice.js';
 import { useSelectedStationId } from '../../store/hooks/hooks.js';
-import { useSelectedDate } from '../../store/slices/selectedDateSlice.js';
+import { useIsDateChanging, useSelectedDate } from '../../store/slices/selectedDateSlice.js';
 import { createStyles } from '../../styles/design-system.js';
 import { useBreakpointDown } from '../../hooks/useBreakpoint.js';
 import { DateTime } from 'luxon';
 import { useAppDispatch } from '../../store/hooks/useAppDispatch.js';
-import { resetStaticPlotRendered } from '../../store/slices/heatmapGermanySlice.js';
 
 const styles = createStyles({
     container: {
@@ -129,6 +128,7 @@ const DateSelection = () => {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const selectedDate = useSelectedDate();
+    const isDateChanging = useIsDateChanging();
     const selectedStationId = useSelectedStationId();
     const dateRange = useDateRangeForStation(selectedStationId);
     const isMobile = useBreakpointDown('mobile');
@@ -148,6 +148,9 @@ const DateSelection = () => {
     const [disabledAfter, setDisabledAfter] = useState<Date | null>(null);
 
     const dateSelectRef = useRef<HTMLDivElement | null>(null);
+
+    const canInteract = isReady && !isDateChanging;
+    const canUseYesterday = canInteract && renderYesterdayButton;
 
     useEffect(() => {
         if (!dateRange) return;
@@ -173,14 +176,12 @@ const DateSelection = () => {
     }, [dateRange])
 
     const handleDateSelection = useCallback((date: DateTime) => {
-        // date is a Luxon DateTime
         dispatch(setDateAndFetchHistoricalData(date.toISO()!));
-        dispatch(resetStaticPlotRendered());
     }, [dispatch]);
 
     // Handle today selection
     const handleTodayClick = () => {
-        if (!isReady) return;
+        if (!isReady || isDateChanging) return;
 
         const today = getNow();
 
@@ -196,7 +197,7 @@ const DateSelection = () => {
 
     // Handle yesterday selection
     const handleYesterdayClick = () => {
-        if (!isReady || !renderYesterdayButton) return;
+        if (!isReady || !renderYesterdayButton || isDateChanging) return;
 
         const yesterday = getNow().minus({ days: 1 });
         handleDateSelection(yesterday);
@@ -239,7 +240,7 @@ const DateSelection = () => {
 
     // Handle calendar icon click
     const toggleCalendar = () => {
-        if (!isReady) return;
+        if (!isReady || isDateChanging) return;
 
         // Don't open if it was recently closed
         if (recentlyClosed && !isCalendarOpen) {
@@ -286,13 +287,13 @@ const DateSelection = () => {
                 <div
                     style={{
                         ...styles.toggleButton,
-                        ...(!isReady || !renderYesterdayButton ? styles.toggleButtonDisabled : {}),
-                        ...(isReady && renderYesterdayButton && hoveredButton === 'yesterday' && !isYesterdaySelected ? styles.toggleButtonHover : {}),
-                        ...(isReady && renderYesterdayButton && isYesterdaySelected ? styles.toggleButtonActive : {}),
+                        ...(!canUseYesterday ? styles.toggleButtonDisabled : {}),
+                        ...(canUseYesterday && hoveredButton === 'yesterday' && !isYesterdaySelected ? styles.toggleButtonHover : {}),
+                        ...(canUseYesterday && isYesterdaySelected ? styles.toggleButtonActive : {}),
                     }}
                     onClick={handleYesterdayClick}
-                    onMouseEnter={() => isReady && renderYesterdayButton && setHoveredButton('yesterday')}
-                    onMouseLeave={() => isReady && renderYesterdayButton && setHoveredButton(null)}
+                    onMouseEnter={() => canUseYesterday && setHoveredButton('yesterday')}
+                    onMouseLeave={() => canUseYesterday && setHoveredButton(null)}
                 >
                     Gestern
                 </div>
@@ -300,13 +301,13 @@ const DateSelection = () => {
                 <div
                     style={{
                         ...styles.toggleButton,
-                        ...(!isReady ? styles.toggleButtonDisabled : {}),
-                        ...(isReady && hoveredButton === 'today' && !isTodaySelected ? styles.toggleButtonHover : {}),
-                        ...(isReady && isTodaySelected ? styles.toggleButtonActive : {}),
+                        ...(!canInteract ? styles.toggleButtonDisabled : {}),
+                        ...(canInteract && hoveredButton === 'today' && !isTodaySelected ? styles.toggleButtonHover : {}),
+                        ...(canInteract && isTodaySelected ? styles.toggleButtonActive : {}),
                     }}
                     onClick={handleTodayClick}
-                    onMouseEnter={() => isReady && setHoveredButton('today')}
-                    onMouseLeave={() => isReady && setHoveredButton(null)}
+                    onMouseEnter={() => canInteract && setHoveredButton('today')}
+                    onMouseLeave={() => canInteract && setHoveredButton(null)}
                 >
                     Heute
                 </div>
@@ -314,19 +315,19 @@ const DateSelection = () => {
                 <div
                     style={{
                         ...styles.calendarIconContainer,
-                        ...(!isReady ? styles.calendarIconContainerDisabled : {}),
-                        ...(isReady && hoveredButton === 'calendar' && !(!isYesterdaySelected && !isTodaySelected) ? styles.calendarIconContainerHover : {}),
-                        ...(isReady && !isYesterdaySelected && !isTodaySelected ? styles.calendarIconContainerActive : {}),
+                        ...(!canInteract ? styles.calendarIconContainerDisabled : {}),
+                        ...(canInteract && hoveredButton === 'calendar' && !(!isYesterdaySelected && !isTodaySelected) ? styles.calendarIconContainerHover : {}),
+                        ...(canInteract && !isYesterdaySelected && !isTodaySelected ? styles.calendarIconContainerActive : {}),
                     }}
                     onClick={toggleCalendar}
-                    onMouseEnter={() => isReady && setHoveredButton('calendar')}
-                    onMouseLeave={() => isReady && setHoveredButton(null)}
+                    onMouseEnter={() => canInteract && setHoveredButton('calendar')}
+                    onMouseLeave={() => canInteract && setHoveredButton(null)}
                 >
                     <FaCalendarDay style={{
                         ...styles.icon,
-                        ...(!isReady ? styles.iconDisabled : {}),
-                        ...(isReady && isCalendarOpen ? styles.iconActive : {}),
-                        ...(isReady && !isYesterdaySelected && !isTodaySelected ? styles.iconInActiveContainer : {}),
+                        ...(!canInteract ? styles.iconDisabled : {}),
+                        ...(canInteract && isCalendarOpen ? styles.iconActive : {}),
+                        ...(canInteract && !isYesterdaySelected && !isTodaySelected ? styles.iconInActiveContainer : {}),
                     }} />
                 </div>
             </div>

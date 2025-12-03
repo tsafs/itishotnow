@@ -11,10 +11,11 @@ import { DateTime } from 'luxon';
 import { getNow } from '../../../utils/dateUtils.js';
 import { useAppDispatch } from '../../../store/hooks/useAppDispatch.js';
 import { fetchGeoJSON } from '../../../store/slices/geoJsonSlice.js';
-import { useSampledPlotData, useCityLabelPlotData, useGeoJSON, useGeoJSONStatus } from '../../../store/hooks/hooks.js';
+import { useSampledPlotData, useCityLabelPlotData, useGeoJSON, useGeoJSONStatus, useHeatmapDataStatus } from '../../../store/hooks/hooks.js';
 import type { CityLabelDatum } from '../../../store/selectors/heatmapSelectors.js';
-import { HEATMAP_INITIAL_DISPLAY_TIMEOUT } from '../../../constants/page.js';
-import { setStaticPlotRendered, useIsStaticPlotRendered } from '../../../store/slices/heatmapGermanySlice.js';
+import { MIN_LOADING_DISPLAY_DURATION } from '../../../constants/page.js';
+import { setDateChangeRenderComplete, useHeatmapRenderComplete } from '../../../store/slices/heatmapGermanySlice.js';
+import AsyncLoadingOverlayWrapper from '../../common/AsyncLoadingOverlayWrapper/AsyncLoadingOverlayWrapper.js';
 
 const getPlotContainerLeftAlignStyle = (isVertical: boolean): CSSProperties => ({
     display: 'flex',
@@ -59,29 +60,6 @@ const styles = createStyles({
         zIndex: 1,
         color: theme.colors.textDark
     },
-    loadingOverlay: {
-        position: 'absolute' as const,
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'transparent',
-        zIndex: 2,
-    },
-    shimmerContainer: {
-        display: 'flex',
-        gap: '8px',
-    },
-    shimmerDot: {
-        width: '12px',
-        height: '12px',
-        borderRadius: '50%',
-        backgroundColor: theme.colors.backgroundLight,
-        animation: 'shimmer 1.4s ease-in-out infinite',
-    },
     textStyle: {
         fontSize: 12,
         dy: 8
@@ -106,14 +84,13 @@ const HeatmapGermanyRightSide = memo(() => {
         wide: { width: 700, height: 952 }
     };
     const plotDims = MAP_DIMENSIONS[breakpoint];
-    console.log('HeatmapGermanyRightSide render - breakpoint:', breakpoint, 'dims:', plotDims);
 
     const sampledPlotData = useSampledPlotData();
     const selectedDate = useSelectedDate();
     const cityLabelData = useCityLabelPlotData();
     const geojson = useGeoJSON();
     const geojsonStatus = useGeoJSONStatus();
-    const isStaticPlotRendered = useIsStaticPlotRendered();
+    const renderComplete = useHeatmapRenderComplete();
 
     const staticPlotRef = useRef<HTMLDivElement | null>(null);
     const dynamicPlotRef = useRef<HTMLDivElement | null>(null);
@@ -121,10 +98,11 @@ const HeatmapGermanyRightSide = memo(() => {
 
     // Track initial mount to show loading only on first render
     const isInitialMount = useRef<boolean>(true);
+    const initialFadeTimeoutRef = useRef<number | null>(null);
 
-    // Control when to show the heatmap (after data loads + initial timeout)
-    const [isMapLoading, setIsMapLoading] = useState<boolean>(true);
     const [isPlotVisible, setShouldAnimatePlot] = useState<boolean>(false);
+
+
 
     const isToday = useMemo(() => DateTime.fromISO(selectedDate).hasSame(getNow(), 'day'), [selectedDate]);
 
@@ -138,7 +116,8 @@ const HeatmapGermanyRightSide = memo(() => {
 
     useEffect(() => {
         const hasGeoJSON = !!geojson;
-        const hasSampledData = !!sampledPlotData;
+        const hasSampledData = Array.isArray(sampledPlotData) && sampledPlotData.length > 0;
+        const hasAnomalyData = hasSampledData && sampledPlotData.some(d => typeof d.anomaly === 'number');
 
         // Skip if we have neither geojson nor sampled data.
         if (!hasGeoJSON && !hasSampledData) return;
@@ -146,6 +125,12 @@ const HeatmapGermanyRightSide = memo(() => {
         // Skip if we have real data, but no geojson. Cannot build plot yet.
         // This happens when data loads before geojson.
         if (!hasGeoJSON && hasSampledData) return;
+
+        // Wait for anomaly data before rebuilding the heatmap after the initial outline.
+        if (hasGeoJSON && hasSampledData && !hasAnomalyData) return;
+
+        // Skip if we have geojson but no sampled data and it's not the initial mount.
+        if (hasGeoJSON && !hasSampledData && !isInitialMount.current) return;
 
         // We will only reach this point if:
         // 1) We have geojson but no sampled data and it's the initial mount (initial outline render)
@@ -167,7 +152,7 @@ const HeatmapGermanyRightSide = memo(() => {
                     width: plotDims.width,
                     height: plotDims.height,
                 });
-            } else if (hasGeoJSON && hasSampledData) {
+            } else if (hasGeoJSON && hasSampledData && hasAnomalyData) {
                 staticPlot = Plot.plot({
                     projection: { type: 'mercator', domain: geojson },
                     color: { type: 'diverging', scheme: 'Turbo', domain: [-10, 10], pivot: 0 },
@@ -198,31 +183,36 @@ const HeatmapGermanyRightSide = memo(() => {
                 }
             }
 
-            // Handle display timing: delay on initial mount, immediate on subsequent changes
-            if (isOutlineOnly && isInitialMount.current) {
-                // Trigger fade-in after DOM update
-                setShouldAnimatePlot(true);
+            if (isOutlineOnly) {
                 showPlot();
-            } else if (!isOutlineOnly && isInitialMount.current) {
-                setTimeout(() => {
-                    isInitialMount.current = false;
-                    dispatch(setStaticPlotRendered(true));
-                    // Trigger fade-in after DOM update
+                if (isInitialMount.current) {
                     setShouldAnimatePlot(true);
-                    showPlot();
-                    setIsMapLoading(false);
-                }, HEATMAP_INITIAL_DISPLAY_TIMEOUT);
+                }
+                return;
+            }
+
+            showPlot();
+
+            if (isInitialMount.current) {
+                isInitialMount.current = false;
+                if (initialFadeTimeoutRef.current !== null) {
+                    window.clearTimeout(initialFadeTimeoutRef.current);
+                }
+                initialFadeTimeoutRef.current = window.setTimeout(() => {
+                    setShouldAnimatePlot(true);
+                    dispatch(setDateChangeRenderComplete(true));
+                    initialFadeTimeoutRef.current = null;
+                }, MIN_LOADING_DISPLAY_DURATION);
             } else {
-                dispatch(setStaticPlotRendered(true));
-                showPlot();
-                setIsMapLoading(false);
+                setShouldAnimatePlot(true);
+                dispatch(setDateChangeRenderComplete(true));
             }
         };
 
 
         if (hasGeoJSON && !hasSampledData && isInitialMount.current) {
             build();
-        } else if (hasGeoJSON && hasSampledData) {
+        } else if (hasGeoJSON && hasSampledData && hasAnomalyData) {
             if ('requestIdleCallback' in window) {
                 idleIdRef.current = requestIdleCallback(build);
             } else {
@@ -233,10 +223,19 @@ const HeatmapGermanyRightSide = memo(() => {
         }
     }, [sampledPlotData, geojson, dispatch, plotDims.width, plotDims.height]);
 
+    useEffect(() => {
+        return () => {
+            if (initialFadeTimeoutRef.current !== null) {
+                window.clearTimeout(initialFadeTimeoutRef.current);
+                initialFadeTimeoutRef.current = null;
+            }
+        };
+    }, []);
+
     // Render dynamic overlays (city dots, labels, selection) on every relevant state change
     const renderDynamicOverlay = useCallback(() => {
         const isDataPresent = !!cityLabelData && !!geojson;
-        if (!isDataPresent || !isStaticPlotRendered) return;
+        if (!isDataPresent || !renderComplete) return;
 
         if (dynamicPlotRef.current) {
             dynamicPlotRef.current.innerHTML = '';
@@ -292,7 +291,7 @@ const HeatmapGermanyRightSide = memo(() => {
             lastSelectedCityId.current = value.cityId;
 
             const isPredefined = PREDEFINED_CITIES.includes(value.cityName);
-            dispatch(selectCity(value.cityId, isPredefined));
+            dispatch(selectCity(value.cityId, !isPredefined));
         });
 
         dynamicPlotRef.current?.appendChild(dynamicPlot as unknown as HTMLElement);
@@ -301,7 +300,7 @@ const HeatmapGermanyRightSide = memo(() => {
         geojson,
         dispatch,
         breakpoint,
-        isStaticPlotRendered,
+        renderComplete,
         plotDims.width,
         plotDims.height
     ]);
@@ -328,7 +327,13 @@ const HeatmapGermanyRightSide = memo(() => {
     return (
         <div style={plotContainerLeftAlignStyle}>
             <div style={styles.plotContainer}>
-                <div style={plotStyle}>
+                <AsyncLoadingOverlayWrapper
+                    dataStatusHook={useHeatmapDataStatus}
+                    renderCompleteSignal={renderComplete}
+                    minDisplayDuration={MIN_LOADING_DISPLAY_DURATION}
+                    onError={() => dispatch(setDateChangeRenderComplete(true))}
+                    style={plotStyle}
+                >
                     <div style={{
                         ...styles.plotAnimationWrapper,
                         ...(isPlotVisible ? styles.plotAnimationWrapperVisible : {})
@@ -336,24 +341,9 @@ const HeatmapGermanyRightSide = memo(() => {
                         <div ref={staticPlotRef} style={styles.staticPlot}></div>
                         <div ref={dynamicPlotRef} style={styles.dynamicPlot}></div>
                     </div>
-                    {isMapLoading && (
-                        <div style={styles.loadingOverlay}>
-                            <div style={styles.shimmerContainer}>
-                                <div style={{ ...styles.shimmerDot, animationDelay: '0s' }}></div>
-                                <div style={{ ...styles.shimmerDot, animationDelay: '0.2s' }}></div>
-                                <div style={{ ...styles.shimmerDot, animationDelay: '0.4s' }}></div>
-                            </div>
-                        </div>
-                    )}
-                </div>
+                </AsyncLoadingOverlayWrapper>
                 <MapLegend title={title} colorScheme="Turbo" />
             </div>
-            <style>{`
-                @keyframes shimmer {
-                    0%, 100% { opacity: 0.3; transform: scale(1); }
-                    50% { opacity: 1; transform: scale(1.2); }
-                }
-            `}</style>
         </div>
     );
 });

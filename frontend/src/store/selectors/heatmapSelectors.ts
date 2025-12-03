@@ -152,10 +152,6 @@ export const selectPlotBaseData = createSelector(
     (points, isToday): PlotBaseDatum[] | null => {
         if (!points) return null;
 
-        if (import.meta.env.MODE === 'development') {
-            console.time('plotBaseData-build');
-        }
-
         const data: PlotBaseDatum[] = points.map(p => {
             const displayTemp = isToday ? p.temperature : p.maxTemperature;
             return {
@@ -173,10 +169,6 @@ export const selectPlotBaseData = createSelector(
                 anomaly: undefined,
             };
         });
-
-        if (import.meta.env.MODE === 'development') {
-            console.timeEnd('plotBaseData-build');
-        }
 
         return data;
     }
@@ -217,10 +209,6 @@ export const selectPlotAnomaliesToday = createSelector(
             hourlyContext.day === selectedDateLuxon.day;
         if (!hourlyReady) return null; // keep previous until ready
 
-        if (import.meta.env.MODE === 'development') {
-            console.time('plotAnomaliesToday-build');
-        }
-
         const map: Record<string, number> = {};
         for (const d of baseData) {
             if (typeof d.rawTemperature !== 'number') continue;
@@ -234,9 +222,6 @@ export const selectPlotAnomaliesToday = createSelector(
             if (typeof ref === 'number') {
                 map[d.stationId] = d.rawTemperature - ref;
             }
-        }
-        if (import.meta.env.MODE === 'development') {
-            console.timeEnd('plotAnomaliesToday-build');
         }
         return map;
     }
@@ -260,9 +245,6 @@ export const selectPlotAnomaliesHistorical = createSelector(
         if (!baseData) return null;
         const ready = yearlyMeanStatus === 'succeeded' && yearlyMeanData;
         if (!ready) return null;
-        if (import.meta.env.MODE === 'development') {
-            console.time('plotAnomaliesHistorical-build');
-        }
         const map: Record<string, number> = {};
         for (const d of baseData) {
             if (typeof d.temperature !== 'number') continue;
@@ -270,9 +252,6 @@ export const selectPlotAnomaliesHistorical = createSelector(
             if (typeof ref === 'number') {
                 map[d.stationId] = d.temperature - ref;
             }
-        }
-        if (import.meta.env.MODE === 'development') {
-            console.timeEnd('plotAnomaliesHistorical-build');
         }
         return map;
     }
@@ -298,15 +277,7 @@ export const selectPlotData = createSelector(
 
         const anomalyMap = isToday ? anomaliesToday : anomaliesHistorical;
 
-        if (import.meta.env.MODE === 'development') {
-            console.time('plotData-merge-build');
-        }
-
         const merged: PlotDatum[] = baseData.map(d => ({ ...d, anomaly: anomalyMap ? (anomalyMap[d.stationId] ?? undefined) : undefined }));
-
-        if (import.meta.env.MODE === 'development') {
-            console.timeEnd('plotData-merge-build');
-        }
 
         return merged;
     }
