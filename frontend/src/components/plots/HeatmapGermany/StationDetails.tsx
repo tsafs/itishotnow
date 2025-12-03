@@ -56,6 +56,7 @@ const placeholderStyle: CSSProperties = {
     backgroundColor: '#555',
     color: 'transparent',
     borderRadius: 4,
+    textShadow: 'none',
 };
 
 const styles = createStyles({
@@ -102,6 +103,7 @@ const styles = createStyles({
     },
     comparisonMessage: {
         fontSize: '1.4rem',
+        lineHeight: 1.2,
         fontWeight: 600,
         color: theme.colors.textLight,
     },
