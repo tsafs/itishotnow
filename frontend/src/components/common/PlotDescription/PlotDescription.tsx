@@ -3,7 +3,7 @@ import type { ReactNode, CSSProperties } from 'react';
 import { theme } from '../../../styles/design-system';
 
 // Pure style computation functions
-const getContainerStyle = (hasTabs: boolean, customStyle?: CSSProperties): CSSProperties => ({
+const getContainerStyle = (hasTabs: boolean): CSSProperties => ({
     paddingRight: theme.spacing.sm,
     height: '100%',
     maxWidth: 600,
@@ -11,7 +11,6 @@ const getContainerStyle = (hasTabs: boolean, customStyle?: CSSProperties): CSSPr
     flexDirection: 'column',
     justifyContent: hasTabs ? 'flex-start' : 'center',
     textAlign: 'left',
-    ...customStyle,
 });
 
 const getTabBarStyle = (): CSSProperties => ({
@@ -25,19 +24,20 @@ const getTabButtonStyle = (isActive: boolean, isHovered: boolean): CSSProperties
     padding: `${theme.spacing.sm}px ${theme.spacing.md}px`,
     background: 'none',
     border: 'none',
-    borderBottom: `2px solid ${isActive ? theme.colors.text : 'transparent'}`,
+    borderBottom: `2px solid ${isActive ? theme.colors.textDark : 'transparent'}`,
     marginBottom: -2,
     cursor: 'pointer',
     fontFamily: theme.typography.fontFamily,
     fontSize: theme.typography.fontSize.md,
     fontWeight: isActive ? theme.typography.fontWeight.bold : theme.typography.fontWeight.medium,
-    color: isActive ? theme.colors.text : theme.colors.textLight,
+    color: isActive ? theme.colors.textDark : theme.colors.textLight,
     backgroundColor: isHovered && !isActive ? theme.colors.hover : 'transparent',
     transition: `all ${theme.transitions.fast}`,
 });
 
-const getContentStyle = (): CSSProperties => ({
+const getContentStyle = (customStyle?: CSSProperties): CSSProperties => ({
     lineHeight: theme.typography.lineHeight.normal,
+    ...customStyle,
 });
 
 export interface Tab {
@@ -92,12 +92,12 @@ const PlotDescription = ({
 
     // Memoized styles
     const containerStyle = useMemo(
-        () => getContainerStyle(!!hasTabs, style),
-        [hasTabs, style]
+        () => getContainerStyle(!!hasTabs),
+        [hasTabs]
     );
 
     const tabBarStyle = useMemo(() => getTabBarStyle(), []);
-    const contentStyle = useMemo(() => getContentStyle(), []);
+    const contentStyle = useMemo(() => getContentStyle(style), [style]);
 
     // Simple content without tabs
     if (!hasTabs) {

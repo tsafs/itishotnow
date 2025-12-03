@@ -21,12 +21,13 @@ const getSideStyle = (
     position: 'first' | 'second',
     ratio: number
 ): CSSProperties => ({
-    padding: isVertical ? 0 : theme.spacing.md,
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',
     alignItems: isVertical ? 'center' : (position === 'first' ? 'flex-end' : 'flex-start'),
     textAlign: isVertical ? 'center' : (position === 'first' ? 'right' : 'left'),
+    marginTop: isVertical ? theme.spacing.md : theme.spacing.lg,
+    marginBottom: isVertical ? theme.spacing.md : theme.spacing.lg,
     ...(!isVertical && { flex: ratio }),
 });
 
@@ -35,8 +36,7 @@ const getTitleStyle = (isVertical: boolean, titleSide: 'left' | 'right'): CSSPro
     textAlign: isVertical ? 'center' : (titleSide === 'left' ? 'right' : 'left'),
     fontSize: isVertical ? theme.typography.fontSize.lg : theme.typography.fontSize.xl,
     fontWeight: theme.typography.fontWeight.bold,
-    marginBottom: theme.spacing.md,
-    marginTop: isVertical ? theme.spacing.xl : 0
+    marginBottom: theme.spacing.lg
 });
 
 interface PlotViewProps {

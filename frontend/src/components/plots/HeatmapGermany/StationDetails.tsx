@@ -16,7 +16,7 @@ const getPanelStyle = (isVertical: boolean): CSSProperties => ({
     marginTop: 20,
     textAlign: 'center',
     color: theme.colors.textLight,
-    marginRight: isVertical ? 0 : 100,
+    // marginRight: isVertical ? 0 : 100,
     textShadow: '0px 0px 10px rgba(0, 0, 0, 1)',
 });
 

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useMemo } from 'react';
 import type { CSSProperties } from 'react';
 import { theme, createStyles } from '../../../styles/design-system.js';
-import { useBreakpoint } from '../../../hooks/useBreakpoint.js';
+import { useBreakpoint, useBreakpointDown } from '../../../hooks/useBreakpoint.js';
 import { useSelectedCityName, useTemperatureAnomaliesDataStatus } from '../../../store/hooks/hooks.js';
 import { useAppDispatch } from '../../../store/hooks/useAppDispatch.js';
 import {
@@ -15,22 +15,21 @@ import './LeftSide.css';
 import { createPlot } from './plot.js';
 
 // Pure style computation functions
-const getContainerStyle = (isMobile: boolean): CSSProperties => ({
-    overflow: 'visible',
-    textAlign: 'center',
-    margin: isMobile ? 0 : undefined,
-});
-
-const getPlotStyle = (dims: { width: number; height: number }): CSSProperties => ({
+const getPlotStyle = (isMobileOrTablet: boolean, dims: { width: number; height: number }): CSSProperties => ({
     position: 'relative',
     maxWidth: dims.width,
     maxHeight: dims.height,
-    marginBottom: theme.spacing.sm,
+    // Extra bottom margin on mobile for spacing to account for overflowing x axis labels
+    marginBottom: isMobileOrTablet ? theme.spacing.lg : theme.spacing.sm,
 });
 
 const styles = createStyles({
     plotRef: {
         overflow: 'visible',
+    },
+    containerStyle: {
+        overflow: 'visible',
+        textAlign: 'center',
     },
     overlayStyle: {
         backgroundColor: theme.colors.backgroundLight
@@ -40,15 +39,10 @@ const styles = createStyles({
 const TemperatureAnomaliesByDayOverYearsLeftSide = () => {
     const dispatch = useAppDispatch();
     const breakpoint = useBreakpoint();
-
-    const containerRef = useRef<HTMLDivElement | null>(null);
-
+    const isMobileOrTablet = useBreakpointDown('tablet');
     const selectedCityName = useSelectedCityName();
-
     const renderComplete = useTemperatureAnomaliesRenderComplete();
-
-    const isMobile = breakpoint === 'mobile';
-
+    const containerRef = useRef<HTMLDivElement | null>(null);
 
     // Fixed dimensions per breakpoint to keep projected shape scale consistent
     const MAP_DIMENSIONS: Record<'mobile' | 'tablet' | 'desktop' | 'wide', { width: number; height: number }> = {
@@ -121,19 +115,13 @@ const TemperatureAnomaliesByDayOverYearsLeftSide = () => {
         }
     }, [plotDataError, dispatch]);
 
-    // Memoized computed styles
-    const containerStyle = useMemo(
-        () => getContainerStyle(isMobile),
-        [isMobile]
-    );
-
     const plotStyle = useMemo(
-        () => getPlotStyle(plotDims),
-        [plotDims]
+        () => getPlotStyle(isMobileOrTablet, plotDims),
+        [isMobileOrTablet, plotDims]
     );
 
     return (
-        <div style={containerStyle} className="temperature-scatter-plot-container">
+        <div style={styles.containerStyle} className="temperature-scatter-plot-container">
             <AsyncLoadingOverlayWrapper
                 dataStatusHook={useTemperatureAnomaliesDataStatus}
                 renderCompleteSignal={renderComplete}
