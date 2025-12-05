@@ -14,12 +14,10 @@ import { useIceAndHotDaysDataStatus } from './hooks/useIceAndHotDaysDataStatus.j
 const IS_DARK_MODE = true;
 const themeColors = IS_DARK_MODE ? theme.colors.plotDark : theme.colors.plotLight;
 
-const getPlotStyle = (isMobileOrTablet: boolean, dims: { width: number; height: number }): CSSProperties => ({
+const getPlotStyle = (dims: { width: number; height: number }): CSSProperties => ({
     position: 'relative',
     maxWidth: dims.width,
     maxHeight: dims.height,
-    // Extra bottom margin on mobile for spacing to account for overflowing x axis labels
-    marginBottom: isMobileOrTablet ? theme.spacing.lg : theme.spacing.sm,
 });
 
 const styles = createStyles({
@@ -31,7 +29,6 @@ const styles = createStyles({
 const IceAndHotDaysRightSide = memo(() => {
     const dispatch = useAppDispatch();
     const breakpoint = useBreakpoint();
-    const isMobileOrTablet = useBreakpointDown('tablet');
     const selectedCityName = useSelectedCityName();
     const data = useIceAndHotDaysPlotData();
     const renderComplete = useIceAndHotDaysRenderComplete();
@@ -39,10 +36,10 @@ const IceAndHotDaysRightSide = memo(() => {
 
     // Fixed dimensions per breakpoint to keep projected shape scale consistent
     const MAP_DIMENSIONS: Record<'mobile' | 'tablet' | 'desktop' | 'wide', { width: number; height: number }> = {
-        mobile: { width: 480, height: 240 },
-        tablet: { width: 700, height: 350 },
-        desktop: { width: 700, height: 350 },
-        wide: { width: 700, height: 350 }
+        mobile: { width: 480, height: 218 },
+        tablet: { width: 768, height: 350 },
+        desktop: { width: 800, height: 364 },
+        wide: { width: 1000, height: 455 }
     };
     const FONT_SIZES: Record<'mobile' | 'tablet' | 'desktop' | 'wide', number> = {
         mobile: 10,
@@ -86,7 +83,7 @@ const IceAndHotDaysRightSide = memo(() => {
         }
     }, [data.error, dispatch]);
 
-    const plotStyle = useMemo(() => getPlotStyle(isMobileOrTablet, plotDims), [isMobileOrTablet, plotDims]);
+    const plotStyle = useMemo(() => getPlotStyle(plotDims), [plotDims]);
 
     return (
         <AsyncLoadingOverlayWrapper

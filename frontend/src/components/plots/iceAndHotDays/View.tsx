@@ -1,12 +1,11 @@
-import { createPlotView } from '../../common/PlotView/createPlotView.js';
-import IceAndHotDaysLeftSide from './LeftSide.js';
-import IceAndHotDaysRightSide from './RightSide.js';
+import { createStackedPlotView } from '../../common/PlotView/createStackedPlotView.js';
+import IceAndHotDaysTop from './Top.js';
+import IceAndHotDaysBottom from './Bottom.js';
 
-const IceAndHotDays = createPlotView({
-    leftContent: IceAndHotDaysLeftSide,
-    rightContent: IceAndHotDaysRightSide,
+const IceAndHotDays = createStackedPlotView({
+    topContent: IceAndHotDaysTop,
+    bottomContent: IceAndHotDaysBottom,
     config: {
-        leftWidth: 45,
         darkMode: true,
     },
 });

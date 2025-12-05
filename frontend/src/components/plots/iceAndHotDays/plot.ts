@@ -1,7 +1,7 @@
 import * as Plot from '@observablehq/plot';
 import type { IXYData } from '../../../classes/XYData';
 import theme from '../../../styles/design-system';
-import { getPercentileColor, getPercentileColorWithPivot } from '../../../utils/TemperatureUtils';
+import { getPercentileColorWithPivot } from '../../../utils/TemperatureUtils';
 
 const FROM_YEAR = 1961;
 const TO_YEAR = 1990;
