@@ -9,6 +9,9 @@ import {
     resetCityChangeRenderComplete,
     setCityChangeRenderComplete,
 } from './temperatureAnomaliesByDayOverYearsSlice.js';
+import { fetchIceAndHotDays } from '../../components/plots/iceAndHotDays/services/IceAndHotDaysService.js';
+import { fetchIceAndHotDaysData, resetIceAndHotDaysData } from './iceAndHotDaysDataSlice.js';
+import { resetIceAndHotDaysRenderComplete, setIceAndHotDaysRenderComplete } from './iceAndHotDaysSlice.js';
 
 export interface SelectedCityState {
     cityId: string | null;
@@ -48,13 +51,16 @@ export const selectCity = (
     if (!cityId) {
         dispatch(setSelectedCity(null));
         dispatch(resetRollingAverageData());
+        dispatch(resetIceAndHotDaysData());
         dispatch(setCityChangeRenderComplete(true));
+        dispatch(setIceAndHotDaysRenderComplete(true));
         dispatch(setIsCityChanging(false));
         return;
     }
 
     dispatch(setIsCityChanging(true));
     dispatch(resetCityChangeRenderComplete());
+    dispatch(resetIceAndHotDaysRenderComplete());
     dispatch(setSelectedCity(cityId));
 
     if (remember && cityId) {
@@ -65,6 +71,7 @@ export const selectCity = (
     const stationId = selectSelectedStationId(stateAfterSelection);
 
     dispatch(resetRollingAverageData());
+    dispatch(resetIceAndHotDaysData());
 
     let didDispatchFetch = false;
 
@@ -73,6 +80,7 @@ export const selectCity = (
 
         await Promise.allSettled([
             dispatch(fetchRollingAverageData({ stationId })).unwrap().catch(() => undefined),
+            dispatch(fetchIceAndHotDaysData({ stationId })).unwrap().catch(() => undefined),
         ]);
     }
 
@@ -80,6 +88,7 @@ export const selectCity = (
 
     if (!didDispatchFetch) {
         dispatch(setCityChangeRenderComplete(true));
+        dispatch(setIceAndHotDaysRenderComplete(true));
     }
 };
 

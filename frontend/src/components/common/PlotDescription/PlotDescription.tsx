@@ -5,7 +5,6 @@ import { theme } from '../../../styles/design-system';
 // Pure style computation functions
 const getContainerStyle = (hasTabs: boolean): CSSProperties => ({
     paddingRight: theme.spacing.sm,
-    height: '100%',
     maxWidth: 600,
     display: 'flex',
     flexDirection: 'column',

@@ -12,4 +12,8 @@ export const plots: PlotRegistryEntry[] = [
         id: 'historical-analysis',
         loader: () => import('./TemperatureAnomaliesByDayOverYears/View'),
     },
+    {
+        id: 'ice-and-hot-days',
+        loader: () => import('./iceAndHotDays/View'),
+    },
 ];

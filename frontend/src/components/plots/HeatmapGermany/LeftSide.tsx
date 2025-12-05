@@ -11,7 +11,6 @@ const HeatmapGermanyLeftSide = memo(() => {
 
     const containerStyle = useMemo<CSSProperties>(
         () => ({
-            // textAlign: 'right',
             marginRight: isMobile ? 0 : theme.spacing.lg,
         }),
         [isMobile]
