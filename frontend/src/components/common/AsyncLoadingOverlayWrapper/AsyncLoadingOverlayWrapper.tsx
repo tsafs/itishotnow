@@ -16,7 +16,7 @@ interface AsyncLoadingOverlayWrapperProps {
     style?: CSSProperties;
     overlayClassName?: string;
     overlayStyle?: CSSProperties;
-    themeMode?: 'dark' | 'light';
+    isDarkTheme?: boolean;
 }
 
 const SHIMMER_ANIMATION_NAME = 'async-loading-overlay-shimmer';
@@ -25,22 +25,23 @@ const shimmerKeyframes = `@keyframes ${SHIMMER_ANIMATION_NAME} {
     50% { opacity: 1; transform: scale(1.2); }
 }`;
 
+const getOverlayLayerStyle = (isDarkTheme: boolean): CSSProperties => ({
+    position: 'absolute' as const,
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: isDarkTheme ? theme.colors.plotDark.background : theme.colors.plotLight.background,
+    zIndex: 2,
+});
+
 const styles = createStyles({
     container: {
         position: 'relative' as const,
-    },
-    overlayLayer: {
-        position: 'absolute' as const,
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'transparent',
-        zIndex: 2,
-    },
+    }
 });
 
 const defaultStyles = createStyles({
@@ -80,7 +81,7 @@ const AsyncLoadingOverlayWrapper = ({
     style,
     overlayClassName,
     overlayStyle,
-    themeMode = 'dark',
+    isDarkTheme = true,
 }: AsyncLoadingOverlayWrapperProps) => {
     const { isLoading, error } = useAsyncLoadingOverlay({
         dataStatusHook,
@@ -104,13 +105,15 @@ const AsyncLoadingOverlayWrapper = ({
 
     const showOverlay = isLoading || Boolean(error);
 
-    const shimmerDotColor = themeMode === 'dark' ? theme.colors.backgroundLight : theme.colors.background; // Keep shimmer legible against overlay
+    const shimmerDotColor = isDarkTheme ? theme.colors.plotDark.foreground : theme.colors.plotLight.foreground; // Keep shimmer legible against overlay
 
     const resolvedPlaceholder = error
         ? typeof errorFallback === 'function'
             ? errorFallback(error)
             : errorFallback ?? <LoadingError message={error} />
         : placeholder ?? <DefaultShimmer color={shimmerDotColor} />;
+
+    const overlayLayerStyle = getOverlayLayerStyle(isDarkTheme);
 
     return (
         <div className={className} style={{ ...styles.container, ...style }}>
@@ -119,7 +122,7 @@ const AsyncLoadingOverlayWrapper = ({
             {showOverlay && (
                 <div
                     className={overlayClassName}
-                    style={{ ...styles.overlayLayer, ...overlayStyle }}
+                    style={{ ...overlayLayerStyle, ...overlayStyle }}
                 >
                     {resolvedPlaceholder}
                 </div>

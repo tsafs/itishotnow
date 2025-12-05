@@ -30,9 +30,6 @@ const styles = createStyles({
     containerStyle: {
         overflow: 'visible',
         textAlign: 'center',
-    },
-    overlayStyle: {
-        backgroundColor: theme.colors.backgroundLight
     }
 });
 
@@ -128,8 +125,7 @@ const TemperatureAnomaliesByDayOverYearsLeftSide = () => {
                 minDisplayDuration={MIN_LOADING_DISPLAY_DURATION}
                 onError={() => dispatch(setCityChangeRenderComplete(true))}
                 style={plotStyle}
-                overlayStyle={styles.overlayStyle}
-                themeMode='light'
+                isDarkTheme={false}
             >
                 <div ref={containerRef} style={styles.plotRef}></div>
             </AsyncLoadingOverlayWrapper>

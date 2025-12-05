@@ -1,5 +1,10 @@
 import * as Plot from '@observablehq/plot';
 import type { IXYData } from '../../../classes/XYData';
+import theme from '../../../styles/design-system';
+import { getPercentileColor, getPercentileColorWithPivot } from '../../../utils/TemperatureUtils';
+
+const FROM_YEAR = 1961;
+const TO_YEAR = 1990;
 
 interface DayData {
     year: number;
@@ -10,14 +15,26 @@ interface LabelData extends DayData {
     label: string;
 }
 
+function percentile(arr: number[], p: number): number {
+    const sorted = arr.slice().sort((a, b) => a - b);
+    const idx = (sorted.length - 1) * p;
+    const lower = Math.floor(idx);
+    const upper = Math.ceil(idx);
+    if (lower === upper) return sorted[lower]!;
+    return sorted[lower]! * (upper - idx) + sorted[upper]! * (idx - lower);
+}
+
 export default function createPlot(
     daysBelow0Tmax: IXYData,
     daysAbove30Tmax: IXYData,
     plotDims: {
         width: number;
         height: number;
-    }
+    },
+    fontSize: number,
+    isDarkMode = false,
 ): HTMLElement {
+    const themeColors = isDarkMode ? theme.colors.plotDark : theme.colors.plotLight;
 
     // Transform data for plotting
     const below0: DayData[] = [];
@@ -26,6 +43,18 @@ export default function createPlot(
 
     // Get years from any metric (they should all have the same years)
     const years = daysBelow0Tmax.x || [];
+
+    // Calculate 5th to 95th percentile range for color domain
+    const filteredIndices = years
+        .map((year, index) => ({ year, index }))
+        .filter(({ year }) => year >= FROM_YEAR && year <= TO_YEAR)
+        .map(({ index }) => index);
+    const below0DaysFiltered = filteredIndices.map(i => -(daysBelow0Tmax.y[i] || 0));
+    const above30DaysFiltered = filteredIndices.map(i => daysAbove30Tmax.y[i] || 0);
+    const domainLow = percentile(below0DaysFiltered, 0.05);
+    const domainHigh = percentile(above30DaysFiltered, 0.95);
+
+    console.log(`Ice and Hot Days Plot - Color Domain: [${domainLow}, ${domainHigh}]`);
 
     // Transform data for plotting
     years.forEach((year, index) => {
@@ -60,37 +89,36 @@ export default function createPlot(
             tickRotate: -90,
             tickSize: 0,
             line: false,
-            tickPadding: 100
+            tickPadding: 100,
+            paddingInner: 0.3,
         },
         y: {
+            axis: "both",
             tickSize: 0,
-            label: null,
+            label: "Gesamte Anzahl der Tage",
+            labelAnchor: "center",
+            labelArrow: false,
             tickFormat: d => Math.abs(d),
-        },
-        color: {
-            type: "diverging",
-            scheme: "BuRd",
-            symmetric: false,
         },
         marks: [
             // Bars for each threshold
             Plot.rectY(below0, {
                 x: "year",
                 y: "days",
-                fill: "days",
+                fill: d => getPercentileColorWithPivot(d.days, [domainLow, domainHigh], 'BlueRed'),
                 ry2: 5,
             }),
 
-            // Bars for each threshold
+            // Bars for above 30°C
             Plot.rectY(above30, {
                 x: "year",
                 y: "days",
-                fill: "days",
+                fill: d => getPercentileColorWithPivot(d.days, [domainLow, domainHigh], 'BlueRed'),
                 ry2: 5,
             }),
 
             // Horizontal intersecting grid lines in white
-            Plot.gridY({ stroke: "#D7DDE2", strokeOpacity: 1 }),
+            Plot.gridY({ stroke: themeColors.grid, strokeOpacity: 1 }),
 
             // Vertical years for above 30°C
             Plot.text(labels, {
@@ -99,7 +127,8 @@ export default function createPlot(
                 y: i => i.days + 1,
                 rotate: -90,
                 textAnchor: "start",
-                fontSize: 12,
+                fontSize: fontSize,
+                fill: themeColors.text,
             }),
         ]
     }) as unknown as HTMLElement;

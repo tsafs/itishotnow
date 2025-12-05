@@ -1,4 +1,4 @@
-export type ColorSchemeName = 'BlueWhiteRed' | 'Turbo';
+export type ColorSchemeName = 'BlueWhiteRed' | 'Turbo' | 'BlueRed';
 
 interface ColorStop {
     threshold: number;
@@ -31,6 +31,20 @@ const turboScheme: ColorStop[] = [
     { threshold: 6, color: "#F86218" },
     { threshold: 8, color: "#BC2309" },
     { threshold: 10, color: "#900C00" }
+];
+
+const blueRedScheme: ColorStop[] = [
+    { threshold: -10, color: "#1058a0" },
+    { threshold: -8, color: "#3787c0" },
+    { threshold: -6, color: "#5fa5d1" },
+    { threshold: -4, color: "#8fc1de" },
+    { threshold: -2, color: "#bbd7eb" },
+    { threshold: 0, color: "#ffffcc" },
+    { threshold: 2, color: "#ffe896" },
+    { threshold: 4, color: "#fec763" },
+    { threshold: 6, color: "#fd9741" },
+    { threshold: 8, color: "#f9542c" },
+    { threshold: 10, color: "#cd0c22" },
 ];
 
 /** Generates a color for the provided temperature anomaly. */
@@ -73,6 +87,20 @@ export const getAnomalyColor = (
 };
 
 /**
+ * Converts RGB values to a hex color string
+ * @param rgb Tuple of [red, green, blue] values (0-255)
+ * @returns Hex color string (e.g., "#FF00FF")
+ */
+export function rgbToHex(rgb: [number, number, number]): string {
+    return `#${rgb
+        .map((v) => {
+            const hex = Math.round(v).toString(16);
+            return hex.length === 1 ? `0${hex}` : hex;
+        })
+        .join('')}`;
+}
+
+/**
  * Interpolates between two hex colors
  * @param {string} color1 - Starting hex color
  * @param {string} color2 - Ending hex color
@@ -87,15 +115,6 @@ function interpolateColor(color1: string, color2: string, ratio: number): string
         return [r, g, b];
     };
 
-    const rgb2hex = (rgb: [number, number, number]): string => {
-        return `#${rgb
-            .map((v) => {
-                const hex = Math.round(v).toString(16);
-                return hex.length === 1 ? `0${hex}` : hex;
-            })
-            .join('')}`;
-    };
-
     const rgb1 = hex2rgb(color1);
     const rgb2 = hex2rgb(color2);
     const clampedRatio = Math.min(Math.max(ratio, 0), 1);
@@ -105,7 +124,7 @@ function interpolateColor(color1: string, color2: string, ratio: number): string
         rgb1[2] + (rgb2[2] - rgb1[2]) * clampedRatio,
     ];
 
-    return rgb2hex(rgb);
+    return rgbToHex(rgb);
 }
 
 export interface TemperatureAnomalyDetails {
@@ -166,3 +185,133 @@ export const analyzeTemperatureAnomaly = (
         anomalyMessage,
     };
 };
+
+/**
+ * Maps a value to a color in the given scheme, using the outermost color for outliers.
+ * @param value The value to map.
+ * @param domain [min, max] domain for the "normal" range.
+ * @param colorScheme The color scheme to use.
+ */
+export function getPercentileColor(
+    value: number,
+    domain: [number, number],
+    colorScheme: ColorSchemeName = 'Turbo'
+): string {
+    let scheme: ColorStop[];
+    switch (colorScheme) {
+        case 'Turbo':
+            scheme = turboScheme;
+            break;
+        case 'BlueWhiteRed':
+            scheme = blueWhiteRedScheme;
+            break;
+        case 'BlueRed':
+            scheme = blueRedScheme;
+            break;
+        default:
+            throw new Error(`Unknown color scheme: ${colorScheme}`);
+    }
+    const min = domain[0];
+    const max = domain[1];
+
+    if (value <= min) {
+        return scheme[0]!.color;
+    }
+    if (value >= max) {
+        return scheme[scheme.length - 1]!.color;
+    }
+
+    // Map value to [0, 1] within domain and interpolate between indices 1 to length-2
+    for (let i = 1; i < scheme.length - 1; i++) {
+        const t0 = min + ((max - min) * (i - 1)) / (scheme.length - 2);
+        const t1 = min + ((max - min) * i) / (scheme.length - 2);
+        if (value >= t0 && value <= t1) {
+            const localRatio = (value - t0) / (t1 - t0);
+            return interpolateColor(scheme[i]!.color, scheme[i + 1]!.color, localRatio);
+        }
+    }
+    // Fallback
+    return scheme[scheme.length - 1]!.color;
+}
+
+/**
+ * Maps a value to a color in the given scheme, respecting a pivot point, which must be a threshold in the specified scheme.
+ * Negative values map to the blue side (indices 0 to midpoint), positive values map to the red side (midpoint to end).
+ * @param value The value to map.
+ * @param domain [min, max] domain for the "normal" range.
+ * @param colorScheme The color scheme to use.
+ * @param pivotPoint The pivot point (usually 0).
+ */
+export function getPercentileColorWithPivot(
+    value: number,
+    domain: [number, number],
+    colorScheme: ColorSchemeName = 'Turbo',
+    pivotPoint: number = 0,
+): string {
+    let scheme: ColorStop[];
+    switch (colorScheme) {
+        case 'Turbo':
+            scheme = turboScheme;
+            break;
+        case 'BlueWhiteRed':
+            scheme = blueWhiteRedScheme;
+            break;
+        case 'BlueRed':
+            scheme = blueRedScheme;
+            break;
+        default:
+            throw new Error(`Unknown color scheme: ${colorScheme}`);
+    }
+
+    const min = domain[0];
+    const max = domain[1];
+
+    // Outliers: use outermost colors
+    if (value <= min) {
+        return scheme[0]!.color;
+    }
+    if (value >= max) {
+        return scheme[scheme.length - 1]!.color;
+    }
+
+    const midpoint = scheme.findIndex(stop => stop.threshold === pivotPoint);
+
+    if (value < pivotPoint) {
+        // Negative side: map to blue side (1 to midpoint)
+        const negativeRatio = (value - min) / (pivotPoint - min);
+        const schemeIndex = 1 + negativeRatio * (midpoint - 1);
+
+        const lowerIndex = Math.floor(schemeIndex);
+        const upperIndex = Math.ceil(schemeIndex);
+        const localRatio = schemeIndex - lowerIndex;
+
+        if (lowerIndex === upperIndex) {
+            return scheme[lowerIndex]!.color;
+        }
+
+        return interpolateColor(
+            scheme[lowerIndex]!.color,
+            scheme[upperIndex]!.color,
+            localRatio
+        );
+    } else {
+        // Positive side: map to red side (midpoint to length-2)
+        const positiveRatio = (value - pivotPoint) / (max - pivotPoint);
+        const schemeIndex = midpoint + positiveRatio * (scheme.length - 2 - midpoint);
+
+        const lowerIndex = Math.floor(schemeIndex);
+        const upperIndex = Math.ceil(schemeIndex);
+        const localRatio = schemeIndex - lowerIndex;
+
+        if (lowerIndex === upperIndex) {
+            return scheme[lowerIndex]!.color;
+        }
+
+        return interpolateColor(
+            scheme[lowerIndex]!.color,
+            scheme[upperIndex]!.color,
+            localRatio
+        );
+    }
+}
+

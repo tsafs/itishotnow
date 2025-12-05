@@ -11,10 +11,9 @@ import { useIceAndHotDaysPlotData } from './hooks/useIceAndHotDaysPlotData.js';
 import { setIceAndHotDaysRenderComplete, useIceAndHotDaysRenderComplete } from '../../../store/slices/iceAndHotDaysSlice.js';
 import { useIceAndHotDaysDataStatus } from './hooks/useIceAndHotDaysDataStatus.js';
 
-const getContainerStyle = (isVertical: boolean): CSSProperties => ({
-});
+const IS_DARK_MODE = true;
+const themeColors = IS_DARK_MODE ? theme.colors.plotDark : theme.colors.plotLight;
 
-// Pure style computation functions
 const getPlotStyle = (isMobileOrTablet: boolean, dims: { width: number; height: number }): CSSProperties => ({
     position: 'relative',
     maxWidth: dims.width,
@@ -23,10 +22,9 @@ const getPlotStyle = (isMobileOrTablet: boolean, dims: { width: number; height: 
     marginBottom: isMobileOrTablet ? theme.spacing.lg : theme.spacing.sm,
 });
 
-
 const styles = createStyles({
-    overlayStyle: {
-        backgroundColor: theme.colors.backgroundLight
+    plot: {
+        color: themeColors.text,
     }
 });
 
@@ -42,18 +40,25 @@ const IceAndHotDaysRightSide = memo(() => {
 
     // Fixed dimensions per breakpoint to keep projected shape scale consistent
     const MAP_DIMENSIONS: Record<'mobile' | 'tablet' | 'desktop' | 'wide', { width: number; height: number }> = {
-        mobile: { width: 320, height: 435 },
-        tablet: { width: 460, height: 625 },
-        desktop: { width: 640, height: 870 },
-        wide: { width: 700, height: 952 }
+        mobile: { width: 480, height: 240 },
+        tablet: { width: 700, height: 350 },
+        desktop: { width: 700, height: 350 },
+        wide: { width: 700, height: 350 }
+    };
+    const FONT_SIZES: Record<'mobile' | 'tablet' | 'desktop' | 'wide', number> = {
+        mobile: 10,
+        tablet: 12,
+        desktop: 12,
+        wide: 12
     };
     const plotDims = MAP_DIMENSIONS[breakpoint];
+    const fontSize = FONT_SIZES[breakpoint];
 
     useEffect(() => {
         if (!containerRef.current || !selectedCityName || !data.iceDays || !data.hotDays) return;
 
         try {
-            const nextPlot = createPlot(data.iceDays, data.hotDays, plotDims);
+            const nextPlot = createPlot(data.iceDays, data.hotDays, plotDims, fontSize, IS_DARK_MODE);
             containerRef.current.replaceChildren(nextPlot);
             dispatch(setIceAndHotDaysRenderComplete(true));
         } catch (err) {
@@ -67,6 +72,7 @@ const IceAndHotDaysRightSide = memo(() => {
         dispatch,
         plotDims.width,
         plotDims.height,
+        fontSize
     ]);
 
     // Cleanup on unmount
@@ -81,30 +87,19 @@ const IceAndHotDaysRightSide = memo(() => {
         }
     }, [data.error, dispatch]);
 
-    const containerStyle = useMemo(
-        () => getContainerStyle(isVertical),
-        [isVertical]
-    );
-
-    const plotStyle = useMemo(
-        () => getPlotStyle(isMobileOrTablet, plotDims),
-        [isMobileOrTablet, plotDims]
-    );
+    const plotStyle = useMemo(() => getPlotStyle(isMobileOrTablet, plotDims), [isMobileOrTablet, plotDims]);
 
     return (
-        <div style={containerStyle}>
-            <AsyncLoadingOverlayWrapper
-                dataStatusHook={useIceAndHotDaysDataStatus}
-                renderCompleteSignal={renderComplete}
-                minDisplayDuration={MIN_LOADING_DISPLAY_DURATION}
-                onError={() => dispatch(setIceAndHotDaysRenderComplete(true))}
-                style={plotStyle}
-                overlayStyle={styles.overlayStyle}
-                themeMode='light'
-            >
-                <div ref={containerRef} />
-            </AsyncLoadingOverlayWrapper>
-        </div>
+        <AsyncLoadingOverlayWrapper
+            dataStatusHook={useIceAndHotDaysDataStatus}
+            renderCompleteSignal={renderComplete}
+            minDisplayDuration={MIN_LOADING_DISPLAY_DURATION}
+            onError={() => dispatch(setIceAndHotDaysRenderComplete(true))}
+            style={plotStyle}
+            isDarkTheme={true}
+        >
+            <div ref={containerRef} style={styles.plot} />
+        </AsyncLoadingOverlayWrapper>
     );
 });
 

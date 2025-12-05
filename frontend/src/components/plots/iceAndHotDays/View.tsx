@@ -7,7 +7,7 @@ const IceAndHotDays = createPlotView({
     rightContent: IceAndHotDaysRightSide,
     config: {
         leftWidth: 45,
-        darkMode: false,
+        darkMode: true,
     },
 });
 

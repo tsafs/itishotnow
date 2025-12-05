@@ -46,6 +46,21 @@ export const theme = {
         // Interactive
         hover: 'rgba(0, 0, 0, 0.05)',
         active: 'rgba(0, 0, 0, 0.1)',
+
+        // Plot styles
+        plotDark: {
+            background: '#222222',
+            foreground: '#eeeeee',
+            grid: '#3d3d3d',
+            text: '#eeeeee',
+        },
+
+        plotLight: {
+            background: '#eeeeee',
+            foreground: '#222222',
+            grid: '#D7DDE2',
+            text: '#222222',
+        },
     },
     typography: {
         fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
