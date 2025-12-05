@@ -31,7 +31,6 @@ const styles = createStyles({
 const IceAndHotDaysRightSide = memo(() => {
     const dispatch = useAppDispatch();
     const breakpoint = useBreakpoint();
-    const isVertical = useBreakpointDown('desktop');
     const isMobileOrTablet = useBreakpointDown('tablet');
     const selectedCityName = useSelectedCityName();
     const data = useIceAndHotDaysPlotData();
@@ -55,7 +54,7 @@ const IceAndHotDaysRightSide = memo(() => {
     const fontSize = FONT_SIZES[breakpoint];
 
     useEffect(() => {
-        if (!containerRef.current || !selectedCityName || !data.iceDays || !data.hotDays) return;
+        if (!selectedCityName || !containerRef.current || !data.iceDays || !data.hotDays) return;
 
         try {
             const nextPlot = createPlot(data.iceDays, data.hotDays, plotDims, fontSize, IS_DARK_MODE);

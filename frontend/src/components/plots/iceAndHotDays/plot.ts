@@ -54,8 +54,6 @@ export default function createPlot(
     const domainLow = percentile(below0DaysFiltered, 0.05);
     const domainHigh = percentile(above30DaysFiltered, 0.95);
 
-    console.log(`Ice and Hot Days Plot - Color Domain: [${domainLow}, ${domainHigh}]`);
-
     // Transform data for plotting
     years.forEach((year, index) => {
         below0.push({
