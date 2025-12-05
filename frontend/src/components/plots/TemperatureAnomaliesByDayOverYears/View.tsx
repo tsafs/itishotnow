@@ -11,12 +11,7 @@ const TemperatureAnomaliesByDayOverYears = createPlotView({
         title: 'Historische Tageswerte',
         titleSide: 'right',
         darkMode: false,
-    },
-    useShouldRender: () => {
-        // const cityName = useSelectedCityName();
-        // return !!cityName;
-        return true;
-    },
+    }
 });
 
 export default TemperatureAnomaliesByDayOverYears;
