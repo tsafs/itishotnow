@@ -167,3 +167,4 @@ export class RollingAverageRecordBuilder {
 }
 
 export type RollingAverageRecordList = RollingAverageRecordJSON[];
+export type RollingAverageRecordMap = Record<string, RollingAverageRecord>;

@@ -12,7 +12,7 @@ const initialState: IceAndHotDaysState = {
 };
 
 const iceAndHotDaysSlice = createSlice({
-    name: 'iceAndHotDays',
+    name: 'iceAndHotDaysWavesPlot',
     initialState,
     reducers: {
         setIceAndHotDaysRenderComplete: (state, action: PayloadAction<boolean>) => {

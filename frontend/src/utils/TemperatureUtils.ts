@@ -1,4 +1,4 @@
-export type ColorSchemeName = 'BlueWhiteRed' | 'Turbo' | 'BlueRed';
+export type ColorSchemeName = 'BlueWhiteRed' | 'Turbo' | 'BlueRed' | 'Blue';
 
 interface ColorStop {
     threshold: number;
@@ -47,6 +47,20 @@ const blueRedScheme: ColorStop[] = [
     { threshold: 10, color: "#cd0c22" },
 ];
 
+const blueScheme: ColorStop[] = [
+    { threshold: -10, color: "#1058a0" },
+    { threshold: -8, color: "#2471b0" },
+    { threshold: -6, color: "#3787c0" },
+    { threshold: -4, color: "#4d9dd0" },
+    { threshold: -2, color: "#62b3e0" },
+    { threshold: 0, color: "#78c9f0" },
+    { threshold: 2, color: "#8ed5f5" },
+    { threshold: 4, color: "#a4e1fa" },
+    { threshold: 6, color: "#baedfb" },
+    { threshold: 8, color: "#d0f9fc" },
+    { threshold: 10, color: "#e6fffd" },
+];
+
 /** Generates a color for the provided temperature anomaly. */
 export const getAnomalyColor = (
     anomaly: number | null | undefined,
@@ -57,6 +71,10 @@ export const getAnomalyColor = (
         scheme = blueWhiteRedScheme;
     } else if (colorScheme === 'Turbo') {
         scheme = turboScheme;
+    } else if (colorScheme === 'BlueRed') {
+        scheme = blueRedScheme;
+    } else if (colorScheme === 'Blue') {
+        scheme = blueScheme;
     } else {
         throw new Error(`Unknown color scheme: ${colorScheme}`);
     }
@@ -208,6 +226,9 @@ export function getPercentileColor(
         case 'BlueRed':
             scheme = blueRedScheme;
             break;
+        case 'Blue':
+            scheme = blueScheme;
+            break;
         default:
             throw new Error(`Unknown color scheme: ${colorScheme}`);
     }
@@ -258,6 +279,9 @@ export function getPercentileColorWithPivot(
             break;
         case 'BlueRed':
             scheme = blueRedScheme;
+            break;
+        case 'Blue':
+            scheme = blueScheme;
             break;
         default:
             throw new Error(`Unknown color scheme: ${colorScheme}`);

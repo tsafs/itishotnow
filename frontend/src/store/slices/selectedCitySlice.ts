@@ -9,9 +9,16 @@ import {
     resetCityChangeRenderComplete,
     setCityChangeRenderComplete,
 } from './temperatureAnomaliesByDayOverYearsSlice.js';
-import { fetchIceAndHotDays } from '../../components/plots/iceAndHotDays/services/IceAndHotDaysService.js';
 import { fetchIceAndHotDaysData, resetIceAndHotDaysData } from './iceAndHotDaysDataSlice.js';
 import { resetIceAndHotDaysRenderComplete, setIceAndHotDaysRenderComplete } from './iceAndHotDaysSlice.js';
+import {
+    resetRenderComplete as resetRenderCompleteIceAndHotDaysWavesPlot,
+    setRenderComplete as setRenderCompleteIceAndHotDaysWavesPlot
+} from './componentSlices/iceAndHotDaysWavePlot.js';
+import {
+    fetchData as fetchDailyHistoricalStationData,
+    resetData as resetDailyHistoricalStationData
+} from './dailyHistoricalStationDataSlice.js';
 
 export interface SelectedCityState {
     cityId: string | null;
@@ -50,17 +57,25 @@ export const selectCity = (
 
     if (!cityId) {
         dispatch(setSelectedCity(null));
+
         dispatch(resetRollingAverageData());
         dispatch(resetIceAndHotDaysData());
+        dispatch(resetDailyHistoricalStationData());
+
         dispatch(setCityChangeRenderComplete(true));
         dispatch(setIceAndHotDaysRenderComplete(true));
+        dispatch(setRenderCompleteIceAndHotDaysWavesPlot(true));
+
         dispatch(setIsCityChanging(false));
         return;
     }
 
     dispatch(setIsCityChanging(true));
+
     dispatch(resetCityChangeRenderComplete());
     dispatch(resetIceAndHotDaysRenderComplete());
+    dispatch(resetRenderCompleteIceAndHotDaysWavesPlot());
+
     dispatch(setSelectedCity(cityId));
 
     if (remember && cityId) {
@@ -72,6 +87,7 @@ export const selectCity = (
 
     dispatch(resetRollingAverageData());
     dispatch(resetIceAndHotDaysData());
+    dispatch(resetDailyHistoricalStationData());
 
     let didDispatchFetch = false;
 
@@ -81,6 +97,7 @@ export const selectCity = (
         await Promise.allSettled([
             dispatch(fetchRollingAverageData({ stationId })).unwrap().catch(() => undefined),
             dispatch(fetchIceAndHotDaysData({ stationId })).unwrap().catch(() => undefined),
+            dispatch(fetchDailyHistoricalStationData({ stationId })).unwrap().catch(() => undefined),
         ]);
     }
 
@@ -89,6 +106,7 @@ export const selectCity = (
     if (!didDispatchFetch) {
         dispatch(setCityChangeRenderComplete(true));
         dispatch(setIceAndHotDaysRenderComplete(true));
+        dispatch(setRenderCompleteIceAndHotDaysWavesPlot(true));
     }
 };
 

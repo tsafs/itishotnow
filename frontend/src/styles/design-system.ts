@@ -51,6 +51,7 @@ export const theme = {
         plotDark: {
             background: '#222222',
             foreground: '#eeeeee',
+            chart: '#eeeeee',
             grid: '#3d3d3d',
             text: '#eeeeee',
         },
@@ -58,6 +59,7 @@ export const theme = {
         plotLight: {
             background: '#eeeeee',
             foreground: '#222222',
+            chart: '#222222',
             grid: '#D7DDE2',
             text: '#222222',
         },

@@ -5,6 +5,10 @@ export interface PlotRegistryEntry {
 
 export const plots: PlotRegistryEntry[] = [
     {
+        id: 'historical-temperature-waves-plot',
+        loader: () => import('./iceAndHotDaysWavesPlot/View'),
+    },
+    {
         id: 'country-heatmap',
         loader: () => import('./HeatmapGermany/View'),
     },
