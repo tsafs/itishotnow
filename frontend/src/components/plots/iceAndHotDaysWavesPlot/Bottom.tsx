@@ -10,6 +10,7 @@ import createPlot from './plot.js';
 import { usePlotData } from './hooks/usePlotData.js';
 import { setIceAndHotDaysRenderComplete, useIceAndHotDaysRenderComplete } from '../../../store/slices/iceAndHotDaysSlice.js';
 import { useDataStatus } from './hooks/useDataStatus.js';
+import { applyPlotStyles, type PlotStyleRuleConfig } from '../../../utils/stylingUtils.js';
 
 const IS_DARK_MODE = true;
 const themeColors = IS_DARK_MODE ? theme.colors.plotDark : theme.colors.plotLight;
@@ -25,6 +26,25 @@ const styles = createStyles({
         color: themeColors.text,
     }
 });
+
+const getPlotStyleRules = (fontSize: number, isDarkMode: boolean): PlotStyleRuleConfig => {
+    const currentThemeColors = isDarkMode ? theme.colors.plotDark : theme.colors.plotLight;
+    const axisColor = currentThemeColors.text;
+    return {
+        'g[aria-label="y-axis label"]': {
+            fontWeight: 'bold',
+            fontSize,
+            color: axisColor,
+            fill: axisColor,
+        },
+        'line[aria-label="frame"]': {
+            strokeWidth: 2
+        },
+        'g[aria-label="y-axis tick"] > path': {
+            strokeWidth: 2
+        },
+    };
+};
 
 const IceAndHotDaysRightSide = memo(() => {
     const dispatch = useAppDispatch();
@@ -56,6 +76,7 @@ const IceAndHotDaysRightSide = memo(() => {
         try {
             const nextPlot = createPlot(data, plotDims, fontSize, IS_DARK_MODE);
             containerRef.current.replaceChildren(nextPlot);
+            applyPlotStyles(nextPlot, getPlotStyleRules(fontSize, IS_DARK_MODE));
             dispatch(setIceAndHotDaysRenderComplete(true));
         } catch (err) {
             console.error("Error creating plot:", err);
@@ -93,7 +114,7 @@ const IceAndHotDaysRightSide = memo(() => {
             style={plotStyle}
             isDarkTheme={true}
         >
-            <div ref={containerRef} style={styles.plot} />
+            <div ref={containerRef} style={styles.plot} id="iceAndHotDaysWavesPlot" />
         </AsyncLoadingOverlayWrapper>
     );
 });

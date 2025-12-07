@@ -3,14 +3,18 @@ import { useAppSelector } from '../../../../store/hooks/useAppSelector.js';
 import { selectDataByStationId } from '../../../../store/slices/dailyHistoricalStationDataSlice.js';
 import { useSelectedStationId } from '../../../../store/hooks/hooks.js';
 import { getPercentileColor } from '../../../../utils/TemperatureUtils.js';
+import type { RollingAverageRecordMap } from '../../../../classes/RollingAverageRecord.js';
+import { useHistoricalDailyDataForStation } from '../../../../store/slices/historicalDataForStationSlice.js';
+import DailyRecentByStation from '../../../../classes/DailyRecentByStation.js';
 
 export type IYear = number;
-export type IYearData = [...number[]] & { length: 12 };
+export type SeriesValues = (number | null)[] & { length: 12 };
 
 export interface ISeries {
     year: number;
-    values: IYearData;
+    values: SeriesValues;
     stroke: string;
+    strokeWidth: number;
 }
 
 export interface IPlotData {
@@ -31,10 +35,12 @@ const REFERENCE_START_YEAR = 1961;
 const REFERENCE_END_YEAR = 1990;
 const RECENT_YEARS_COUNT = 1;
 const COLOR_DOMAIN: [number, number] = [-10, 10];
+const CURRENT_YEAR_STROKE = '#ff5252';
 
 export const usePlotData = (): IPlotData => {
     const stationId = useSelectedStationId();
     const data = useAppSelector((state) => selectDataByStationId(state, stationId));
+    const dailyRecords = useHistoricalDailyDataForStation(stationId);
 
     return useMemo(() => {
         if (!stationId || data.stationId !== stationId) {
@@ -42,12 +48,30 @@ export const usePlotData = (): IPlotData => {
         }
 
         const monthlyMeans = data.monthlyMeans ?? {};
-        const allYears = Object.keys(monthlyMeans)
+        const monthlyMeansByYear: Record<number, SeriesValues> = {};
+
+        for (const [yearKey, values] of Object.entries(monthlyMeans)) {
+            const year = Number.parseInt(yearKey, 10);
+            if (!Number.isFinite(year)) {
+                continue;
+            }
+
+            monthlyMeansByYear[year] = values.slice() as SeriesValues;
+        }
+
+        const currentYear = new Date().getFullYear();
+        const {
+            means: currentYearData,
+            completedMonths,
+        } = computeCurrentYearMonthlyMeans(dailyRecords, currentYear);
+        const hasCurrentYearSeries = Boolean(currentYearData && completedMonths.size > 0);
+
+        const allYears = Object.keys(monthlyMeansByYear)
             .map((year) => Number.parseInt(year, 10))
             .filter((year) => Number.isFinite(year))
             .sort((a, b) => a - b);
 
-        if (allYears.length === 0) {
+        if (allYears.length === 0 && !hasCurrentYearSeries) {
             return {
                 stationId,
                 domain: data.domain,
@@ -64,10 +88,11 @@ export const usePlotData = (): IPlotData => {
         const yearsToShow = Array.from(new Set([...referenceYears, ...recentYears])).sort((a, b) => a - b);
 
         const denominator = Math.max(allYears.length - 1, 1);
-        const series: ISeries[] = [];
+        const baseSeries: ISeries[] = [];
+        let highlightedSeries: ISeries | null = null;
 
         for (const year of yearsToShow) {
-            const values = monthlyMeans[year];
+            const values = monthlyMeansByYear[year];
             if (!values) {
                 continue;
             }
@@ -77,18 +102,36 @@ export const usePlotData = (): IPlotData => {
                 ? COLOR_DOMAIN[0] + (yearPosition / denominator) * (COLOR_DOMAIN[1] - COLOR_DOMAIN[0])
                 : 0;
             const stroke = getPercentileColor(colorValue, COLOR_DOMAIN, 'Blue');
-
-            series.push({
+            const plottedValues = values.slice() as SeriesValues;
+            baseSeries.push({
                 year,
-                values,
+                values: plottedValues,
                 stroke,
+                strokeWidth: 2,
             });
+        }
+
+        if (hasCurrentYearSeries) {
+            const plottedValues = currentYearData!.slice() as SeriesValues;
+
+            for (let monthIndex = 0; monthIndex < plottedValues.length; monthIndex += 1) {
+                if (!completedMonths.has(monthIndex)) {
+                    plottedValues[monthIndex] = null;
+                }
+            }
+
+            highlightedSeries = {
+                year: currentYear,
+                values: plottedValues,
+                stroke: CURRENT_YEAR_STROKE,
+                strokeWidth: 3,
+            };
         }
 
         return {
             stationId,
             domain: data.domain,
-            series,
+            series: highlightedSeries ? [...baseSeries, highlightedSeries] : baseSeries,
             error: null,
         };
     }, [
@@ -96,5 +139,108 @@ export const usePlotData = (): IPlotData => {
         data.stationId,
         data.monthlyMeans,
         data.domain,
+        data.data,
+        dailyRecords,
     ]);
 };
+
+const getDaysInMonth = (year: number, monthIndex: number): number => new Date(year, monthIndex + 1, 0).getDate();
+
+// Derive current-year monthly means and identify months with full daily coverage.
+function computeCurrentYearMonthlyMeans(
+    dailyRecords: Record<string, DailyRecentByStation> | null,
+    currentYear: number,
+): { means: SeriesValues | null; completedMonths: Set<number> } {
+    if (!dailyRecords) {
+        return { means: null, completedMonths: new Set<number>() };
+    }
+
+    const sums = new Array(12).fill(0);
+    const counts = new Array(12).fill(0);
+    const dayPresence = Array.from({ length: 12 }, () => new Set<number>());
+
+    for (const record of Object.values(dailyRecords)) {
+        if (!record) {
+            continue;
+        }
+
+        const parts = extractYMD(record.date);
+        if (!parts || parts.year !== currentYear) {
+            continue;
+        }
+
+        const { monthIndex, day } = parts;
+        const tasmax = record.maxTemperature;
+        if (typeof tasmax !== 'number' || !Number.isFinite(tasmax)) {
+            continue;
+        }
+
+        sums[monthIndex] += tasmax;
+        counts[monthIndex] += 1;
+        dayPresence[monthIndex]?.add(day);
+    }
+
+    const means = new Array(12).fill(null) as SeriesValues;
+    let hasData = false;
+    const completedMonths = new Set<number>();
+
+    for (let month = 0; month < 12; month += 1) {
+        const count = counts[month];
+        if (count > 0) {
+            means[month] = sums[month] / count;
+            hasData = true;
+
+            const expectedDays = getDaysInMonth(currentYear, month);
+            const daysSeen = dayPresence[month];
+            if (daysSeen && daysSeen.size === expectedDays) {
+                let missingDay = false;
+                for (let day = 1; day <= expectedDays; day += 1) {
+                    if (!daysSeen.has(day)) {
+                        missingDay = true;
+                        break;
+                    }
+                }
+
+                if (!missingDay) {
+                    completedMonths.add(month);
+                }
+            }
+        }
+    }
+
+    return {
+        means: hasData ? means : null,
+        completedMonths,
+    };
+}
+
+function extractYMD(dateString: string): { year: number; monthIndex: number; day: number } | null {
+    if (!dateString) {
+        return null;
+    }
+
+    if (/^\d{8}$/.test(dateString)) {
+        const year = Number.parseInt(dateString.slice(0, 4), 10);
+        const month = Number.parseInt(dateString.slice(4, 6), 10);
+        const day = Number.parseInt(dateString.slice(6, 8), 10);
+
+        if (Number.isFinite(year) && Number.isFinite(month) && Number.isFinite(day)) {
+            const monthIndex = month - 1;
+            if (monthIndex >= 0 && monthIndex < 12 && day >= 1 && day <= 31) {
+                return { year, monthIndex, day };
+            }
+        }
+        return null;
+    }
+
+    const parsed = new Date(dateString);
+    if (Number.isNaN(parsed.getTime())) {
+        return null;
+    }
+
+    return {
+        year: parsed.getFullYear(),
+        monthIndex: parsed.getMonth(),
+        day: parsed.getDate(),
+    };
+}

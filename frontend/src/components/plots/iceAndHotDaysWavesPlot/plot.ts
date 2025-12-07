@@ -9,15 +9,15 @@ export default function createPlot(
         width: number;
         height: number;
     },
-    _fontSize: number,
+    fontSize: number,
     _isDarkMode = false,
 ): HTMLElement {
 
     const lines: Plot.Line[] = data.series.map((series) => Plot.lineY(series.values, {
         x: (_d, i) => i,
-        y: (d) => d,
+        y: (d) => (typeof d === 'number' && Number.isFinite(d)) ? d : Number.NaN,
         stroke: series.stroke,
-        strokeWidth: 2,
+        strokeWidth: series.strokeWidth,
         curve: 'catmull-rom',
     }));
 
@@ -25,14 +25,21 @@ export default function createPlot(
         width: plotDims.width,
         height: plotDims.height,
         nice: true,
-        // axis: null,
+        insetLeft: 2,
         x: {
             axis: "bottom",
-            label: "Monat →",
+            labelAnchor: "center",
             ticks: 12,
             tickFormat: (d) => MONTH_LABELS[d] || '',
+            tickSize: 0,
+            line: true
         },
         y: {
+            axis: "left",
+            label: "Temperatur in °C",
+            labelAnchor: "center",
+            labelArrow: false,
+            line: true,
             domain: data.domain,
         },
         marks: [
