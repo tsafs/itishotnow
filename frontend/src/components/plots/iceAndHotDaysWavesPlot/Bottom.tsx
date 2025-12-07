@@ -1,7 +1,7 @@
 import { useEffect, useRef, useMemo, memo } from 'react';
 import type { CSSProperties } from 'react';
 import { theme, createStyles } from '../../../styles/design-system.js';
-import { useBreakpoint } from '../../../hooks/useBreakpoint.js';
+import { useBreakpoint, useBreakpointDown } from '../../../hooks/useBreakpoint.js';
 import { useAppDispatch } from '../../../store/hooks/useAppDispatch.js';
 import { useSelectedCityName } from '../../../store/hooks/hooks.js';
 import { MIN_LOADING_DISPLAY_DURATION } from '../../../constants/page.js';
@@ -49,6 +49,7 @@ const getPlotStyleRules = (fontSize: number, isDarkMode: boolean): PlotStyleRule
 const IceAndHotDaysRightSide = memo(() => {
     const dispatch = useAppDispatch();
     const breakpoint = useBreakpoint();
+    const isMobile = useBreakpointDown('mobile');
     const selectedCityName = useSelectedCityName();
     const data = usePlotData();
     const renderComplete = useIceAndHotDaysRenderComplete();
@@ -56,10 +57,10 @@ const IceAndHotDaysRightSide = memo(() => {
 
     // Fixed dimensions per breakpoint to keep projected shape scale consistent
     const MAP_DIMENSIONS: Record<'mobile' | 'tablet' | 'desktop' | 'wide', { width: number; height: number }> = {
-        mobile: { width: 480, height: 218 },
-        tablet: { width: 768, height: 350 },
-        desktop: { width: 800, height: 364 },
-        wide: { width: 1000, height: 455 }
+        mobile: { width: 480, height: 240 },
+        tablet: { width: 768, height: 384 },
+        desktop: { width: 800, height: 400 },
+        wide: { width: 1000, height: 500 }
     };
     const FONT_SIZES: Record<'mobile' | 'tablet' | 'desktop' | 'wide', number> = {
         mobile: 10,
@@ -74,7 +75,7 @@ const IceAndHotDaysRightSide = memo(() => {
         if (!selectedCityName || !containerRef.current) return;
 
         try {
-            const nextPlot = createPlot(data, plotDims, fontSize, IS_DARK_MODE);
+            const nextPlot = createPlot(data, plotDims, fontSize, isMobile);
             containerRef.current.replaceChildren(nextPlot);
             applyPlotStyles(nextPlot, getPlotStyleRules(fontSize, IS_DARK_MODE));
             dispatch(setIceAndHotDaysRenderComplete(true));

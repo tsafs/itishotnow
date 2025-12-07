@@ -1,6 +1,6 @@
 import { fetchDailyDataForStation } from '../../services/RollingAverageDataService.js';
 import type { RootState } from '../index.js';
-import type { RollingAverageRecordMap } from '../../classes/RollingAverageRecord.js';
+import RollingAverageRecord, { type RollingAverageRecordMap } from '../../classes/RollingAverageRecord.js';
 import { createDataSlice } from '../factories/createDataSlice.js';
 
 interface IYearData extends Array<number> {
@@ -13,17 +13,19 @@ export interface DailyHistoricalStationDataArgs {
 
 export interface IData {
     stationId: string;
-    data: RollingAverageRecordMap;
     monthlyMeans: Record<number, IYearData>;
     domain: [number, number];
 }
 
 const fetchFn = async ({ stationId }: DailyHistoricalStationDataArgs): Promise<IData> => {
+    // Fetch map of class instances for computation
     const data = await fetchDailyDataForStation(stationId);
+
+    // Compute aggregates using class instances
     const { monthlyMeans, domain } = calculateMonthlyMeansAndDomain(data);
+
     return {
         stationId,
-        data,
         monthlyMeans,
         domain,
     };
@@ -50,7 +52,6 @@ const { slice, actions, selectors } = createDataSlice<
 // Empty constant for rolling average data to avoid creating new [] object every time the state is empty
 const EMPTY_DATA: IData = {
     stationId: '',
-    data: {},
     monthlyMeans: {},
     domain: [0, 0],
 };
@@ -109,7 +110,7 @@ function calculateMonthlyMeansAndDomain(records: RollingAverageRecordMap): {
         }
 
         const accumulatorForYear = monthAccumulators[year];
-        const tasmax = record.getMetric('tasmax');
+        const tasmax = record.getMetric('tas');
         if (tasmax !== undefined) {
             accumulatorForYear.sum[month]! += tasmax;
             accumulatorForYear.count[month]! += 1;

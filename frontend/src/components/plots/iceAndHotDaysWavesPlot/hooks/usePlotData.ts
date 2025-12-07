@@ -35,7 +35,7 @@ const REFERENCE_START_YEAR = 1961;
 const REFERENCE_END_YEAR = 1990;
 const RECENT_YEARS_COUNT = 1;
 const COLOR_DOMAIN: [number, number] = [-10, 10];
-const CURRENT_YEAR_STROKE = '#ff5252';
+export const CURRENT_YEAR_STROKE = '#ff5252';
 
 export const usePlotData = (): IPlotData => {
     const stationId = useSelectedStationId();
@@ -139,7 +139,6 @@ export const usePlotData = (): IPlotData => {
         data.stationId,
         data.monthlyMeans,
         data.domain,
-        data.data,
         dailyRecords,
     ]);
 };
@@ -170,7 +169,7 @@ function computeCurrentYearMonthlyMeans(
         }
 
         const { monthIndex, day } = parts;
-        const tasmax = record.maxTemperature;
+        const tasmax = record.meanTemperature;
         if (typeof tasmax !== 'number' || !Number.isFinite(tasmax)) {
             continue;
         }
