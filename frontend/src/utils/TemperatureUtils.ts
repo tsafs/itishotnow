@@ -48,17 +48,17 @@ const blueRedScheme: ColorStop[] = [
 ];
 
 const blueScheme: ColorStop[] = [
-    { threshold: -10, color: "#1058a0" },
-    { threshold: -8, color: "#2471b0" },
-    { threshold: -6, color: "#3787c0" },
-    { threshold: -4, color: "#4d9dd0" },
-    { threshold: -2, color: "#62b3e0" },
-    { threshold: 0, color: "#78c9f0" },
-    { threshold: 2, color: "#8ed5f5" },
-    { threshold: 4, color: "#a4e1fa" },
-    { threshold: 6, color: "#baedfb" },
-    { threshold: 8, color: "#d0f9fc" },
-    { threshold: 10, color: "#e6fffd" },
+    { threshold: -10, color: rgbToHex([8, 48, 107]) },
+    { threshold: -8, color: rgbToHex([9, 68, 136]) },
+    { threshold: -6, color: rgbToHex([20, 95, 166]) },
+    { threshold: -4, color: rgbToHex([42, 122, 185]) },
+    { threshold: -2, color: rgbToHex([70, 147, 199]) },
+    { threshold: 0, color: rgbToHex([104, 171, 212]) },
+    { threshold: 2, color: rgbToHex([143, 193, 222]) },
+    { threshold: 4, color: rgbToHex([179, 211, 232]) },
+    { threshold: 6, color: rgbToHex([206, 225, 242]) },
+    { threshold: 8, color: rgbToHex([227, 238, 248]) },
+    { threshold: 10, color: rgbToHex([247, 251, 255]) },
 ];
 
 /** Generates a color for the provided temperature anomaly. */

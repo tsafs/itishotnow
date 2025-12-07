@@ -51,7 +51,7 @@ const IceAndHotDaysRightSide = memo(() => {
     const fontSize = FONT_SIZES[breakpoint];
 
     useEffect(() => {
-        if (!selectedCityName || !containerRef.current || !data.data) return;
+        if (!selectedCityName || !containerRef.current) return;
 
         try {
             const nextPlot = createPlot(data, plotDims, fontSize, IS_DARK_MODE);
@@ -63,7 +63,7 @@ const IceAndHotDaysRightSide = memo(() => {
         }
     }, [
         selectedCityName,
-        data.data,
+        data.series,
         dispatch,
         plotDims.width,
         plotDims.height,

@@ -15,10 +15,7 @@ import {
     resetRenderComplete as resetRenderCompleteIceAndHotDaysWavesPlot,
     setRenderComplete as setRenderCompleteIceAndHotDaysWavesPlot
 } from './componentSlices/iceAndHotDaysWavePlot.js';
-import {
-    fetchData as fetchDailyHistoricalStationData,
-    resetData as resetDailyHistoricalStationData
-} from './dailyHistoricalStationDataSlice.js';
+import { fetchData as fetchDailyHistoricalStationData } from './dailyHistoricalStationDataSlice.js';
 
 export interface SelectedCityState {
     cityId: string | null;
@@ -60,7 +57,6 @@ export const selectCity = (
 
         dispatch(resetRollingAverageData());
         dispatch(resetIceAndHotDaysData());
-        dispatch(resetDailyHistoricalStationData());
 
         dispatch(setCityChangeRenderComplete(true));
         dispatch(setIceAndHotDaysRenderComplete(true));
@@ -87,7 +83,6 @@ export const selectCity = (
 
     dispatch(resetRollingAverageData());
     dispatch(resetIceAndHotDaysData());
-    dispatch(resetDailyHistoricalStationData());
 
     let didDispatchFetch = false;
 
