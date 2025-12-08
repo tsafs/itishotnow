@@ -15,6 +15,7 @@ export interface ISeries {
     values: SeriesValues;
     stroke: string;
     strokeWidth: number;
+    strokeOpacity?: number;
 }
 
 export interface IPlotData {
@@ -85,12 +86,16 @@ export const usePlotData = (): IPlotData => {
             baseline[m] = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : NaN;
         }
 
-        const recentYears = allYears.filter((y) => y > REFERENCE_END_YEAR).slice(-RECENT_YEARS_COUNT);
-        const yearsToShow = Array.from(new Set([/*...referenceYears,*/ ...recentYears])).sort((a, b) => a - b);
+        // Only show the last N recent years (background), no reference years
+        const recentYears = allYears
+            .filter((y) => y > REFERENCE_END_YEAR)
+            .slice(-RECENT_YEARS_COUNT);
+        const yearsToShow = recentYears.sort((a, b) => a - b);
 
         const denominator = Math.max(allYears.length - 1, 1);
         const baseSeries: ISeries[] = [];
         let highlightedSeries: ISeries | null = null;
+        let meanSeries: ISeries | null = null;
 
         // Build anomaly series for historical and recent years
         for (const year of yearsToShow) {
@@ -106,7 +111,7 @@ export const usePlotData = (): IPlotData => {
                 ? COLOR_DOMAIN[0] + (yearPosition / denominator) * (COLOR_DOMAIN[1] - COLOR_DOMAIN[0])
                 : 0;
             const stroke = getPercentileColor(colorValue, COLOR_DOMAIN, 'Blue');
-            baseSeries.push({ year, values: anomalies, stroke, strokeWidth: 2 });
+            baseSeries.push({ year, values: anomalies, stroke, strokeWidth: 2, strokeOpacity: 0.3 });
         }
 
         // Current year anomalies (mask incomplete months)
@@ -122,13 +127,54 @@ export const usePlotData = (): IPlotData => {
                 values: anomalies,
                 stroke: CURRENT_YEAR_STROKE,
                 strokeWidth: 3,
+                strokeOpacity: 1,
+            };
+        }
+
+        // Mean curve across displayed years (recentYears only)
+        if (yearsToShow.length > 0) {
+            const anomalyMatrix: (number | null)[][] = [];
+            for (const year of yearsToShow) {
+                const values = monthlyMeansByYear[year];
+                if (!values) continue;
+                const anomalies = values.map((v, i) => {
+                    const b = baseline[i]!;
+                    return typeof v === 'number' && Number.isFinite(v) && Number.isFinite(b) ? v - b : null;
+                });
+                anomalyMatrix.push(anomalies);
+            }
+
+            const meanAnomalies = new Array(12).fill(null) as SeriesValues;
+            for (let m = 0; m < 12; m += 1) {
+                const vals: number[] = [];
+                for (const row of anomalyMatrix) {
+                    const v = row[m];
+                    if (typeof v === 'number' && Number.isFinite(v)) vals.push(v);
+                }
+                if (vals.length > 0) {
+                    meanAnomalies[m] = vals.reduce((a, b) => a + b, 0) / vals.length;
+                } else {
+                    meanAnomalies[m] = null;
+                }
+            }
+
+            meanSeries = {
+                year: NaN,
+                values: meanAnomalies,
+                stroke: '#ffffff',
+                strokeWidth: 3,
+                strokeOpacity: 1,
             };
         }
 
         return {
             stationId,
             domain: data.domain,
-            series: highlightedSeries ? [...baseSeries, highlightedSeries] : baseSeries,
+            series: [
+                ...baseSeries,
+                ...(meanSeries ? [meanSeries] : []),
+                ...(highlightedSeries ? [highlightedSeries] : []),
+            ],
             error: null,
         };
     }, [stationId, data.stationId, data.monthlyMeans, data.domain, dailyRecords]);

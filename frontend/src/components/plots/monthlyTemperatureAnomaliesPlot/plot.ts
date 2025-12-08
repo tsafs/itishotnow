@@ -11,11 +11,10 @@ export default function createPlot(
     fontSize: number,
     isMobile = false,
 ): HTMLElement {
-    const currentYear: string = data.series.length > 0 ? data.series[data.series.length - 1]!.year + "" : 'N/A';
-    const lastYear: string = data.series.length > 1 ? data.series[data.series.length - 2]!.year + "" : 'N/A';
-    const referenceYears = data.series.length > 2
-        ? `${data.series[0]!.year} - ${data.series[data.series.length - 3]!.year}`
-        : 'N/A';
+    // Determine special series: mean (white) and current year (red)
+    const meanSeries = data.series.find((s) => s.stroke.toLowerCase() === '#ffffff');
+    const currentSeries = data.series.find((s) => s.stroke.toLowerCase() === CURRENT_YEAR_STROKE.toLowerCase());
+    const currentYear: string = currentSeries && Number.isFinite(currentSeries.year) ? String(currentSeries.year) : 'Aktuelles Jahr';
     const legendVerticalSpacing = isMobile ? 3 : 2;
 
     const lines: Plot.Line[] = data.series.map((series) => Plot.lineY(series.values, {
@@ -23,6 +22,7 @@ export default function createPlot(
         y: (d) => (typeof d === 'number' && Number.isFinite(d)) ? d : Number.NaN,
         stroke: series.stroke,
         strokeWidth: series.strokeWidth,
+        strokeOpacity: series.strokeOpacity ?? 1,
         curve: 'catmull-rom',
     }));
 
@@ -50,12 +50,12 @@ export default function createPlot(
         },
         marks: [
             ...lines,
-            // Inline legend
+            // Inline legend: current year (red) and mean curve (white)
             Plot.ruleY([2], {
                 x1: 0.05,
                 x2: 0.35,
                 stroke: CURRENT_YEAR_STROKE,
-                strokeWidth: 2.5,
+                strokeWidth: 3,
             }),
             Plot.text([{ x: 0.4, y: 2, text: currentYear }], {
                 x: 'x', y: 'y', text: 'text', fill: CURRENT_YEAR_STROKE,
@@ -63,24 +63,10 @@ export default function createPlot(
             }),
 
             Plot.ruleY([2 - legendVerticalSpacing], {
-                x1: 0.05, x2: 0.35, stroke: blueScheme[9]!.color, strokeWidth: 2.5,
+                x1: 0.05, x2: 0.35, stroke: '#ffffff', strokeWidth: 3,
             }),
-            Plot.text([{ x: 0.4, y: 2 - legendVerticalSpacing, text: lastYear }], {
-                x: 'x', y: 'y', text: 'text', fill: blueScheme[9]!.color,
-                fontSize, fontWeight: 'bold', textAnchor: 'start'
-            }),
-
-            Plot.ruleY([2 - legendVerticalSpacing * 2 + 0.35], {
-                x1: 0.05, x2: 0.35, stroke: blueScheme[6]!.color, strokeWidth: 2.0,
-            }),
-            Plot.ruleY([2 - legendVerticalSpacing * 2], {
-                x1: 0.05, x2: 0.35, stroke: blueScheme[4]!.color, strokeWidth: 2.0,
-            }),
-            Plot.ruleY([2 - legendVerticalSpacing * 2 - 0.35], {
-                x1: 0.05, x2: 0.35, stroke: blueScheme[2]!.color, strokeWidth: 2.0,
-            }),
-            Plot.text([{ x: 0.4, y: 2 - legendVerticalSpacing * 2, text: referenceYears }], {
-                x: 'x', y: 'y', text: 'text', fill: blueScheme[4]!.color,
+            Plot.text([{ x: 0.4, y: 2 - legendVerticalSpacing, text: 'Mittelwert' }], {
+                x: 'x', y: 'y', text: 'text', fill: '#ffffff',
                 fontSize, fontWeight: 'bold', textAnchor: 'start'
             }),
         ]
