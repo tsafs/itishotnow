@@ -40,8 +40,9 @@ const { slice, actions, selectors } = createDataSlice<
     }
 });
 
-// Export actions
 export const fetchDailyDataForStation = actions.fetch;
+export const selectDataStatus = selectors.selectStatus;
+export const selectDataError = selectors.selectError;
 
 // Hook to get historical data for a station (returns DailyRecentByStation instances)
 export const useHistoricalDailyDataForStation = (stationId: string | null | undefined): Record<string, DailyRecentByStation> | null => {
