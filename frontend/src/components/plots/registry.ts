@@ -9,6 +9,10 @@ export const plots: PlotRegistryEntry[] = [
         loader: () => import('./iceAndHotDaysWavesPlot/View'),
     },
     {
+        id: 'monthly-temperature-anomalies-plot',
+        loader: () => import('./monthlyTemperatureAnomaliesPlot/View'),
+    },
+    {
         id: 'country-heatmap',
         loader: () => import('./HeatmapGermany/View'),
     },

@@ -18,6 +18,7 @@ import iceAndHotDaysReducer from './slices/iceAndHotDaysSlice.js';
 import iceAndHotDaysDataReducer from './slices/iceAndHotDaysDataSlice.js';
 import iceAndHotDaysWavesPlot from './slices/componentSlices/iceAndHotDaysWavePlot.js';
 import dailyHistoricalStationData from './slices/dailyHistoricalStationDataSlice.js';
+import monthlyTemperatureAnomaliesReducer from './slices/componentSlices/monthlyTemperatureAnomaliesSlice.js';
 
 export const store = configureStore({
     reducer: {
@@ -39,6 +40,7 @@ export const store = configureStore({
         iceAndHotDaysData: iceAndHotDaysDataReducer,
         iceAndHotDaysWavesPlot: iceAndHotDaysWavesPlot,
         dailyHistoricalStationData: dailyHistoricalStationData,
+        monthlyTemperatureAnomalies: monthlyTemperatureAnomaliesReducer,
     },
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({

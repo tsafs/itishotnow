@@ -15,6 +15,10 @@ import {
     resetRenderComplete as resetRenderCompleteIceAndHotDaysWavesPlot,
     setRenderComplete as setRenderCompleteIceAndHotDaysWavesPlot
 } from './componentSlices/iceAndHotDaysWavePlot.js';
+import {
+    resetRenderComplete as resetRenderCompleteMonthlyTemperatureAnomaliesPlot,
+    setRenderComplete as setRenderCompleteMonthlyTemperatureAnomaliesPlot
+} from './componentSlices/monthlyTemperatureAnomaliesSlice.js';
 import { fetchData as fetchDailyHistoricalStationData } from './dailyHistoricalStationDataSlice.js';
 
 export interface SelectedCityState {
@@ -61,6 +65,7 @@ export const selectCity = (
         dispatch(setCityChangeRenderComplete(true));
         dispatch(setIceAndHotDaysRenderComplete(true));
         dispatch(setRenderCompleteIceAndHotDaysWavesPlot(true));
+        dispatch(setRenderCompleteMonthlyTemperatureAnomaliesPlot(true));
 
         dispatch(setIsCityChanging(false));
         return;
@@ -71,6 +76,7 @@ export const selectCity = (
     dispatch(resetCityChangeRenderComplete());
     dispatch(resetIceAndHotDaysRenderComplete());
     dispatch(resetRenderCompleteIceAndHotDaysWavesPlot());
+    dispatch(resetRenderCompleteMonthlyTemperatureAnomaliesPlot());
 
     dispatch(setSelectedCity(cityId));
 
@@ -102,6 +108,7 @@ export const selectCity = (
         dispatch(setCityChangeRenderComplete(true));
         dispatch(setIceAndHotDaysRenderComplete(true));
         dispatch(setRenderCompleteIceAndHotDaysWavesPlot(true));
+        dispatch(setRenderCompleteMonthlyTemperatureAnomaliesPlot(true));
     }
 };
 
