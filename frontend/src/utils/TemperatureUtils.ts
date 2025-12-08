@@ -60,7 +60,6 @@ export const blueScheme: ColorStop[] = [
     { threshold: 8, color: "#e3eef8" },
     { threshold: 10, color: "#f7fbff" },
 ];
-console.log(blueScheme);
 
 /** Generates a color for the provided temperature anomaly. */
 export const getAnomalyColor = (
