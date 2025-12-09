@@ -1,7 +1,6 @@
 import * as Plot from '@observablehq/plot';
-import type { IPlotData } from './hooks/usePlotData';
-
-const MONTH_LABELS = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+import { MONTH_LABELS } from '../utils/plotStyles';
+import type { IPlotData } from '../utils/yearSeries';
 
 export default function createPlot(
     data: IPlotData,
@@ -10,7 +9,6 @@ export default function createPlot(
         height: number;
     },
 ): HTMLElement {
-    // Create one line mark per series, mapping stroke to the label so Plot can infer colors and render a legend.
     const lines: Plot.Line[] = data.series.map((series) =>
         Plot.lineY(series.values, {
             x: 'x',

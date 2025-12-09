@@ -10,7 +10,7 @@ import createPlot from './plot.js';
 import { usePlotData } from './hooks/usePlotData.js';
 import { setRenderComplete, useRenderComplete } from '../../../store/slices/componentSlices/monthlyTemperatureAnomaliesSlice.js';
 import { useDataStatus } from './hooks/useDataStatus.js';
-import { applyPlotStyles, type PlotStyleRuleConfig } from '../../../utils/stylingUtils.js';
+import { applyPlotStyles, getPlotStyleRules } from '../utils/plotStyles.js';
 
 const IS_DARK_MODE = true;
 const themeColors = IS_DARK_MODE ? theme.colors.plotDark : theme.colors.plotLight;
@@ -24,16 +24,6 @@ const getPlotStyle = (dims: { width: number; height: number }): CSSProperties =>
 const styles = createStyles({
     plot: { color: themeColors.text }
 });
-
-const getPlotStyleRules = (fontSize: number, isDarkMode: boolean): PlotStyleRuleConfig => {
-    const currentThemeColors = isDarkMode ? theme.colors.plotDark : theme.colors.plotLight;
-    const axisColor = currentThemeColors.text;
-    return {
-        'g[aria-label="y-axis label"]': { fontWeight: 'bold', fontSize, color: axisColor, fill: axisColor },
-        'line[aria-label="frame"]': { strokeWidth: 2 },
-        'g[aria-label="y-axis tick"] > path': { strokeWidth: 2 },
-    };
-};
 
 const MonthlyTemperatureAnomaliesBottom = memo(() => {
     const dispatch = useAppDispatch();
@@ -64,15 +54,15 @@ const MonthlyTemperatureAnomaliesBottom = memo(() => {
         dispatch(setRenderComplete(false));
         if (!selectedCityName || !containerRef.current) return;
         try {
-            const nextPlot = createPlot(data, plotDims, fontSize, isMobile);
+            const nextPlot = createPlot(data, plotDims);
             containerRef.current.replaceChildren(nextPlot);
-            applyPlotStyles(nextPlot, getPlotStyleRules(fontSize, IS_DARK_MODE));
+            applyPlotStyles(nextPlot, getPlotStyleRules(isMobile, fontSize, IS_DARK_MODE));
             dispatch(setRenderComplete(true));
         } catch (err) {
             console.error('Error creating anomalies plot:', err);
             dispatch(setRenderComplete(true));
         }
-    }, [selectedCityName, data.series, dispatch, plotDims.width, plotDims.height, fontSize]);
+    }, [selectedCityName, data, dispatch, plotDims, fontSize, isMobile]);
 
     useEffect(() => () => { containerRef.current = null; }, []);
 

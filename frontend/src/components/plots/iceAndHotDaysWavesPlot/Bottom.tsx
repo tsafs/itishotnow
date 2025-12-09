@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo, memo, useState } from 'react';
+import { useEffect, useRef, useMemo, memo } from 'react';
 import type { CSSProperties } from 'react';
 import { theme, createStyles } from '../../../styles/design-system.js';
 import { useBreakpoint } from '../../../hooks/useBreakpoint.js';
@@ -10,7 +10,7 @@ import createPlot from './plot.js';
 import { usePlotData } from './hooks/usePlotData.js';
 import { setIceAndHotDaysRenderComplete, useIceAndHotDaysRenderComplete } from '../../../store/slices/iceAndHotDaysSlice.js';
 import { useDataStatus } from './hooks/useDataStatus.js';
-import { applyPlotStyles, type PlotStyleRuleConfig } from '../../../utils/stylingUtils.js';
+import { applyPlotStyles, getPlotStyleRules } from '../utils/plotStyles.js';
 
 const IS_DARK_MODE = true;
 const themeColors = IS_DARK_MODE ? theme.colors.plotDark : theme.colors.plotLight;
@@ -31,44 +31,6 @@ const styles = createStyles({
         gap: 8,
     }
 });
-
-const getPlotStyleRules = (isMobile: boolean, fontSize: number, isDarkMode: boolean): PlotStyleRuleConfig => {
-    const currentThemeColors = isDarkMode ? theme.colors.plotDark : theme.colors.plotLight;
-    const axisColor = currentThemeColors.text;
-    return {
-        'g[aria-label="y-axis label"]': {
-            fontWeight: 'bold',
-            fontSize,
-            color: axisColor,
-            fill: axisColor,
-        },
-        'line[aria-label="frame"]': {
-            strokeWidth: 2
-        },
-        'g[aria-label="y-axis tick"] > path': {
-            strokeWidth: 2
-        },
-        'figure': {
-            display: 'flex',
-            flexDirection: 'column-reverse', // to place legend at bottom
-            alignItems: 'center',
-            flexWrap: 'nowrap',
-        },
-        '.legend-swatches-wrap': {
-            marginLeft: isMobile ? '5px' : '40px', // to align with x-axis center
-            marginBottom: 0, // reset default margin
-            gap: isMobile ? '8px' : '16px',
-            minHeight: 0, // reset default minHeight
-        },
-        '.legend-swatch': {
-            marginRight: 0, // reset default margin
-        },
-        '.legend-swatch > svg': {
-            width: isMobile ? 10 : 15,
-            height: isMobile ? 10 : 15,
-        }
-    };
-};
 
 const IceAndHotDaysRightSide = memo(() => {
     const dispatch = useAppDispatch();
@@ -112,8 +74,7 @@ const IceAndHotDaysRightSide = memo(() => {
         selectedCityName,
         data,
         dispatch,
-        plotDims.width,
-        plotDims.height,
+        plotDims,
         isMobile,
         fontSize,
     ]);

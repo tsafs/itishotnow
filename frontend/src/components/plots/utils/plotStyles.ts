@@ -1,4 +1,7 @@
 import type { CSSProperties } from "react";
+import theme from "../../../styles/design-system";
+
+export const MONTH_LABELS = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
 
 export type PlotStyleRuleConfig = Readonly<Record<string, CSSProperties>>;
 
@@ -40,4 +43,42 @@ export const applyPlotStyles = (root: ParentNode | null, rules: PlotStyleRuleCon
             });
         });
     });
+};
+
+export const getPlotStyleRules = (isMobile: boolean, fontSize: number, isDarkMode: boolean): PlotStyleRuleConfig => {
+    const currentThemeColors = isDarkMode ? theme.colors.plotDark : theme.colors.plotLight;
+    const axisColor = currentThemeColors.text;
+    return {
+        'g[aria-label="y-axis label"]': {
+            fontWeight: 'bold',
+            fontSize,
+            color: axisColor,
+            fill: axisColor,
+        },
+        'line[aria-label="frame"]': {
+            strokeWidth: 2
+        },
+        'g[aria-label="y-axis tick"] > path': {
+            strokeWidth: 2
+        },
+        'figure': {
+            display: 'flex',
+            flexDirection: 'column-reverse', // to place legend at bottom
+            alignItems: 'center',
+            flexWrap: 'nowrap',
+        },
+        '.legend-swatches-wrap': {
+            marginLeft: isMobile ? '5px' : '40px', // to align with x-axis center
+            marginBottom: 0, // reset default margin
+            gap: isMobile ? '8px' : '16px',
+            minHeight: 0, // reset default minHeight
+        },
+        '.legend-swatch': {
+            marginRight: 0, // reset default margin
+        },
+        '.legend-swatch > svg': {
+            width: isMobile ? 10 : 15,
+            height: isMobile ? 10 : 15,
+        }
+    };
 };

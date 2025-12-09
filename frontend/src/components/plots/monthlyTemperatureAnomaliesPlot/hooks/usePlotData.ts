@@ -1,32 +1,22 @@
 import { useMemo } from 'react';
 import { useAppSelector } from '../../../../store/hooks/useAppSelector.js';
-import { selectDataByStationId } from '../../../../store/slices/dailyHistoricalStationDataSlice.js';
+import { selectDataByStationId, type IYearData } from '../../../../store/slices/dailyHistoricalStationDataSlice.js';
 import { useSelectedStationId } from '../../../../store/hooks/hooks.js';
-import { getPercentileColor } from '../../../../utils/TemperatureUtils.js';
 import { useHistoricalDailyDataForStation } from '../../../../store/slices/historicalDataForStationSlice.js';
-import DailyRecentByStation from '../../../../classes/DailyRecentByStation.js';
-import { computeMeanOfSeries, type ISeries, type SeriesValues } from '../../utils/yearSeries.js';
-
-export type IYear = number;
-
-export interface IPlotData {
-    stationId: string;
-    domain: [number, number];
-    series: ISeries[];
-    error: string | null;
-}
+import { computeCurrentYearMonthlyMeans, computeReferenceMonthlyMeans, toPoints, type ILineSeries, type IPlotData } from '../../utils/yearSeries.js';
 
 const initialResult: IPlotData = {
     stationId: '',
     domain: [0, 0],
-    series: [],
     error: null,
+    series: [],
+    colorDomain: [],
+    colorRange: [],
 };
 
 const REFERENCE_START_YEAR = 1961;
 const REFERENCE_END_YEAR = 1990;
-const RECENT_YEARS_COUNT = 10;
-const COLOR_DOMAIN: [number, number] = [-10, 10];
+const RECENT_YEARS_COUNT = 1;
 export const CURRENT_YEAR_STROKE = '#ff5252';
 
 export const usePlotData = (): IPlotData => {
@@ -40,177 +30,122 @@ export const usePlotData = (): IPlotData => {
         }
 
         const monthlyMeans = data.monthlyMeans ?? {};
-        const monthlyMeansByYear: Record<number, SeriesValues> = {};
 
-        for (const [yearKey, values] of Object.entries(monthlyMeans)) {
-            const year = Number.parseInt(yearKey, 10);
-            if (!Number.isFinite(year)) continue;
-            monthlyMeansByYear[year] = values.slice() as SeriesValues;
-        }
-
-        const currentYear = new Date().getFullYear();
-        const {
-            means: currentYearData,
-            completedMonths,
-        } = computeCurrentYearMonthlyMeans(dailyRecords, currentYear);
-        const hasCurrentYearSeries = Boolean(currentYearData && completedMonths.size > 0);
-
-        const allYears = Object.keys(monthlyMeansByYear)
+        // Get all years as numbers and sorted
+        const allYears = Object.keys(monthlyMeans)
             .map((year) => Number.parseInt(year, 10))
             .filter((year) => Number.isFinite(year))
             .sort((a, b) => a - b);
 
-        if (allYears.length === 0 && !hasCurrentYearSeries) {
-            return { stationId, domain: data.domain, series: [], error: null };
+        // No data available
+        if (!allYears.length) {
+            return initialResult;
         }
 
-        // Compute reference-period baseline per month (mean of 1961–1990)
-        const referenceYears = allYears.filter((y) => y >= REFERENCE_START_YEAR && y <= REFERENCE_END_YEAR);
-        const baseline: number[] = new Array(12).fill(NaN);
-        for (let m = 0; m < 12; m += 1) {
-            const vals: number[] = [];
-            for (const y of referenceYears) {
-                const arr = monthlyMeansByYear[y];
-                const v = arr?.[m];
-                if (typeof v === 'number' && Number.isFinite(v)) vals.push(v);
+        // Compute 1961–1990 baseline
+        const referenceMonthlyMeans = computeReferenceMonthlyMeans(monthlyMeans, REFERENCE_START_YEAR, REFERENCE_END_YEAR);
+
+        const unifiedSeries: ILineSeries[] = [];
+
+        // Reference years (1961-1990) as light gray lines
+        const referenceYears = allYears.filter((year) => year >= REFERENCE_START_YEAR && year <= REFERENCE_END_YEAR);
+        const referenceLabel = `${REFERENCE_START_YEAR}-${REFERENCE_END_YEAR}`;
+        for (const year of referenceYears) {
+            const values = monthlyMeans[year];
+            if (!values) {
+                continue;
             }
-            baseline[m] = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : NaN;
+            const anomalyValues = toAnomalies(values as IYearData, referenceMonthlyMeans);
+            unifiedSeries.push({
+                label: referenceLabel,
+                strokeWidth: 1,
+                strokeOpacity: 0.3,
+                values: toPoints(anomalyValues, referenceLabel),
+            });
         }
 
-        // Only show the last N recent years (background), no reference years
-        const recentYears = allYears
-            .filter((y) => y > REFERENCE_END_YEAR)
-            .slice(-RECENT_YEARS_COUNT);
-        const yearsToShow = recentYears.sort((a, b) => a - b);
-
-        const denominator = Math.max(allYears.length - 1, 1);
-        const baseSeries: ISeries[] = [];
-        let highlightedSeries: ISeries | null = null;
-        let meanSeries: ISeries | null = null;
-
-        // Build anomaly series for historical and recent years
-        for (const year of yearsToShow) {
-            const values = monthlyMeansByYear[year];
-            if (!values) continue;
-            const anomalies = values.map((v, i) => {
-                const b = baseline[i]!;
-                return typeof v === 'number' && Number.isFinite(v) && Number.isFinite(b) ? v - b : null;
-            }) as SeriesValues;
-
-            const yearPosition = allYears.indexOf(year);
-            const colorValue = allYears.length > 1
-                ? COLOR_DOMAIN[0] + (yearPosition / denominator) * (COLOR_DOMAIN[1] - COLOR_DOMAIN[0])
-                : 0;
-            const stroke = getPercentileColor(colorValue, COLOR_DOMAIN, 'Blue');
-            baseSeries.push({ year, values: anomalies, stroke, strokeWidth: 2, strokeOpacity: 0.1 });
-        }
-
-        // Current year anomalies (mask incomplete months)
-        if (hasCurrentYearSeries) {
-            const anomalies = currentYearData!.map((v, i) => {
-                const b = baseline[i]!;
-                if (!completedMonths.has(i)) return null;
-                return typeof v === 'number' && Number.isFinite(v) && Number.isFinite(b) ? v - b : null;
-            }) as SeriesValues;
-
-            highlightedSeries = {
-                year: currentYear,
-                values: anomalies,
-                stroke: CURRENT_YEAR_STROKE,
-                strokeWidth: 3,
+        // Recent N years as light gray lines
+        const lastYear = allYears.slice(-1)[0]!;
+        const values = monthlyMeans[lastYear];
+        if (values) {
+            const anomalyValues = toAnomalies(values as IYearData, referenceMonthlyMeans);
+            unifiedSeries.push({
+                label: String(lastYear),
+                strokeWidth: 2,
                 strokeOpacity: 1,
-            };
+                values: toPoints(anomalyValues, String(lastYear)),
+            });
         }
 
-        // Mean curve across recent years
-        if (yearsToShow.length > 0) {
-            const meanAnomalies = computeMeanOfSeries(baseSeries.map(s => s.values));
-
-            meanSeries = {
-                year: NaN,
-                values: meanAnomalies,
-                stroke: '#ffffff',
-                strokeWidth: 3,
+        // Get monthly means of the current year
+        const currentYear = new Date().getFullYear();
+        const {
+            means: currentYearMeans,
+            completedMonths: currentYearCompletedMonths,
+        } = computeCurrentYearMonthlyMeans(dailyRecords, currentYear);
+        if (currentYearMeans && currentYearCompletedMonths.size > 0) {
+            const currentAnomalies = toAnomalies(currentYearMeans as IYearData, referenceMonthlyMeans);
+            unifiedSeries.push({
+                label: String(currentYear),
+                strokeWidth: 2,
                 strokeOpacity: 1,
-            };
+                values: toPoints(currentAnomalies, String(currentYear)),
+            });
         }
+
+        // Define color scale mapping for legend
+        const colorForLabel = (label: string): string => {
+            if (label === String(currentYear)) return '#ff5252';
+            if (label === String(lastYear)) return '#ffaa00';
+            if (label === referenceLabel) return '#666666';
+            return '#666666';
+        };
+        const colorDomain: string[] = [];
+        const colorRange: string[] = [];
+        const seen = new Set<string>();
+        for (const s of unifiedSeries) {
+            if (!seen.has(s.label)) {
+                seen.add(s.label);
+                colorDomain.push(s.label);
+                colorRange.push(colorForLabel(s.label));
+            }
+        }
+
+        // Compute anomaly domain from unified series values
+        const getDomainFromSeries = (series: ILineSeries[]): [number, number] => {
+            let minY = Number.POSITIVE_INFINITY;
+            let maxY = Number.NEGATIVE_INFINITY;
+            for (const s of series) {
+                for (const p of s.values) {
+                    if (typeof p.y === 'number' && Number.isFinite(p.y)) {
+                        if (p.y < minY) minY = p.y;
+                        if (p.y > maxY) maxY = p.y;
+                    }
+                }
+            }
+            return minY === Number.POSITIVE_INFINITY || maxY === Number.NEGATIVE_INFINITY
+                ? [0, 0]
+                : [minY, maxY];
+        };
+
+        const computedDomain = getDomainFromSeries(unifiedSeries);
 
         return {
             stationId,
-            domain: data.domain,
-            series: [
-                ...baseSeries,
-                ...(meanSeries ? [meanSeries] : []),
-                ...(highlightedSeries ? [highlightedSeries] : []),
-            ],
+            domain: computedDomain,
             error: null,
+            series: unifiedSeries,
+            colorDomain,
+            colorRange,
         };
-    }, [stationId, data.stationId, data.monthlyMeans, data.domain, dailyRecords]);
+    }, [stationId, data, dailyRecords]);
 };
 
-const getDaysInMonth = (year: number, monthIndex: number): number => new Date(year, monthIndex + 1, 0).getDate();
 
-function computeCurrentYearMonthlyMeans(
-    dailyRecords: Record<string, DailyRecentByStation> | null,
-    currentYear: number,
-): { means: SeriesValues | null; completedMonths: Set<number> } {
-    if (!dailyRecords) return { means: null, completedMonths: new Set<number>() };
-
-    const sums = new Array(12).fill(0);
-    const counts = new Array(12).fill(0);
-    const dayPresence = Array.from({ length: 12 }, () => new Set<number>());
-
-    for (const record of Object.values(dailyRecords)) {
-        if (!record) continue;
-        const parts = extractYMD(record.date);
-        if (!parts || parts.year !== currentYear) continue;
-        const { monthIndex, day } = parts;
-        const meanTemp = record.meanTemperature;
-        if (typeof meanTemp !== 'number' || !Number.isFinite(meanTemp)) continue;
-        sums[monthIndex] += meanTemp;
-        counts[monthIndex] += 1;
-        dayPresence[monthIndex]?.add(day);
-    }
-
-    const means = new Array(12).fill(null) as SeriesValues;
-    let hasData = false;
-    const completedMonths = new Set<number>();
-
-    for (let month = 0; month < 12; month += 1) {
-        const count = counts[month];
-        if (count > 0) {
-            means[month] = sums[month] / count;
-            hasData = true;
-            const expectedDays = getDaysInMonth(currentYear, month);
-            const daysSeen = dayPresence[month];
-            if (daysSeen && daysSeen.size === expectedDays) {
-                let missingDay = false;
-                for (let day = 1; day <= expectedDays; day += 1) {
-                    if (!daysSeen.has(day)) { missingDay = true; break; }
-                }
-                if (!missingDay) completedMonths.add(month);
-            }
-        }
-    }
-
-    return { means: hasData ? means : null, completedMonths };
-}
-
-function extractYMD(dateString: string): { year: number; monthIndex: number; day: number } | null {
-    if (!dateString) return null;
-    if (/^\d{8}$/.test(dateString)) {
-        const year = Number.parseInt(dateString.slice(0, 4), 10);
-        const month = Number.parseInt(dateString.slice(4, 6), 10);
-        const day = Number.parseInt(dateString.slice(6, 8), 10);
-        if (Number.isFinite(year) && Number.isFinite(month) && Number.isFinite(day)) {
-            const monthIndex = month - 1;
-            if (monthIndex >= 0 && monthIndex < 12 && day >= 1 && day <= 31) {
-                return { year, monthIndex, day };
-            }
-        }
-        return null;
-    }
-    const parsed = new Date(dateString);
-    if (Number.isNaN(parsed.getTime())) return null;
-    return { year: parsed.getFullYear(), monthIndex: parsed.getMonth(), day: parsed.getDate() };
-}
+const toAnomalies = (values: IYearData, refMeans: (number | null)[]): IYearData =>
+    values.map((v, i) => {
+        const ref = refMeans[i];
+        return typeof v === 'number' && Number.isFinite(v) && typeof ref === 'number'
+            ? v - ref
+            : (v as number | null);
+    }) as IYearData;
