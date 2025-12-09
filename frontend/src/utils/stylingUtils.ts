@@ -13,7 +13,24 @@ const toCssValue = (value: CSSProperties[keyof CSSProperties]) => {
 
 export const applyPlotStyles = (root: ParentNode | null, rules: PlotStyleRuleConfig) => {
     if (!root) return;
+
+    const maybeStyleRoot = (selector: string, declarations: CSSProperties) => {
+        const el = root as Element & ElementCSSInlineStyle;
+        if (el.matches && el.matches(selector)) {
+            Object.entries(declarations).forEach(([property, value]) => {
+                const cssValue = toCssValue(value);
+                if (cssValue == null) return;
+                const cssProperty = property.startsWith('--') ? property : toKebabCase(property);
+                el.style.setProperty(cssProperty, cssValue);
+            });
+        }
+    };
+
     Object.entries(rules).forEach(([selector, declarations]) => {
+        // Apply to root if it matches
+        maybeStyleRoot(selector, declarations);
+
+        // Apply to descendants
         root.querySelectorAll<Element & ElementCSSInlineStyle>(selector).forEach((node) => {
             Object.entries(declarations).forEach(([property, value]) => {
                 const cssValue = toCssValue(value);

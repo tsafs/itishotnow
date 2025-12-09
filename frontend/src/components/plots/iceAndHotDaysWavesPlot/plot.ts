@@ -1,6 +1,5 @@
 import * as Plot from '@observablehq/plot';
 import type { IPlotData } from './hooks/usePlotData';
-import { blueScheme } from '../../../utils/TemperatureUtils';
 
 const MONTH_LABELS = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
 
@@ -11,27 +10,19 @@ export default function createPlot(
         height: number;
     },
 ): HTMLElement {
-    const allSeries = [
-        ...data.referenceYears,
-        data.mean,
-        data.lastYear,
-        data.currentYear
-    ]
+    // Create one line mark per series, mapping stroke to the label so Plot can infer colors and render a legend.
+    const lines: Plot.Line[] = data.series.map((series) =>
+        Plot.lineY(series.values, {
+            x: 'x',
+            y: (d) => (typeof d?.y === 'number' && Number.isFinite(d.y)) ? d.y : Number.NaN,
+            stroke: 'label',
+            strokeWidth: series.strokeWidth,
+            strokeOpacity: series.strokeOpacity,
+            curve: 'catmull-rom',
+        })
+    );
 
-    const lines: Plot.Line[] = allSeries.map((series) => {
-        if (series) {
-            return Plot.lineY(series.values, {
-                x: (_d, i) => i,
-                y: (d) => (typeof d === 'number' && Number.isFinite(d)) ? d : Number.NaN,
-                stroke: series.stroke,
-                strokeWidth: series.strokeWidth,
-                strokeOpacity: series.strokeOpacity,
-                curve: 'catmull-rom',
-            })
-        }
-        return null;
-    })
-        .filter((line): line is Plot.Line => line !== null);
+    const hasPalette = data.colorDomain.length > 0 && data.colorRange.length === data.colorDomain.length;
 
     return Plot.plot({
         width: plotDims.width,
@@ -41,6 +32,10 @@ export default function createPlot(
         insetBottom: 5,
         color: {
             legend: true,
+            type: 'ordinal',
+            ...(hasPalette ? { domain: data.colorDomain, range: data.colorRange } : {}),
+            // @ts-expect-error Observable Plot supports className on color legend; typings are outdated.
+            className: 'legend'
         },
         x: {
             axis: "bottom",

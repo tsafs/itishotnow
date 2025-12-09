@@ -8,24 +8,39 @@ import { computeMeanOfSeries, type ISeries } from '../../utils/yearSeries.js';
 
 export type IYear = number;
 
+
+// Types for unified series used by Observable Plot
+export interface ISeriesPoint {
+    x: number;
+    y: number | null;
+    label: string;
+}
+
+export interface ILineSeries {
+    label: string;
+    strokeWidth: number;
+    strokeOpacity: number;
+    values: ISeriesPoint[];
+}
+
 export interface IPlotData {
     stationId: string;
     domain: [number, number];
-    referenceYears: ISeries[];
-    lastYear: ISeries | null;
-    currentYear: ISeries | null;
-    mean: ISeries | null;
     error: string | null;
+    // Unified data structure for Observable Plot legend support
+    series: ILineSeries[];
+    // Optional color scale configuration for Observable Plot
+    colorDomain: string[];
+    colorRange: string[];
 }
 
 const initialResult: IPlotData = {
     stationId: '',
     domain: [0, 0],
-    referenceYears: [],
-    lastYear: null,
-    currentYear: null,
-    mean: null,
     error: null,
+    series: [],
+    colorDomain: [],
+    colorRange: [],
 };
 
 const REFERENCE_START_YEAR = 1961;
@@ -55,35 +70,60 @@ export const usePlotData = (): IPlotData => {
             return initialResult;
         }
 
+        // Helpers
+        const toPoints = (values: IYearData, label: string): ISeriesPoint[] => values.map((v, i) => ({ x: i, y: v, label }));
+        const unifiedSeries: ILineSeries[] = [];
+
         // Reference years (1961-1990) as light gray lines
         const referenceYears = allYears.filter((year) => year >= REFERENCE_START_YEAR && year <= REFERENCE_END_YEAR);
         const referenceYearsData: ISeries[] = [];
+        const referenceLabel = `${REFERENCE_START_YEAR}-${REFERENCE_END_YEAR}`;
         for (const year of referenceYears) {
             const values = monthlyMeans[year];
             if (!values) {
                 continue;
             }
-            referenceYearsData.push({
+            const series: ISeries = {
                 year,
                 values: values.slice() as IYearData,
                 stroke: "#eeeeee",
                 strokeWidth: 1,
-                strokeOpacity: 0.1,
+                strokeOpacity: 0.3,
+            };
+            referenceYearsData.push(series);
+            unifiedSeries.push({
+                label: referenceLabel,
+                strokeWidth: series.strokeWidth,
+                strokeOpacity: series.strokeOpacity,
+                values: toPoints(series.values, referenceLabel),
             });
         }
+
+        // Mean curve across reference years
+        // if (referenceYears.length > 0) {
+        //     const meanAnomalies = computeMeanOfSeries(
+        //         referenceYearsData
+        //             .filter((s) => referenceYears.includes(s.year))
+        //             .map(s => s.values)
+        //     );
+        //     unifiedSeries.push({
+        //         label: `${referenceLabel} Mittel`,
+        //         strokeWidth: 2,
+        //         strokeOpacity: 1,
+        //         values: toPoints(meanAnomalies, `${referenceLabel} Mittel`),
+        //     });
+        // }
 
         // Last year as yellow line
         const lastYear = allYears.slice(-1)[0]!;
         const values = monthlyMeans[lastYear];
-        let lastYearData: ISeries | null = null;
         if (values) {
-            lastYearData = {
-                year: lastYear,
-                values: values.slice() as IYearData,
-                stroke: "#ffcc00",
+            unifiedSeries.push({
+                label: String(lastYear),
                 strokeWidth: 2,
                 strokeOpacity: 1,
-            };
+                values: toPoints(values.slice() as IYearData, String(lastYear)),
+            });
         }
 
         // Get monthly means of the current year
@@ -92,48 +132,45 @@ export const usePlotData = (): IPlotData => {
             means: currentYearMeans,
             completedMonths: currentYearCompletedMonths,
         } = computeCurrentYearMonthlyMeans(dailyRecords, currentYear);
-        let currentYearData: ISeries | null = null;
         if (currentYearMeans && currentYearCompletedMonths.size > 0) {
-            currentYearData = {
-                year: currentYear,
-                values: currentYearMeans!.slice() as IYearData,
-                stroke: "#ff5252",
+            unifiedSeries.push({
+                label: String(currentYear),
                 strokeWidth: 2,
                 strokeOpacity: 1,
-            };
+                values: toPoints(currentYearMeans!.slice() as IYearData, String(currentYear)),
+            });
         }
 
-        // Mean curve across reference years
-        let meanData: ISeries | null = null;
-        if (referenceYears.length > 0) {
-            const meanAnomalies = computeMeanOfSeries(
-                referenceYearsData
-                    .filter((s) => referenceYears.includes(s.year))
-                    .map(s => s.values)
-            );
-            meanData = {
-                year: NaN,
-                values: meanAnomalies,
-                stroke: "#eeeeee",
-                strokeWidth: 2,
-                strokeOpacity: 1,
-            };
+        // Define color scale mapping for legend
+        const colorForLabel = (label: string): string => {
+            if (label === String(currentYear)) return '#ff5252';
+            if (label === String(lastYear)) return '#ffcc00';
+            if (label === referenceLabel) return '#666666';
+            if (label.endsWith('Mittel')) return '#eeeeee';
+            return '#666666';
+        };
+        const colorDomain: string[] = [];
+        const colorRange: string[] = [];
+        const seen = new Set<string>();
+        for (const s of unifiedSeries) {
+            if (!seen.has(s.label)) {
+                seen.add(s.label);
+                colorDomain.push(s.label);
+                colorRange.push(colorForLabel(s.label));
+            }
         }
 
         return {
             stationId,
             domain: data.domain,
-            referenceYears: referenceYearsData,
-            mean: meanData,
-            lastYear: lastYearData,
-            currentYear: currentYearData,
             error: null,
+            series: unifiedSeries,
+            colorDomain,
+            colorRange,
         };
     }, [
         stationId,
-        data.stationId,
-        data.monthlyMeans,
-        data.domain,
+        data,
         dailyRecords,
     ]);
 };
