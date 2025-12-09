@@ -11,8 +11,7 @@ export default function createPlot(
     fontSize: number,
     isMobile = false,
 ): HTMLElement {
-    // Determine special series: mean (white) and current year (red)
-    const meanSeries = data.series.find((s) => s.stroke.toLowerCase() === '#ffffff');
+    // Determine current year (red)
     const currentSeries = data.series.find((s) => s.stroke.toLowerCase() === CURRENT_YEAR_STROKE.toLowerCase());
     const currentYear: string = currentSeries && Number.isFinite(currentSeries.year) ? String(currentSeries.year) : 'Aktuelles Jahr';
     const legendVerticalSpacing = isMobile ? 3 : 2;
@@ -61,7 +60,6 @@ export default function createPlot(
                 x: 'x', y: 'y', text: 'text', fill: CURRENT_YEAR_STROKE,
                 fontSize, fontWeight: 'bold', textAnchor: 'start'
             }),
-
             Plot.ruleY([2 - legendVerticalSpacing], {
                 x1: 0.05, x2: 0.35, stroke: '#ffffff', strokeWidth: 3,
             }),

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo, memo } from 'react';
+import { useEffect, useRef, useMemo, memo, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { theme, createStyles } from '../../../styles/design-system.js';
 import { useBreakpoint, useBreakpointDown } from '../../../hooks/useBreakpoint.js';
@@ -15,15 +15,29 @@ import { applyPlotStyles, type PlotStyleRuleConfig } from '../../../utils/stylin
 const IS_DARK_MODE = true;
 const themeColors = IS_DARK_MODE ? theme.colors.plotDark : theme.colors.plotLight;
 
+type LegendItemStyle = Required<Pick<CSSProperties, 'width' | 'strokeWidth' | 'color'>> & CSSProperties;
+
 const getPlotStyle = (dims: { width: number; height: number }): CSSProperties => ({
     position: 'relative',
     maxWidth: dims.width,
     maxHeight: dims.height,
 });
 
+const getLegendItemStyle = (medium: 'mobile' | 'tablet' | 'desktop' | 'wide'): LegendItemStyle => ({
+    fontSize: medium === 'mobile' ? 8 : medium === 'tablet' ? 10 : 12,
+    width: medium === 'mobile' ? 12 : 20,
+    strokeWidth: medium === 'mobile' ? 1.5 : 2,
+    color: '#eeeeee',
+})
+
 const styles = createStyles({
     plot: {
         color: themeColors.text,
+    },
+    legend: {
+        display: 'flex',
+        justifyContent: 'center',
+        gap: 8,
     }
 });
 
@@ -49,7 +63,6 @@ const getPlotStyleRules = (fontSize: number, isDarkMode: boolean): PlotStyleRule
 const IceAndHotDaysRightSide = memo(() => {
     const dispatch = useAppDispatch();
     const breakpoint = useBreakpoint();
-    const isMobile = useBreakpointDown('mobile');
     const selectedCityName = useSelectedCityName();
     const data = usePlotData();
     const renderComplete = useIceAndHotDaysRenderComplete();
@@ -71,11 +84,13 @@ const IceAndHotDaysRightSide = memo(() => {
     const plotDims = MAP_DIMENSIONS[breakpoint];
     const fontSize = FONT_SIZES[breakpoint];
 
+    const legendItemStyle = useMemo(() => getLegendItemStyle(breakpoint), [breakpoint]);
+
     useEffect(() => {
-        if (!selectedCityName || !containerRef.current) return;
+        if (!selectedCityName || !containerRef.current || !data.stationId) return;
 
         try {
-            const nextPlot = createPlot(data, plotDims, fontSize, isMobile);
+            const nextPlot = createPlot(data, plotDims);
             containerRef.current.replaceChildren(nextPlot);
             applyPlotStyles(nextPlot, getPlotStyleRules(fontSize, IS_DARK_MODE));
             dispatch(setIceAndHotDaysRenderComplete(true));
@@ -85,11 +100,11 @@ const IceAndHotDaysRightSide = memo(() => {
         }
     }, [
         selectedCityName,
-        data.series,
+        data,
         dispatch,
         plotDims.width,
         plotDims.height,
-        fontSize
+        fontSize,
     ]);
 
     // Cleanup on unmount
@@ -116,9 +131,62 @@ const IceAndHotDaysRightSide = memo(() => {
             isDarkTheme={true}
         >
             <div ref={containerRef} style={styles.plot} id="iceAndHotDaysWavesPlot" />
+            <div style={styles.legend}>
+                {(() => {
+                    const currentYearLabel = data.currentYear ? String(data.currentYear.year) : 'N/A';
+                    const lastYearLabel = data.lastYear ? String(data.lastYear.year) : 'N/A';
+                    const referenceYearsLabel = data.referenceYears.length > 0
+                        ? `${data.referenceYears[0]!.year} - ${data.referenceYears[data.referenceYears.length - 1]!.year}`
+                        : 'N/A';
+                    const meanLabel = data.referenceYears.length > 0 ? `Mittelwert ${referenceYearsLabel}` : 'Mittelwert';
+
+                    const currentColor = data.currentYear ? data.currentYear.stroke : '#ff5252';
+                    const lastColor = data.lastYear ? data.lastYear.stroke : '#ffcc00';
+                    const refColor = '#999999';
+                    const meanColor = data.mean ? data.mean.stroke : '#eeeeee';
+
+                    return (
+                        <>
+                            <LegendItem label={currentYearLabel} style={{ ...legendItemStyle, color: currentColor }} />
+                            <LegendItem label={lastYearLabel} style={{ ...legendItemStyle, color: lastColor }} />
+                            <LegendItem label={referenceYearsLabel} style={{ ...legendItemStyle, color: refColor }} />
+                            <LegendItem label={meanLabel} style={{ ...legendItemStyle, color: meanColor }} />
+                        </>
+                    );
+                })()}
+            </div>
         </AsyncLoadingOverlayWrapper>
     );
 });
+
+const LegendItem = ({ label, style }: { label: string; style: LegendItemStyle }) => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        <LegendWave style={style} />
+        <span style={{ ...style, width: 'auto' }}>{label}</span>
+    </div>
+);
+
+const LegendWave = ({ style }: { style: LegendItemStyle }) => {
+    const width = parseInt(style.width! + "");
+    const strokeWidth = parseInt(style.strokeWidth! + "");
+
+    const height = 10;
+    const amplitude = 4; // wave height
+    const cycles = 1; // number of sine cycles
+    const points = 40;
+    const step = width / points;
+    let d = `M 0 ${height / 2}`;
+    for (let i = 0; i <= points; i++) {
+        const x = i * step;
+        const y = height / 2 + Math.sin((i / points) * cycles * 2 * Math.PI) * amplitude;
+        d += ` L ${x} ${y}`;
+    }
+    return (
+        <svg width={width} height={height} aria-label="legend-wave" overflow="visible">
+            <path d={d} stroke={style.color} strokeWidth={strokeWidth} fill="none" strokeLinecap="round" />
+        </svg>
+    );
+};
 
 IceAndHotDaysRightSide.displayName = 'IceAndHotDaysRightSide';
 

@@ -3,20 +3,11 @@ import { useAppSelector } from '../../../../store/hooks/useAppSelector.js';
 import { selectDataByStationId } from '../../../../store/slices/dailyHistoricalStationDataSlice.js';
 import { useSelectedStationId } from '../../../../store/hooks/hooks.js';
 import { getPercentileColor } from '../../../../utils/TemperatureUtils.js';
-import type { RollingAverageRecordMap } from '../../../../classes/RollingAverageRecord.js';
 import { useHistoricalDailyDataForStation } from '../../../../store/slices/historicalDataForStationSlice.js';
 import DailyRecentByStation from '../../../../classes/DailyRecentByStation.js';
+import { computeMeanOfSeries, type ISeries, type SeriesValues } from '../../utils/yearSeries.js';
 
 export type IYear = number;
-export type SeriesValues = (number | null)[] & { length: 12 };
-
-export interface ISeries {
-    year: number;
-    values: SeriesValues;
-    stroke: string;
-    strokeWidth: number;
-    strokeOpacity?: number;
-}
 
 export interface IPlotData {
     stationId: string;
@@ -111,7 +102,7 @@ export const usePlotData = (): IPlotData => {
                 ? COLOR_DOMAIN[0] + (yearPosition / denominator) * (COLOR_DOMAIN[1] - COLOR_DOMAIN[0])
                 : 0;
             const stroke = getPercentileColor(colorValue, COLOR_DOMAIN, 'Blue');
-            baseSeries.push({ year, values: anomalies, stroke, strokeWidth: 2, strokeOpacity: 0.3 });
+            baseSeries.push({ year, values: anomalies, stroke, strokeWidth: 2, strokeOpacity: 0.1 });
         }
 
         // Current year anomalies (mask incomplete months)
@@ -131,32 +122,9 @@ export const usePlotData = (): IPlotData => {
             };
         }
 
-        // Mean curve across displayed years (recentYears only)
+        // Mean curve across recent years
         if (yearsToShow.length > 0) {
-            const anomalyMatrix: (number | null)[][] = [];
-            for (const year of yearsToShow) {
-                const values = monthlyMeansByYear[year];
-                if (!values) continue;
-                const anomalies = values.map((v, i) => {
-                    const b = baseline[i]!;
-                    return typeof v === 'number' && Number.isFinite(v) && Number.isFinite(b) ? v - b : null;
-                });
-                anomalyMatrix.push(anomalies);
-            }
-
-            const meanAnomalies = new Array(12).fill(null) as SeriesValues;
-            for (let m = 0; m < 12; m += 1) {
-                const vals: number[] = [];
-                for (const row of anomalyMatrix) {
-                    const v = row[m];
-                    if (typeof v === 'number' && Number.isFinite(v)) vals.push(v);
-                }
-                if (vals.length > 0) {
-                    meanAnomalies[m] = vals.reduce((a, b) => a + b, 0) / vals.length;
-                } else {
-                    meanAnomalies[m] = null;
-                }
-            }
+            const meanAnomalies = computeMeanOfSeries(baseSeries.map(s => s.values));
 
             meanSeries = {
                 year: NaN,
