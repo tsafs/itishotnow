@@ -37,6 +37,10 @@ interface StackedPlotViewProps {
     darkMode?: boolean; // Whether to use dark mode styles (default: false)
 }
 
+export interface StackedPlotViewBottomProps {
+    darkMode?: boolean | undefined;
+}
+
 /**
  * StackedPlotView Component
  * 

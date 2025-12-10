@@ -1,6 +1,6 @@
 import { useEffect, useRef, useMemo, memo } from 'react';
 import type { CSSProperties } from 'react';
-import { theme, createStyles } from '../../../styles/design-system.js';
+import { theme } from '../../../styles/design-system.js';
 import { useBreakpoint, useBreakpointDown } from '../../../hooks/useBreakpoint.js';
 import { useAppDispatch } from '../../../store/hooks/useAppDispatch.js';
 import { useSelectedCityName } from '../../../store/hooks/hooks.js';
@@ -11,21 +11,19 @@ import { usePlotData } from './hooks/usePlotData.js';
 import { setRenderComplete, useRenderComplete } from './slices/slice.js';
 import { useDataStatus } from './hooks/useDataStatus.js';
 import { applyPlotStyles, getPlotStyleRules } from '../utils/plotStyles.js';
+import type { StackedPlotViewBottomProps } from '../../common/PlotView/StackedPlotView.js';
 
-const IS_DARK_MODE = true;
-const themeColors = IS_DARK_MODE ? theme.colors.plotDark : theme.colors.plotLight;
-
-const getPlotStyle = (dims: { width: number; height: number }): CSSProperties => ({
+const getPlotContainerStyle = (dims: { width: number; height: number }): CSSProperties => ({
     position: 'relative',
     maxWidth: dims.width,
     maxHeight: dims.height,
 });
 
-const styles = createStyles({
-    plot: { color: themeColors.text }
+const getPlotStyle = (isDarkTheme: boolean): CSSProperties => ({
+    color: isDarkTheme ? theme.colors.plotDark.text : theme.colors.plotLight.text,
 });
 
-const MonthlyTemperatureAnomaliesBottom = memo(() => {
+const MonthlyTemperatureAnomaliesBottom = memo(({ darkMode = false }: StackedPlotViewBottomProps) => {
     const dispatch = useAppDispatch();
     const breakpoint = useBreakpoint();
     const isMobile = useBreakpointDown('mobile');
@@ -54,15 +52,15 @@ const MonthlyTemperatureAnomaliesBottom = memo(() => {
         dispatch(setRenderComplete(false));
         if (!selectedCityName || !containerRef.current) return;
         try {
-            const nextPlot = createPlot(data, plotDims);
+            const nextPlot = createPlot(data, plotDims, darkMode);
             containerRef.current.replaceChildren(nextPlot);
-            applyPlotStyles(nextPlot, getPlotStyleRules(isMobile, fontSize, IS_DARK_MODE));
+            applyPlotStyles(nextPlot, getPlotStyleRules(isMobile, fontSize, darkMode));
             dispatch(setRenderComplete(true));
         } catch (err) {
             console.error('Error creating anomalies plot:', err);
             dispatch(setRenderComplete(true));
         }
-    }, [selectedCityName, data, dispatch, plotDims, fontSize, isMobile]);
+    }, [selectedCityName, data, dispatch, plotDims, fontSize, isMobile, darkMode]);
 
     useEffect(() => () => { containerRef.current = null; }, []);
 
@@ -73,7 +71,8 @@ const MonthlyTemperatureAnomaliesBottom = memo(() => {
         }
     }, [data.error, dispatch]);
 
-    const plotStyle = useMemo(() => getPlotStyle(plotDims), [plotDims]);
+    const plotContainerStyle = useMemo(() => getPlotContainerStyle(plotDims), [plotDims]);
+    const plotStyle = useMemo(() => getPlotStyle(darkMode), [darkMode]);
 
     return (
         <AsyncLoadingOverlayWrapper
@@ -81,10 +80,10 @@ const MonthlyTemperatureAnomaliesBottom = memo(() => {
             renderCompleteSignal={renderComplete}
             minDisplayDuration={MIN_LOADING_DISPLAY_DURATION}
             onError={() => dispatch(setRenderComplete(true))}
-            style={plotStyle}
-            isDarkTheme={true}
+            style={plotContainerStyle}
+            isDarkTheme={darkMode}
         >
-            <div ref={containerRef} style={styles.plot} id="monthlyTemperatureAnomaliesPlot" />
+            <div ref={containerRef} style={plotStyle} id="monthlyTemperatureAnomaliesPlot" />
         </AsyncLoadingOverlayWrapper>
     );
 });

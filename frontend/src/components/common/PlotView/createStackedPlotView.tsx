@@ -1,9 +1,9 @@
 import React from 'react';
-import StackedPlotView from './StackedPlotView.js';
+import StackedPlotView, { type StackedPlotViewBottomProps } from './StackedPlotView.js';
 
 interface CreateStackedPlotViewOptions {
     topContent: React.ComponentType;
-    bottomContent: React.ComponentType;
+    bottomContent: React.ComponentType<StackedPlotViewBottomProps>;
     config: {
         darkMode?: boolean;
     };
@@ -25,7 +25,7 @@ export const createStackedPlotView = (options: CreateStackedPlotViewOptions) => 
         return (
             <StackedPlotView
                 topContent={<TopComp />}
-                bottomContent={<BottomComp />}
+                bottomContent={<BottomComp darkMode={options.config.darkMode} />}
                 {...options.config}
             />
         );

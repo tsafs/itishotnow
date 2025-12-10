@@ -3,7 +3,7 @@ import { createStyles, theme } from '../../../styles/design-system.js';
 
 const styles = createStyles({
     container: {
-        color: theme.colors.plotDark.text,
+        color: theme.colors.plotLight.text,
         marginBottom: 8,
     },
     title: {

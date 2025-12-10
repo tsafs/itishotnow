@@ -59,7 +59,7 @@ export const usePlotData = (): IMonthsInYearsPlotData => {
             unifiedSeries.push({
                 label: referenceLabel,
                 strokeWidth: 1,
-                strokeOpacity: 0.3,
+                strokeOpacity: 0.5,
                 values: toLinePoint(values, referenceLabel),
             });
         }

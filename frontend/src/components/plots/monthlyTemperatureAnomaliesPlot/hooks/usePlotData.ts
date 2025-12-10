@@ -64,7 +64,7 @@ export const usePlotData = (): IMonthsInYearsPlotData => {
             unifiedSeries.push({
                 label: referenceLabel,
                 strokeWidth: 1,
-                strokeOpacity: 0.3,
+                strokeOpacity: 0.4,
                 values: toLinePoint(anomalyValues, referenceLabel),
             });
         }
@@ -102,7 +102,7 @@ export const usePlotData = (): IMonthsInYearsPlotData => {
         const colorForLabel = (label: string): string => {
             if (label === String(currentYear)) return '#ff5252';
             if (label === String(lastYear)) return '#ffaa00';
-            if (label === referenceLabel) return '#666666';
+            if (label === referenceLabel) return '#999999';
             return '#666666';
         };
         const colorDomain: string[] = [];

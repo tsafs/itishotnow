@@ -1,11 +1,15 @@
 import * as Plot from '@observablehq/plot';
 import { MONTH_LABELS } from '../utils/plotStyles';
 import type { IMonthsInYearsPlotData } from '../utils/yearSeries';
+import theme from '../../../styles/design-system';
 
 export default function createPlot(
     data: IMonthsInYearsPlotData,
     plotDims: { width: number; height: number },
+    darkMode: boolean,
 ): HTMLElement {
+    const plotTheme = darkMode ? theme.colors.plotDark : theme.colors.plotLight;
+
     const lines: Plot.Line[] = data.series.map((series) =>
         Plot.lineY(series.values, {
             x: 'x',
@@ -51,7 +55,7 @@ export default function createPlot(
         },
         marks: [
             ...lines,
-            Plot.ruleY([0], { stroke: '#eeeeee', strokeDasharray: '4 4' }),
+            Plot.ruleY([0], { stroke: plotTheme.foreground, strokeDasharray: '4 4' }),
         ]
     }) as unknown as HTMLElement;
 }
