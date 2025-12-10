@@ -7,8 +7,7 @@ import {
     computeMeansOfMonthsOfCurrentYear,
     toLinePoint,
     type ILineSeries,
-    type IMonthsInYearsPlotData,
-    type TSeriesValues
+    type IMonthsInYearsPlotData
 } from '../../utils/yearSeries.js';
 
 const initialResult: IMonthsInYearsPlotData = {
@@ -61,7 +60,7 @@ export const usePlotData = (): IMonthsInYearsPlotData => {
                 label: referenceLabel,
                 strokeWidth: 1,
                 strokeOpacity: 0.3,
-                values: toLinePoint(values.slice() as TSeriesValues, referenceLabel),
+                values: toLinePoint(values, referenceLabel),
             });
         }
 
@@ -73,7 +72,7 @@ export const usePlotData = (): IMonthsInYearsPlotData => {
                 label: String(lastYear),
                 strokeWidth: 2,
                 strokeOpacity: 1,
-                values: toLinePoint(values.slice() as TSeriesValues, String(lastYear)),
+                values: toLinePoint(values, String(lastYear)),
             });
         }
 
@@ -88,7 +87,7 @@ export const usePlotData = (): IMonthsInYearsPlotData => {
                 label: String(currentYear),
                 strokeWidth: 2,
                 strokeOpacity: 1,
-                values: toLinePoint(currentYearMeans!.slice() as TSeriesValues, String(currentYear)),
+                values: toLinePoint(currentYearMeans, String(currentYear)),
             });
         }
 

@@ -1,9 +1,8 @@
 import type DailyRecentByStation from "../../../classes/DailyRecentByStation";
 import { extractYMD } from "../../../utils/dateUtils";
 
-export type TSeriesValues = (number | null)[] & { length: 12 };
-
-export const toLinePoint = (values: TSeriesValues, label: string): ILinePoint[] => values.map((v, i) => ({ x: i, y: v, label }));
+export const toLinePoint = (values: readonly (number | null)[], label: string): ILinePoint[] =>
+    Array.from(values, (v, i) => ({ x: i, y: v, label }));
 
 export interface ILinePoint {
     x: number;
@@ -35,7 +34,7 @@ const getDaysInMonth = (year: number, monthIndex: number): number => new Date(ye
 export function computeMeansOfMonthsOfCurrentYear(
     dailyRecords: Record<string, DailyRecentByStation> | null,
     currentYear: number,
-): { means: TSeriesValues | null; completedMonths: Set<number> } {
+): { means: (number | null)[] | null; completedMonths: Set<number> } {
     if (!dailyRecords) {
         return { means: null, completedMonths: new Set<number>() };
     }
@@ -63,7 +62,7 @@ export function computeMeansOfMonthsOfCurrentYear(
         counts[monthIndex] += 1;
     }
 
-    const means = new Array(12).fill(null) as TSeriesValues;
+    const means = new Array(12).fill(null) as (number | null)[];
     let hasData = false;
     const completedMonths = new Set<number>();
 
@@ -83,7 +82,11 @@ export function computeMeansOfMonthsOfCurrentYear(
     };
 }
 
-export const computeMeansOfMonthsOverYears = (mm: Record<number, TSeriesValues | undefined>, startYear: number, endYear: number): (number | null)[] => {
+export const computeMeansOfMonthsOverYears = (
+    mm: Record<number, (number | null)[] | undefined>,
+    startYear: number,
+    endYear: number,
+): (number | null)[] => {
     return Array.from({ length: 12 }, (_, m) => {
         let sum = 0;
         let count = 0;

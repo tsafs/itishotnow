@@ -8,8 +8,7 @@ import {
     computeMeansOfMonthsOverYears,
     toLinePoint,
     type ILineSeries,
-    type IMonthsInYearsPlotData,
-    type TSeriesValues
+    type IMonthsInYearsPlotData
 } from '../../utils/yearSeries.js';
 
 const initialResult: IMonthsInYearsPlotData = {
@@ -61,7 +60,7 @@ export const usePlotData = (): IMonthsInYearsPlotData => {
             if (!values) {
                 continue;
             }
-            const anomalyValues = toAnomalies(values as TSeriesValues, referenceMonthlyMeans);
+            const anomalyValues = toAnomalies(values, referenceMonthlyMeans);
             unifiedSeries.push({
                 label: referenceLabel,
                 strokeWidth: 1,
@@ -74,7 +73,7 @@ export const usePlotData = (): IMonthsInYearsPlotData => {
         const lastYear = allYears.slice(-1)[0]!;
         const values = monthlyMeans[lastYear];
         if (values) {
-            const anomalyValues = toAnomalies(values as TSeriesValues, referenceMonthlyMeans);
+            const anomalyValues = toAnomalies(values, referenceMonthlyMeans);
             unifiedSeries.push({
                 label: String(lastYear),
                 strokeWidth: 2,
@@ -90,7 +89,7 @@ export const usePlotData = (): IMonthsInYearsPlotData => {
             completedMonths: currentYearCompletedMonths,
         } = computeMeansOfMonthsOfCurrentYear(dailyRecords, currentYear);
         if (currentYearMeans && currentYearCompletedMonths.size > 0) {
-            const currentAnomalies = toAnomalies(currentYearMeans as TSeriesValues, referenceMonthlyMeans);
+            const currentAnomalies = toAnomalies(currentYearMeans, referenceMonthlyMeans);
             unifiedSeries.push({
                 label: String(currentYear),
                 strokeWidth: 2,
@@ -147,11 +146,13 @@ export const usePlotData = (): IMonthsInYearsPlotData => {
     }, [stationId, data, dailyRecords]);
 };
 
-
-const toAnomalies = (values: TSeriesValues, refMeans: (number | null)[]): TSeriesValues =>
-    values.map((v, i) => {
+const toAnomalies = (
+    values: readonly (number | null)[],
+    refMeans: readonly (number | null)[]
+): (number | null)[] =>
+    Array.from(values, (v, i) => {
         const ref = refMeans[i];
         return typeof v === 'number' && Number.isFinite(v) && typeof ref === 'number'
             ? v - ref
             : (v as number | null);
-    }) as TSeriesValues;
+    });
