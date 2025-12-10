@@ -23,11 +23,11 @@ docker build -t itishotow -f jobs/job-update-daily-station-data/Dockerfile .
 
 ```bash
 docker run \
-  -e ACCESS_KEY=SCWFHFE30FTZCCHK0CN8 \
-  -e SECRET_KEY=5b182159-554a-41db-a888-432a7c7ec189 \
-  -e BUCKET_NAME=esistwarm.jetzt \
-  -e REGION=fr-par \
-  -e ENDPOINT_URL=https://s3.fr-par.scw.cloud \
+  -e ACCESS_KEY=your_access_key \
+  -e SECRET_KEY=your_secret_key \
+  -e BUCKET_NAME=your_bucket_name \
+  -e REGION=your_region \
+  -e ENDPOINT_URL=your_bucket_endpoint_url \
   itishotnow
 ```
 
