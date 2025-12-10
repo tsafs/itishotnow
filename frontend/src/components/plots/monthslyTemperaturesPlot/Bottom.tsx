@@ -10,7 +10,7 @@ import createPlot from './plot.js';
 import { usePlotData } from './hooks/usePlotData.js';
 import { setIceAndHotDaysRenderComplete, useIceAndHotDaysRenderComplete } from '../../../store/slices/iceAndHotDaysSlice.js';
 import { useDataStatus } from './hooks/useDataStatus.js';
-import { applyPlotStyles, getPlotStyleRules } from '../utils/plotStyles.js';
+import { applyPlotStyles, getPlotStyleRules } from '../utils/monthsInYearsPlotStyles.js';
 
 const IS_DARK_MODE = true;
 const themeColors = IS_DARK_MODE ? theme.colors.plotDark : theme.colors.plotLight;

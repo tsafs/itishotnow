@@ -1,13 +1,24 @@
 import { useMemo, memo } from 'react';
 import type { CSSProperties } from 'react';
-import { theme } from '../../../styles/design-system.js';
+import { createStyles, theme } from '../../../styles/design-system.js';
 import { useBreakpoint } from '../../../hooks/useBreakpoint.js';
 import PlotDescription from '../../common/PlotDescription/PlotDescription.js';
 
 const getContainerStyle = (isMobile: boolean): CSSProperties => ({
     textAlign: 'center',
-    marginRight: isMobile ? 0 : theme.spacing.lg,
     color: theme.colors.textLight,
+    marginBottom: 8,
+});
+
+const styles = createStyles({
+    title: {
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    subtitle: {
+        fontSize: 12,
+        opacity: 0.9,
+    }
 });
 
 const IceAndHotDaysLeftSide = memo(() => {
@@ -18,7 +29,8 @@ const IceAndHotDaysLeftSide = memo(() => {
 
     return (
         <PlotDescription style={containerStyle}>
-            Todo
+            <div style={styles.title}>Monatliche Temperaturen</div>
+            <div style={styles.subtitle}>Referenzzeitraum: 1961–1990.</div>
         </PlotDescription>
     );
 });

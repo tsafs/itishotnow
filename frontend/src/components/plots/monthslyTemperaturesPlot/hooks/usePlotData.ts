@@ -8,7 +8,7 @@ import {
     toLinePoint,
     type ILineSeries,
     type IMonthsInYearsPlotData
-} from '../../utils/yearSeries.js';
+} from '../../utils/monthsInYearsPlotUtils.js';
 
 const initialResult: IMonthsInYearsPlotData = {
     stationId: '',

@@ -1,6 +1,6 @@
 import * as Plot from '@observablehq/plot';
-import { MONTH_LABELS } from '../utils/plotStyles';
-import type { IMonthsInYearsPlotData } from '../utils/yearSeries';
+import { MONTH_LABELS } from '../utils/monthsInYearsPlotStyles';
+import type { IMonthsInYearsPlotData } from '../utils/monthsInYearsPlotUtils';
 
 export default function createPlot(
     data: IMonthsInYearsPlotData,

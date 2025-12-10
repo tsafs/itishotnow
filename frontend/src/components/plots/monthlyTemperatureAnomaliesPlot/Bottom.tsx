@@ -10,7 +10,7 @@ import createPlot from './plot.js';
 import { usePlotData } from './hooks/usePlotData.js';
 import { setRenderComplete, useRenderComplete } from './slices/slice.js';
 import { useDataStatus } from './hooks/useDataStatus.js';
-import { applyPlotStyles, getPlotStyleRules } from '../utils/plotStyles.js';
+import { applyPlotStyles, getPlotStyleRules } from '../utils/monthsInYearsPlotStyles.js';
 import type { StackedPlotViewBottomProps } from '../../common/PlotView/StackedPlotView.js';
 
 const getPlotContainerStyle = (dims: { width: number; height: number }): CSSProperties => ({

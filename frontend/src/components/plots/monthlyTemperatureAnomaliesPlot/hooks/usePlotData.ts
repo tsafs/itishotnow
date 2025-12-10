@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useAppSelector } from '../../../../store/hooks/useAppSelector.js';
-import { selectDataByStationId } from '../../iceAndHotDaysWavesPlot/slices/dataSlice.js';
+import { selectDataByStationId } from '../../monthslyTemperaturesPlot/slices/dataSlice.js';
 import { useSelectedStationId } from '../../../../store/hooks/hooks.js';
 import { useHistoricalDailyDataForStation } from '../../../../store/slices/historicalDataForStationSlice.js';
 import {
@@ -9,7 +9,7 @@ import {
     toLinePoint,
     type ILineSeries,
     type IMonthsInYearsPlotData
-} from '../../utils/yearSeries.js';
+} from '../../utils/monthsInYearsPlotUtils.js';
 
 const initialResult: IMonthsInYearsPlotData = {
     stationId: '',

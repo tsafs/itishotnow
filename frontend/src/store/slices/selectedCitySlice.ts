@@ -14,12 +14,12 @@ import { resetIceAndHotDaysRenderComplete, setIceAndHotDaysRenderComplete } from
 import {
     resetRenderComplete as resetRenderCompleteIceAndHotDaysWavesPlot,
     setRenderComplete as setRenderCompleteIceAndHotDaysWavesPlot
-} from '../../components/plots/iceAndHotDaysWavesPlot/slices/slice.js';
+} from '../../components/plots/monthslyTemperaturesPlot/slices/slice.js';
 import {
     resetRenderComplete as resetRenderCompleteMonthlyTemperatureAnomaliesPlot,
     setRenderComplete as setRenderCompleteMonthlyTemperatureAnomaliesPlot
 } from '../../components/plots/monthlyTemperatureAnomaliesPlot/slices/slice.js';
-import { fetchData as fetchDailyHistoricalStationData } from '../../components/plots/iceAndHotDaysWavesPlot/slices/dataSlice.js';
+import { fetchData as fetchDailyHistoricalStationData } from '../../components/plots/monthslyTemperaturesPlot/slices/dataSlice.js';
 
 export interface SelectedCityState {
     cityId: string | null;
