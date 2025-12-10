@@ -1,9 +1,16 @@
 import { useMemo } from 'react';
 import { useAppSelector } from '../../../../store/hooks/useAppSelector.js';
-import { selectDataByStationId, type IYearData } from '../../../../store/slices/dailyHistoricalStationDataSlice.js';
+import { selectDataByStationId } from '../../iceAndHotDaysWavesPlot/slices/dataSlice.js';
 import { useSelectedStationId } from '../../../../store/hooks/hooks.js';
 import { useHistoricalDailyDataForStation } from '../../../../store/slices/historicalDataForStationSlice.js';
-import { computeCurrentYearMonthlyMeans, computeReferenceMonthlyMeans, toPoints, type ILineSeries, type IPlotData } from '../../utils/yearSeries.js';
+import {
+    computeCurrentYearMonthlyMeans,
+    computeReferenceMonthlyMeans,
+    toPoints,
+    type ILineSeries,
+    type IPlotData,
+    type SeriesValues
+} from '../../utils/yearSeries.js';
 
 const initialResult: IPlotData = {
     stationId: '',
@@ -16,7 +23,6 @@ const initialResult: IPlotData = {
 
 const REFERENCE_START_YEAR = 1961;
 const REFERENCE_END_YEAR = 1990;
-const RECENT_YEARS_COUNT = 1;
 export const CURRENT_YEAR_STROKE = '#ff5252';
 
 export const usePlotData = (): IPlotData => {
@@ -55,7 +61,7 @@ export const usePlotData = (): IPlotData => {
             if (!values) {
                 continue;
             }
-            const anomalyValues = toAnomalies(values as IYearData, referenceMonthlyMeans);
+            const anomalyValues = toAnomalies(values as SeriesValues, referenceMonthlyMeans);
             unifiedSeries.push({
                 label: referenceLabel,
                 strokeWidth: 1,
@@ -68,7 +74,7 @@ export const usePlotData = (): IPlotData => {
         const lastYear = allYears.slice(-1)[0]!;
         const values = monthlyMeans[lastYear];
         if (values) {
-            const anomalyValues = toAnomalies(values as IYearData, referenceMonthlyMeans);
+            const anomalyValues = toAnomalies(values as SeriesValues, referenceMonthlyMeans);
             unifiedSeries.push({
                 label: String(lastYear),
                 strokeWidth: 2,
@@ -84,7 +90,7 @@ export const usePlotData = (): IPlotData => {
             completedMonths: currentYearCompletedMonths,
         } = computeCurrentYearMonthlyMeans(dailyRecords, currentYear);
         if (currentYearMeans && currentYearCompletedMonths.size > 0) {
-            const currentAnomalies = toAnomalies(currentYearMeans as IYearData, referenceMonthlyMeans);
+            const currentAnomalies = toAnomalies(currentYearMeans as SeriesValues, referenceMonthlyMeans);
             unifiedSeries.push({
                 label: String(currentYear),
                 strokeWidth: 2,
@@ -142,10 +148,10 @@ export const usePlotData = (): IPlotData => {
 };
 
 
-const toAnomalies = (values: IYearData, refMeans: (number | null)[]): IYearData =>
+const toAnomalies = (values: SeriesValues, refMeans: (number | null)[]): SeriesValues =>
     values.map((v, i) => {
         const ref = refMeans[i];
         return typeof v === 'number' && Number.isFinite(v) && typeof ref === 'number'
             ? v - ref
             : (v as number | null);
-    }) as IYearData;
+    }) as SeriesValues;

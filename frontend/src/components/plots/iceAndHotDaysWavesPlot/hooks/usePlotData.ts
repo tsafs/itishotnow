@@ -1,9 +1,16 @@
 import { useMemo } from 'react';
 import { useAppSelector } from '../../../../store/hooks/useAppSelector.js';
-import { selectDataByStationId, type IYearData } from '../../../../store/slices/dailyHistoricalStationDataSlice.js';
+import { selectDataByStationId } from '../slices/dataSlice.js';
 import { useSelectedStationId } from '../../../../store/hooks/hooks.js';
 import { useHistoricalDailyDataForStation } from '../../../../store/slices/historicalDataForStationSlice.js';
-import { computeCurrentYearMonthlyMeans, toPoints, type ILineSeries, type IPlotData, type ISeries } from '../../utils/yearSeries.js';
+import {
+    computeCurrentYearMonthlyMeans,
+    toPoints,
+    type ILineSeries,
+    type IPlotData,
+    type ISeries,
+    type SeriesValues
+} from '../../utils/yearSeries.js';
 
 const initialResult: IPlotData = {
     stationId: '',
@@ -54,7 +61,7 @@ export const usePlotData = (): IPlotData => {
             }
             const series: ISeries = {
                 year,
-                values: values.slice() as IYearData,
+                values: values.slice() as SeriesValues,
                 stroke: "#eeeeee",
                 strokeWidth: 1,
                 strokeOpacity: 0.3,
@@ -91,7 +98,7 @@ export const usePlotData = (): IPlotData => {
                 label: String(lastYear),
                 strokeWidth: 2,
                 strokeOpacity: 1,
-                values: toPoints(values.slice() as IYearData, String(lastYear)),
+                values: toPoints(values.slice() as SeriesValues, String(lastYear)),
             });
         }
 
@@ -106,7 +113,7 @@ export const usePlotData = (): IPlotData => {
                 label: String(currentYear),
                 strokeWidth: 2,
                 strokeOpacity: 1,
-                values: toPoints(currentYearMeans!.slice() as IYearData, String(currentYear)),
+                values: toPoints(currentYearMeans!.slice() as SeriesValues, String(currentYear)),
             });
         }
 

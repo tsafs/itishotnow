@@ -3,7 +3,7 @@ import { useAppSelector } from '../../../../store/hooks/useAppSelector';
 import {
     selectDataStatus as selectDailyHistoricalDataStatus,
     selectDataError as selectDailyHistoricalDataError
-} from '../../../../store/slices/dailyHistoricalStationDataSlice';
+} from '../../iceAndHotDaysWavesPlot/slices/dataSlice';
 import {
     selectDataStatus as selectHistoricalDataStatus,
     selectDataError as selectHistoricalDataError

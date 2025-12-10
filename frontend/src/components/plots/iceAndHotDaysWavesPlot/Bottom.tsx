@@ -62,7 +62,6 @@ const IceAndHotDaysRightSide = memo(() => {
 
         try {
             const nextPlot = createPlot(data, plotDims);
-            console.log(nextPlot);
             containerRef.current.replaceChildren(nextPlot);
             applyPlotStyles(nextPlot, getPlotStyleRules(isMobile, fontSize, IS_DARK_MODE));
             dispatch(setIceAndHotDaysRenderComplete(true));

@@ -1,5 +1,4 @@
 import type DailyRecentByStation from "../../../classes/DailyRecentByStation";
-import type { IYearData } from "../../../store/slices/dailyHistoricalStationDataSlice";
 
 export type SeriesValues = (number | null)[] & { length: 12 };
 
@@ -50,7 +49,7 @@ export interface IPlotData {
     colorRange: string[];
 }
 
-export const toPoints = (values: IYearData, label: string): ISeriesPoint[] => values.map((v, i) => ({ x: i, y: v, label }));
+export const toPoints = (values: SeriesValues, label: string): ISeriesPoint[] => values.map((v, i) => ({ x: i, y: v, label }));
 
 
 const getDaysInMonth = (year: number, monthIndex: number): number => new Date(year, monthIndex + 1, 0).getDate();
@@ -59,7 +58,7 @@ const getDaysInMonth = (year: number, monthIndex: number): number => new Date(ye
 export function computeCurrentYearMonthlyMeans(
     dailyRecords: Record<string, DailyRecentByStation> | null,
     currentYear: number,
-): { means: IYearData | null; completedMonths: Set<number> } {
+): { means: SeriesValues | null; completedMonths: Set<number> } {
     if (!dailyRecords) {
         return { means: null, completedMonths: new Set<number>() };
     }
@@ -87,7 +86,7 @@ export function computeCurrentYearMonthlyMeans(
         counts[monthIndex] += 1;
     }
 
-    const means = new Array(12).fill(null) as IYearData;
+    const means = new Array(12).fill(null) as SeriesValues;
     let hasData = false;
     const completedMonths = new Set<number>();
 
@@ -138,7 +137,7 @@ function extractYMD(dateString: string): { year: number; monthIndex: number; day
     };
 }
 
-export const computeReferenceMonthlyMeans = (mm: Record<number, IYearData | undefined>, start: number, end: number): (number | null)[] => {
+export const computeReferenceMonthlyMeans = (mm: Record<number, SeriesValues | undefined>, start: number, end: number): (number | null)[] => {
     return Array.from({ length: 12 }, (_, m) => {
         let sum = 0;
         let count = 0;

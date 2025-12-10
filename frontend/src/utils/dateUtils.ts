@@ -7,7 +7,6 @@ const NOW = NOW_ENV ? new Date(NOW_ENV) : null;
 
 export const getNow = () => {
     if (DEBUG_MODE && NOW) {
-        console.debug('Debug mode is enabled and VITE_APP_NOW is configured. Returning a fixed date for testing.');
         return DateTime.fromJSDate(NOW, { zone: 'Europe/Berlin' });
     }
     return DateTime.now().setZone('Europe/Berlin');

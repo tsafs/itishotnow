@@ -8,7 +8,7 @@ import { MIN_LOADING_DISPLAY_DURATION } from '../../../constants/page.js';
 import AsyncLoadingOverlayWrapper from '../../common/AsyncLoadingOverlayWrapper/AsyncLoadingOverlayWrapper.js';
 import createPlot from './plot.js';
 import { usePlotData } from './hooks/usePlotData.js';
-import { setRenderComplete, useRenderComplete } from '../../../store/slices/componentSlices/monthlyTemperatureAnomaliesSlice.js';
+import { setRenderComplete, useRenderComplete } from './slices/slice.js';
 import { useDataStatus } from './hooks/useDataStatus.js';
 import { applyPlotStyles, getPlotStyleRules } from '../utils/plotStyles.js';
 

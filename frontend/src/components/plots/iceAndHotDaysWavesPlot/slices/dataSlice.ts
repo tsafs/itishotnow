@@ -1,7 +1,7 @@
-import { fetchDailyDataForStation } from '../../services/RollingAverageDataService.js';
-import type { RootState } from '../index.js';
-import { type RollingAverageRecordMap } from '../../classes/RollingAverageRecord.js';
-import { createDataSlice } from '../factories/createDataSlice.js';
+import { fetchDailyDataForStation } from '../../../../services/RollingAverageDataService.js';
+import type { RootState } from '../../../../store/index.js';
+import { type RollingAverageRecordMap } from '../../../../classes/RollingAverageRecord.js';
+import { createDataSlice } from '../../../../store/factories/createDataSlice.js';
 
 export interface IYearData extends Array<number | null> {
     length: 12;

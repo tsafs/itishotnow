@@ -1,39 +1,38 @@
 import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import type { RootState } from '../../index.js';
-import { useAppSelector } from '../../hooks/useAppSelector.js';
+import type { RootState } from '../../../../store';
+import { useAppSelector } from '../../../../store/hooks/useAppSelector';
 
 export type TState = {
     renderComplete: boolean;
-};
+}
 
 const initialState: TState = {
     renderComplete: false,
 };
 
 const slice = createSlice({
-    name: 'iceAndHotDaysWavesPlot',
+    name: 'monthlyTemperatureAnomalies',
     initialState,
     reducers: {
-        setRenderComplete: (state, action: PayloadAction<boolean>) => {
+        setRenderComplete(state, action: PayloadAction<boolean>) {
             state.renderComplete = action.payload;
         },
-        resetRenderComplete: (state) => {
+        resetRenderComplete(state) {
             state.renderComplete = false;
-        },
-    },
+        }
+    }
 });
 
 export const selectRenderComplete = (state: RootState) =>
-    state.iceAndHotDaysWavesPlot.renderComplete;
+    state.monthlyTemperatureAnomalies.renderComplete;
 
-export const useRenderComplete = (): boolean => {
-    return useAppSelector(selectRenderComplete);
-};
+export const useRenderComplete = (): boolean =>
+    useAppSelector(selectRenderComplete);
 
 export const {
     setRenderComplete,
-    resetRenderComplete,
+    resetRenderComplete
 } = slice.actions;
 
 export default slice.reducer;
