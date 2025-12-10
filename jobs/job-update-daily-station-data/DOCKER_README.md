@@ -14,7 +14,7 @@ This Docker setup provides a streamlined way to:
 Navigate to the root of the project and run:
 
 ```bash
-docker build -t itishotow -f jobs/job-update-daily-station-data/Dockerfile .
+docker build -t itishotnow -f jobs/job-update-daily-station-data/Dockerfile .
 ```
 
 ## Running with Docker
