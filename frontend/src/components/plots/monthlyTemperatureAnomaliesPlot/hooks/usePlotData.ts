@@ -4,15 +4,15 @@ import { selectDataByStationId } from '../../iceAndHotDaysWavesPlot/slices/dataS
 import { useSelectedStationId } from '../../../../store/hooks/hooks.js';
 import { useHistoricalDailyDataForStation } from '../../../../store/slices/historicalDataForStationSlice.js';
 import {
-    computeCurrentYearMonthlyMeans,
-    computeReferenceMonthlyMeans,
-    toPoints,
+    computeMeansOfMonthsOfCurrentYear,
+    computeMeansOfMonthsOverYears,
+    toLinePoint,
     type ILineSeries,
-    type IPlotData,
-    type SeriesValues
+    type IMonthsInYearsPlotData,
+    type TSeriesValues
 } from '../../utils/yearSeries.js';
 
-const initialResult: IPlotData = {
+const initialResult: IMonthsInYearsPlotData = {
     stationId: '',
     domain: [0, 0],
     error: null,
@@ -25,7 +25,7 @@ const REFERENCE_START_YEAR = 1961;
 const REFERENCE_END_YEAR = 1990;
 export const CURRENT_YEAR_STROKE = '#ff5252';
 
-export const usePlotData = (): IPlotData => {
+export const usePlotData = (): IMonthsInYearsPlotData => {
     const stationId = useSelectedStationId();
     const data = useAppSelector((state) => selectDataByStationId(state, stationId));
     const dailyRecords = useHistoricalDailyDataForStation(stationId);
@@ -49,7 +49,7 @@ export const usePlotData = (): IPlotData => {
         }
 
         // Compute 1961–1990 baseline
-        const referenceMonthlyMeans = computeReferenceMonthlyMeans(monthlyMeans, REFERENCE_START_YEAR, REFERENCE_END_YEAR);
+        const referenceMonthlyMeans = computeMeansOfMonthsOverYears(monthlyMeans, REFERENCE_START_YEAR, REFERENCE_END_YEAR);
 
         const unifiedSeries: ILineSeries[] = [];
 
@@ -61,12 +61,12 @@ export const usePlotData = (): IPlotData => {
             if (!values) {
                 continue;
             }
-            const anomalyValues = toAnomalies(values as SeriesValues, referenceMonthlyMeans);
+            const anomalyValues = toAnomalies(values as TSeriesValues, referenceMonthlyMeans);
             unifiedSeries.push({
                 label: referenceLabel,
                 strokeWidth: 1,
                 strokeOpacity: 0.3,
-                values: toPoints(anomalyValues, referenceLabel),
+                values: toLinePoint(anomalyValues, referenceLabel),
             });
         }
 
@@ -74,12 +74,12 @@ export const usePlotData = (): IPlotData => {
         const lastYear = allYears.slice(-1)[0]!;
         const values = monthlyMeans[lastYear];
         if (values) {
-            const anomalyValues = toAnomalies(values as SeriesValues, referenceMonthlyMeans);
+            const anomalyValues = toAnomalies(values as TSeriesValues, referenceMonthlyMeans);
             unifiedSeries.push({
                 label: String(lastYear),
                 strokeWidth: 2,
                 strokeOpacity: 1,
-                values: toPoints(anomalyValues, String(lastYear)),
+                values: toLinePoint(anomalyValues, String(lastYear)),
             });
         }
 
@@ -88,14 +88,14 @@ export const usePlotData = (): IPlotData => {
         const {
             means: currentYearMeans,
             completedMonths: currentYearCompletedMonths,
-        } = computeCurrentYearMonthlyMeans(dailyRecords, currentYear);
+        } = computeMeansOfMonthsOfCurrentYear(dailyRecords, currentYear);
         if (currentYearMeans && currentYearCompletedMonths.size > 0) {
-            const currentAnomalies = toAnomalies(currentYearMeans as SeriesValues, referenceMonthlyMeans);
+            const currentAnomalies = toAnomalies(currentYearMeans as TSeriesValues, referenceMonthlyMeans);
             unifiedSeries.push({
                 label: String(currentYear),
                 strokeWidth: 2,
                 strokeOpacity: 1,
-                values: toPoints(currentAnomalies, String(currentYear)),
+                values: toLinePoint(currentAnomalies, String(currentYear)),
             });
         }
 
@@ -148,10 +148,10 @@ export const usePlotData = (): IPlotData => {
 };
 
 
-const toAnomalies = (values: SeriesValues, refMeans: (number | null)[]): SeriesValues =>
+const toAnomalies = (values: TSeriesValues, refMeans: (number | null)[]): TSeriesValues =>
     values.map((v, i) => {
         const ref = refMeans[i];
         return typeof v === 'number' && Number.isFinite(v) && typeof ref === 'number'
             ? v - ref
             : (v as number | null);
-    }) as SeriesValues;
+    }) as TSeriesValues;

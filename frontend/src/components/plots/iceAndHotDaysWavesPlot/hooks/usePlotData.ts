@@ -4,15 +4,14 @@ import { selectDataByStationId } from '../slices/dataSlice.js';
 import { useSelectedStationId } from '../../../../store/hooks/hooks.js';
 import { useHistoricalDailyDataForStation } from '../../../../store/slices/historicalDataForStationSlice.js';
 import {
-    computeCurrentYearMonthlyMeans,
-    toPoints,
+    computeMeansOfMonthsOfCurrentYear,
+    toLinePoint,
     type ILineSeries,
-    type IPlotData,
-    type ISeries,
-    type SeriesValues
+    type IMonthsInYearsPlotData,
+    type TSeriesValues
 } from '../../utils/yearSeries.js';
 
-const initialResult: IPlotData = {
+const initialResult: IMonthsInYearsPlotData = {
     stationId: '',
     domain: [0, 0],
     error: null,
@@ -24,7 +23,7 @@ const initialResult: IPlotData = {
 const REFERENCE_START_YEAR = 1961;
 const REFERENCE_END_YEAR = 1990;
 
-export const usePlotData = (): IPlotData => {
+export const usePlotData = (): IMonthsInYearsPlotData => {
     const stationId = useSelectedStationId();
     const data = useAppSelector((state) => selectDataByStationId(state, stationId));
     const dailyRecords = useHistoricalDailyDataForStation(stationId);
@@ -52,43 +51,19 @@ export const usePlotData = (): IPlotData => {
 
         // Reference years (1961-1990) as light gray lines
         const referenceYears = allYears.filter((year) => year >= REFERENCE_START_YEAR && year <= REFERENCE_END_YEAR);
-        const referenceYearsData: ISeries[] = [];
         const referenceLabel = `${REFERENCE_START_YEAR}-${REFERENCE_END_YEAR}`;
         for (const year of referenceYears) {
             const values = monthlyMeans[year];
             if (!values) {
                 continue;
             }
-            const series: ISeries = {
-                year,
-                values: values.slice() as SeriesValues,
-                stroke: "#eeeeee",
-                strokeWidth: 1,
-                strokeOpacity: 0.3,
-            };
-            referenceYearsData.push(series);
             unifiedSeries.push({
                 label: referenceLabel,
-                strokeWidth: series.strokeWidth,
-                strokeOpacity: series.strokeOpacity,
-                values: toPoints(series.values, referenceLabel),
+                strokeWidth: 1,
+                strokeOpacity: 0.3,
+                values: toLinePoint(values.slice() as TSeriesValues, referenceLabel),
             });
         }
-
-        // Mean curve across reference years
-        // if (referenceYears.length > 0) {
-        //     const meanAnomalies = computeMeanOfSeries(
-        //         referenceYearsData
-        //             .filter((s) => referenceYears.includes(s.year))
-        //             .map(s => s.values)
-        //     );
-        //     unifiedSeries.push({
-        //         label: `${referenceLabel} Mittel`,
-        //         strokeWidth: 2,
-        //         strokeOpacity: 1,
-        //         values: toPoints(meanAnomalies, `${referenceLabel} Mittel`),
-        //     });
-        // }
 
         // Last year as yellow line
         const lastYear = allYears.slice(-1)[0]!;
@@ -98,7 +73,7 @@ export const usePlotData = (): IPlotData => {
                 label: String(lastYear),
                 strokeWidth: 2,
                 strokeOpacity: 1,
-                values: toPoints(values.slice() as SeriesValues, String(lastYear)),
+                values: toLinePoint(values.slice() as TSeriesValues, String(lastYear)),
             });
         }
 
@@ -107,13 +82,13 @@ export const usePlotData = (): IPlotData => {
         const {
             means: currentYearMeans,
             completedMonths: currentYearCompletedMonths,
-        } = computeCurrentYearMonthlyMeans(dailyRecords, currentYear);
+        } = computeMeansOfMonthsOfCurrentYear(dailyRecords, currentYear);
         if (currentYearMeans && currentYearCompletedMonths.size > 0) {
             unifiedSeries.push({
                 label: String(currentYear),
                 strokeWidth: 2,
                 strokeOpacity: 1,
-                values: toPoints(currentYearMeans!.slice() as SeriesValues, String(currentYear)),
+                values: toLinePoint(currentYearMeans!.slice() as TSeriesValues, String(currentYear)),
             });
         }
 
