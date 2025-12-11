@@ -16,8 +16,8 @@ import heatmapGermanySlice from './slices/heatmapGermanySlice.js';
 import temperatureAnomaliesByDayOverYearsReducer from './slices/temperatureAnomaliesByDayOverYearsSlice.js';
 import iceAndHotDaysReducer from './slices/iceAndHotDaysSlice.js';
 import iceAndHotDaysDataReducer from './slices/iceAndHotDaysDataSlice.js';
-import iceAndHotDaysWavesPlot from '../components/plots/monthslyTemperaturesPlot/slices/slice.js';
-import dailyHistoricalStationData from '../components/plots/monthslyTemperaturesPlot/slices/dataSlice.js';
+import iceAndHotDaysWavesPlot from '../components/plots/monthlyTemperaturesPlot/slices/slice.js';
+import dailyHistoricalStationData from '../components/plots/monthlyTemperaturesPlot/slices/dataSlice.js';
 import monthlyTemperatureAnomaliesReducer from '../components/plots/monthlyTemperatureAnomaliesPlot/slices/slice.js';
 
 export const store = configureStore({

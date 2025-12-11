@@ -6,7 +6,7 @@ export interface PlotRegistryEntry {
 export const plots: PlotRegistryEntry[] = [
     {
         id: 'historical-temperature-waves-plot',
-        loader: () => import('./monthslyTemperaturesPlot/View'),
+        loader: () => import('./monthlyTemperaturesPlot/View'),
     },
     {
         id: 'monthly-temperature-anomalies-plot',
