@@ -26,6 +26,17 @@ export interface IMonthsInYearsPlotData {
     // Optional color scale configuration for Observable Plot
     colorDomain: string[];
     colorRange: string[];
+    // Optional computed stats for descriptions/insights
+    stats?: {
+        currentYear?: number;
+        currentMonthIndex?: number; // 0-11
+        completenessMonths?: number; // number of months with full coverage in current year
+        currentMonthMean?: number | null;
+        referenceMonthMean?: number | null;
+        currentMonthAnomaly?: number | null;
+        recentTrendPerDecade1991Plus?: number; // °C/decade
+        anomalyDomain?: { min: number; max: number };
+    };
 }
 
 const getDaysInMonth = (year: number, monthIndex: number): number => new Date(year, monthIndex + 1, 0).getDate();

@@ -10,6 +10,7 @@ import {
     type ILineSeries,
     type IMonthsInYearsPlotData
 } from '../../utils/monthsInYearsPlotUtils.js';
+import { theilSenSlope } from '../../../../services/description/stats.js';
 
 const initialResult: IMonthsInYearsPlotData = {
     stationId: '',
@@ -135,6 +136,32 @@ export const usePlotData = (): IMonthsInYearsPlotData => {
 
         const computedDomain = getDomainFromSeries(unifiedSeries);
 
+        // Compute stats for description
+        const completenessMonths = currentYearCompletedMonths?.size ?? 0;
+        const currentMonthIndex = completenessMonths > 0 ? Math.max(...Array.from(currentYearCompletedMonths)) : null;
+        const currentMonthMean = (currentYearMeans && currentMonthIndex != null) ? currentYearMeans[currentMonthIndex] : null;
+        const referenceMonthMean = (referenceMonthlyMeans && currentMonthIndex != null) ? referenceMonthlyMeans[currentMonthIndex] : null;
+        const currentMonthAnomaly = (typeof currentMonthMean === 'number' && typeof referenceMonthMean === 'number')
+            ? currentMonthMean - referenceMonthMean
+            : null;
+
+        // Recent trend since 1991: annual average anomalies per year
+        const yearsFrom1991 = allYears.filter(y => y >= 1991);
+        const annualAnomalyMeans: number[] = [];
+        const xs: number[] = [];
+        for (const y of yearsFrom1991) {
+            const vals = monthlyMeans[y];
+            if (!vals) continue;
+            const anomalies = toAnomalies(vals, referenceMonthlyMeans);
+            const finite = anomalies.filter(v => typeof v === 'number') as number[];
+            if (!finite.length) continue;
+            const avg = finite.reduce((s, v) => s + v, 0) / finite.length;
+            xs.push(y);
+            annualAnomalyMeans.push(avg);
+        }
+        const slopePerYear = theilSenSlope(xs, annualAnomalyMeans);
+        const recentTrendPerDecade1991Plus = (slopePerYear == null) ? null : slopePerYear * 10;
+
         return {
             stationId,
             domain: computedDomain,
@@ -142,6 +169,16 @@ export const usePlotData = (): IMonthsInYearsPlotData => {
             series: unifiedSeries,
             colorDomain,
             colorRange,
+            stats: {
+                currentYear,
+                completenessMonths,
+                anomalyDomain: { min: computedDomain[0], max: computedDomain[1] },
+                ...(currentMonthIndex != null ? { currentMonthIndex } : {}),
+                ...(currentMonthMean != null ? { currentMonthMean } : {}),
+                ...(referenceMonthMean != null ? { referenceMonthMean } : {}),
+                ...(currentMonthAnomaly != null ? { currentMonthAnomaly } : {}),
+                ...(recentTrendPerDecade1991Plus != null ? { recentTrendPerDecade1991Plus } : {}),
+            },
         };
     }, [stationId, data, dailyRecords]);
 };

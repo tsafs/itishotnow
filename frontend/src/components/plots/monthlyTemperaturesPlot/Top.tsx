@@ -3,6 +3,9 @@ import type { CSSProperties } from 'react';
 import { createStyles, theme } from '../../../styles/design-system.js';
 import { useBreakpoint } from '../../../hooks/useBreakpoint.js';
 import PlotDescription from '../../common/PlotDescription/PlotDescription.js';
+import { useSelectedCityName } from '../../../store/hooks/hooks.js';
+import { getMonthlyTempsDescription } from '../../../services/description/descriptionEngine.js';
+import { usePlotData } from './hooks/usePlotData.js';
 
 const getContainerStyle = (isMobile: boolean): CSSProperties => ({
     textAlign: 'center',
@@ -21,20 +24,34 @@ const styles = createStyles({
     }
 });
 
-const IceAndHotDaysLeftSide = memo(() => {
+const MonthlyTemperaturesTop = memo(() => {
     const breakpoint = useBreakpoint();
     const isMobile = breakpoint === 'mobile' || breakpoint === 'tablet';
 
     const containerStyle = useMemo(() => getContainerStyle(isMobile), [isMobile]);
 
+    const city = useSelectedCityName();
+    const { stats } = usePlotData();
+    const ctx = {
+        plotId: 'monthlyTemps' as const,
+        city,
+        locale: 'de' as const,
+        ...(stats ? { stats } : {}),
+    };
+
+    const { title, baseline, insights } = getMonthlyTempsDescription(ctx);
+
     return (
         <PlotDescription style={containerStyle}>
-            <div style={styles.title}>Monatliche Temperaturen</div>
-            <div style={styles.subtitle}>Referenzzeitraum: 1961–1990.</div>
+            <div style={styles.title}>{title}</div>
+            <div style={styles.subtitle}>{baseline}</div>
+            {insights.map((s, i) => (
+                <div key={i} style={styles.subtitle}>{s}</div>
+            ))}
         </PlotDescription>
     );
 });
 
-IceAndHotDaysLeftSide.displayName = 'IceAndHotDaysLeftSide';
+MonthlyTemperaturesTop.displayName = 'MonthlyTemperaturesTop';
 
-export default IceAndHotDaysLeftSide;
+export default MonthlyTemperaturesTop;

@@ -5,10 +5,12 @@ import { useSelectedStationId } from '../../../../store/hooks/hooks.js';
 import { useHistoricalDailyDataForStation } from '../../../../store/slices/historicalDataForStationSlice.js';
 import {
     computeMeansOfMonthsOfCurrentYear,
+    computeMeansOfMonthsOverYears,
     toLinePoint,
     type ILineSeries,
     type IMonthsInYearsPlotData
 } from '../../utils/monthsInYearsPlotUtils.js';
+import { theilSenSlope } from '../../../../services/description/stats.js';
 
 const initialResult: IMonthsInYearsPlotData = {
     stationId: '',
@@ -110,6 +112,32 @@ export const usePlotData = (): IMonthsInYearsPlotData => {
             }
         }
 
+        // Compute stats for description
+        const referenceMonthlyMeans = computeMeansOfMonthsOverYears(monthlyMeans, REFERENCE_START_YEAR, REFERENCE_END_YEAR);
+        const completenessMonths = currentYearCompletedMonths?.size ?? 0;
+        const currentMonthIndex = completenessMonths > 0 ? Math.max(...Array.from(currentYearCompletedMonths)) : null;
+        const currentMonthMean = (currentYearMeans && currentMonthIndex != null) ? currentYearMeans[currentMonthIndex] : null;
+        const referenceMonthMean = (referenceMonthlyMeans && currentMonthIndex != null) ? referenceMonthlyMeans[currentMonthIndex] : null;
+        const currentMonthAnomaly = (typeof currentMonthMean === 'number' && typeof referenceMonthMean === 'number')
+            ? currentMonthMean - referenceMonthMean
+            : null;
+
+        // Recent trend since 1991 using annual monthly-means averages
+        const yearsFrom1991 = allYears.filter(y => y >= 1991);
+        const annualMeans: number[] = [];
+        const xs: number[] = [];
+        for (const y of yearsFrom1991) {
+            const vals = monthlyMeans[y];
+            if (!vals) continue;
+            const finite = vals.filter(v => typeof v === 'number') as number[];
+            if (!finite.length) continue;
+            const avg = finite.reduce((s, v) => s + v, 0) / finite.length;
+            xs.push(y);
+            annualMeans.push(avg);
+        }
+        const slopePerYear = theilSenSlope(xs, annualMeans);
+        const recentTrendPerDecade1991Plus = (slopePerYear == null) ? null : slopePerYear * 10;
+
         return {
             stationId,
             domain: data.domain,
@@ -117,6 +145,15 @@ export const usePlotData = (): IMonthsInYearsPlotData => {
             series: unifiedSeries,
             colorDomain,
             colorRange,
+            stats: {
+                currentYear,
+                completenessMonths,
+                ...(currentMonthIndex != null ? { currentMonthIndex } : {}),
+                ...(currentMonthMean != null ? { currentMonthMean } : {}),
+                ...(referenceMonthMean != null ? { referenceMonthMean } : {}),
+                ...(currentMonthAnomaly != null ? { currentMonthAnomaly } : {}),
+                ...(recentTrendPerDecade1991Plus != null ? { recentTrendPerDecade1991Plus } : {}),
+            },
         };
     }, [stationId, data, dailyRecords]);
 };
